@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Herobutton from "@/components/Herobutton";
 import SocialLinksButton from "@/components/SocialLinksButton";
+import TiktokIcon from "@/components/icons/TiktokIcon";
 
 export default function Home() {
   return (
@@ -18,7 +19,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 bg-gray-800/20" />
       </div>
-
+      <TiktokIcon />
       <SocialLinksButton />
 
       {/* Content */}
