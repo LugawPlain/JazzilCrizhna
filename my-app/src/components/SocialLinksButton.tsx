@@ -64,64 +64,66 @@ const SocialLinksButton = () => {
   ];
 
   return (
-    <div className="fixed right-8 bottom-8 z-50">
-      {/* Social Media Icons */}
-      <div className="flex flex-col-reverse gap-4 mb-4">
-        {socialLinks.map((link, index) => (
-          <a
-            key={index}
-            href={link.href}
-            className={`flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all group duration-300 absolute ${
-              !isOpen && "pointer-events-none"
-            }`}
-            style={{
-              transform: isOpen
-                ? `translateY(${-16 * (index + 1)}px)`
-                : "translateY(0px)",
-              opacity: isOpen ? 1 : 0,
-              transition: `transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${
-                index * 0.1
-              }s, opacity 0.5s ease-out ${index * 0.1}s`,
-              bottom: "0",
-              right: "0",
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-white group-hover:motion-preset-shake"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+    <>
+      <div className="fixed right-8 bottom-8 z-50">
+        {/* Social Media Icons */}
+        <div className="flex flex-col-reverse gap-4 mb-4">
+          {socialLinks.map((link, index) => (
+            <a
+              key={index}
+              href={link.href}
+              className={`flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all group duration-300 absolute ${
+                !isOpen && "pointer-events-none"
+              }`}
+              style={{
+                transform: isOpen
+                  ? `translateY(${-60 * (index + 1)}px)`
+                  : "translateY(0px)",
+                opacity: isOpen ? 1 : 0,
+                transition: `transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${
+                  index * 0.1
+                }s, opacity 0.5s ease-out ${index * 0.1}s`,
+                bottom: "0",
+                right: "0",
+              }}
             >
-              {link.icon}
-            </svg>
-          </a>
-        ))}
-      </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white group-hover:motion-preset-shake"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                {link.icon}
+              </svg>
+            </a>
+          ))}
+        </div>
 
-      {/* Main Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group relative z-10"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-6 w-6 text-white transition-transform duration-500 group-hover:motion-preset-shake ${
-            isOpen ? "rotate-45" : ""
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+        {/* Main Toggle Button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group relative z-10"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          />
-        </svg>
-      </button>
-    </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-6 w-6 text-white transition-transform duration-500 group-hover:motion-preset-shake ${
+              isOpen ? "rotate-45" : ""
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
+          </svg>
+        </button>
+      </div>
+    </>
   );
 };
 

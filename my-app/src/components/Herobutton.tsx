@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 
 interface HerobuttonProps {
@@ -32,14 +33,18 @@ const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
           fill="none"
         />
       </svg>
-      <div className="hover:bg-white/10 hover:backdrop-blur-xs transition-all duration-150 px-1 py-2 rounded-md z-10 group ">
+
+      <Link
+        href="/portfolio"
+        className="hover:bg-white/10 hover:backdrop-blur-xs transition-all duration-150 px-1 py-2 rounded-md z-10 group "
+      >
         <p
           className="text-white group-hover:text-black transition-all duration-150 text-5xl font-normal "
           style={{ fontFamily: "acumin-pro-regular, sans-serif" }}
         >
           {text}
         </p>
-      </div>
+      </Link>
     </div>
   );
 };
