@@ -6,7 +6,7 @@ interface HerobuttonProps {
 
 const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center ">
       <svg
         className="absolute z-0 motion-preset-expand motion-duration-1000"
         width="200"
@@ -32,7 +32,7 @@ const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
           fill="none"
         />
       </svg>
-      <div className="hover:bg-gray-400/60 transition-all duration-150 px-1 py-2 rounded-md z-10 group motion-opacity-in-[0%] motion-duration-[1.5s]/opacity  ">
+      <div className="hover:bg-white/10 hover:backdrop-blur-xs transition-all duration-150 px-1 py-2 rounded-md z-10 group ">
         <p
           className="text-white group-hover:text-black transition-all duration-150 text-5xl font-normal "
           style={{ fontFamily: "acumin-pro-regular, sans-serif" }}
