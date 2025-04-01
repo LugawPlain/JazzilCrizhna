@@ -2,6 +2,7 @@ import Image from "next/image";
 import Herobutton from "@/components/Herobutton";
 import SocialLinksButton from "@/components/SocialLinksButton";
 import TiktokIcon from "@/components/icons/TiktokIcon";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -23,10 +24,12 @@ export default function Home() {
       {/* Content */}
       <div className="relative z-10 flex flex-row container ">
         <div className="flex flex-col relative items-center left-80 top-8 text-center space-y">
-          <h1 className="text-3xl font-bold text-white">
-            Yorticia{" "}
-            <span className="text-white/80 text-2xl">(Jazzil Sarinas)</span>
-          </h1>
+          <Link href="/portfolio">
+            <h1 className="text-3xl font-bold text-white">
+              Yorticia{" "}
+              <span className="text-white/80 text-2xl">(Jazzil Sarinas)</span>
+            </h1>
+          </Link>
           <p className=" text-gray-200 max-w-2xl">
             Model | Influencer | Ambasadress
           </p>

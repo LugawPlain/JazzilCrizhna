@@ -1,66 +1,128 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 export default function Header() {
   const pathname = usePathname();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Don't render the header on the home page
   if (pathname === "/") {
     return null;
   }
 
+  const portfolioCategories = [
+    { name: "Pageant", href: "/portfolio/pageant" },
+    { name: "Advertising", href: "/portfolio/advertising" },
+    { name: "Models", href: "/portfolio/models" },
+    { name: "Clothing", href: "/portfolio/clothing" },
+    { name: "Muse", href: "/portfolio/muse" },
+    { name: "Photoshoots", href: "/portfolio/photoshoots" },
+  ];
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
-      <nav className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-center relative">
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-12">
+    <header className="fixed top-0 left-0 right-0 z-50">
+      <nav className="bg-black/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo/Name */}
             <Link
-              href="/portfolio"
-              className="text-white hover:text-gray-200 transition-colors"
+              href="/"
+              className="text-white text-3xl font-semibold hover:text-gray-200 transition-colors"
             >
-              Portfolio
+              Yorticia
             </Link>
-            <Link
-              href="/about"
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              About
-            </Link>
-            <Link
-              href="/contact"
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              Contact
-            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              {/* Portfolio Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  onMouseEnter={() => setIsDropdownOpen(true)}
+                  className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 py-2"
+                >
+                  Portfolio
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                <div
+                  onMouseLeave={() => setIsDropdownOpen(false)}
+                  className={`absolute right-0 mt-1 w-48 rounded-lg shadow-lg bg-black/90 backdrop-blur-sm ring-1 ring-white/10 
+                    transition-all duration-200 origin-top ${
+                      isDropdownOpen
+                        ? "opacity-100 scale-100 translate-y-0"
+                        : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                    }`}
+                >
+                  <div className="py-2 px-1">
+                    {portfolioCategories.map((category) => (
+                      <Link
+                        key={category.name}
+                        href={category.href}
+                        className={`block px-4 py-2 text-sm text-white hover:bg-white/10 rounded-md transition-colors ${
+                          pathname === category.href ? "bg-white/10" : ""
+                        }`}
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                href="/about"
+                className={`text-white hover:text-gray-200 transition-colors ${
+                  pathname === "/about" ? "text-gray-200" : ""
+                }`}
+              >
+                About
+              </Link>
+              <Link
+                href="/contact"
+                className={`text-white hover:text-gray-200 transition-colors ${
+                  pathname === "/contact" ? "text-gray-200" : ""
+                }`}
+              >
+                Contact
+              </Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button className="md:hidden text-white hover:text-gray-200 transition-colors">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
           </div>
-
-          {/* Logo/Name - Absolute positioned */}
-          <Link
-            href="/"
-            className="absolute left-0 text-white text-xl font-semibold hover:text-gray-200 transition-colors"
-          >
-            Yorticia
-          </Link>
-
-          {/* Mobile Menu Button - Absolute positioned */}
-          <button className="absolute right-0 md:hidden text-white hover:text-gray-200 transition-colors">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
         </div>
       </nav>
     </header>
