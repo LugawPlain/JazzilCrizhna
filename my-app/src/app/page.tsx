@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Herobutton from "@/components/Herobutton";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
         />
         {/* Dark overlay for better text readability */}
         <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-gray-800/20" />
       </div>
 
       {/* Fixed Contact Icon */}
@@ -40,58 +42,20 @@ export default function Home() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-20">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold text-white">
+      <div className="relative z-10 container mx-auto px-4 py-4">
+        <div className="flex flex-col relative left-30 top-4 items-center w-96 text-center space-y">
+          <h1 className="text-3xl font-bold text-white">
             Yorticia{" "}
-            <span className="text-white/80 text-4xl">(Jazzil Sarinas)</span>
+            <span className="text-white/80 text-2xl">(Jazzil Sarinas)</span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 max-w-2xl">
+          <p className=" text-gray-200 max-w-2xl">
             Model | Influencer | Ambasadress
           </p>
         </div>
       </div>
-      {/* <div className="relative w-full h-full flex items-center justify-center">
-        <div className="absolute text-white font-bold text-5xl sm:text-6xl md:text-7xl">
-          <span className="border-t-4 border-l-4 absolute -top-5 -left-5 w-8 h-8"></span>
-          <span className="border-b-4 border-r-4 absolute bottom-0 right-0 w-8 h-8"></span>
-          Modeling
-        </div>
-      </div> */}
-      <div className="relative w-full h-full flex items-center mt-8 justify-center">
-        <svg
-          className="absolute"
-          width="200"
-          height="200"
-          viewBox="0 0 200 200"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M0 100 L0 0 L100 0"
-            stroke="white"
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeOpacity="0.5"
-            fill="none"
-          />
-          <path
-            d="M200 100 L200 200 L100 200"
-            stroke="white"
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeOpacity="0.5"
-            fill="none"
-          />
-        </svg>
-        <span>
-          <p
-            className="text-white text-4xl font-normal"
-            style={{ fontFamily: "acumin-pro-regular, sans-serif" }}
-          >
-            Modeling
-          </p>
-        </span>
+
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Herobutton text="Portfolio" />
       </div>
     </div>
   );
