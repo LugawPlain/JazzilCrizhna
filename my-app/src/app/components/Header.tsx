@@ -19,6 +19,7 @@ export default function Header() {
     { name: "Clothing", href: "/portfolio/clothing" },
     { name: "Muse", href: "/portfolio/muse" },
     { name: "Photoshoots", href: "/portfolio/photoshoots" },
+    { name: "Cosplay", href: "/portfolio/cosplay" },
   ];
 
   return (

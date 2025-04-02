@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import TiktokIcon from "./icons/TiktokIcon";
+import YoutubeIcon from "./icons/YoutubeIcon";
+import FacebookPageIcon from "./icons/FacebookPageIcon";
 
 const SocialLinksButton = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +17,13 @@ const SocialLinksButton = () => {
           d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
         />
       ),
-      href: "#facebook",
+      href: "https://www.facebook.com/yourpage",
+      label: "Facebook",
+    },
+    {
+      icon: <FacebookPageIcon />,
+      href: "https://www.facebook.com/yourpage",
+      label: "Facebook Page",
     },
     {
       icon: (
@@ -40,7 +48,8 @@ const SocialLinksButton = () => {
           />
         </>
       ),
-      href: "#instagram",
+      href: "https://www.instagram.com/yourprofile",
+      label: "Instagram",
     },
     {
       icon: (
@@ -48,7 +57,13 @@ const SocialLinksButton = () => {
           <TiktokIcon></TiktokIcon>
         </>
       ),
-      href: "#tiktok",
+      href: "https://www.tiktok.com/@yourprofile",
+      label: "TikTok",
+    },
+    {
+      icon: <YoutubeIcon />,
+      href: "https://www.youtube.com/yourchannel",
+      label: "YouTube",
     },
     {
       icon: (
@@ -60,6 +75,7 @@ const SocialLinksButton = () => {
         />
       ),
       href: "mailto:contact@example.com",
+      label: "Email",
     },
   ];
 
@@ -71,6 +87,8 @@ const SocialLinksButton = () => {
           <a
             key={index}
             href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
             className={`flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all group duration-300 absolute ${
               !isOpen && "pointer-events-none"
             }`}
@@ -85,6 +103,7 @@ const SocialLinksButton = () => {
               bottom: "0",
               right: "0",
             }}
+            title={link.label}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
