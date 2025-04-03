@@ -4,10 +4,17 @@ import path from "path";
 
 export async function GET(
   request: Request,
-  { params }: { params: { category: string } }
+  context: { params: { category: string } }
 ) {
   try {
-    const category = params.category;
+    const { category } = context.params;
+    if (!category) {
+      return NextResponse.json(
+        { error: "Category parameter is missing" },
+        { status: 400 }
+      );
+    }
+
     const publicPath = path.join(process.cwd(), "public", category);
 
     // Check if the directory exists

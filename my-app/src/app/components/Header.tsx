@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-
+import { categories } from "../portfolio/CategoryData";
 export default function Header() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -15,7 +15,7 @@ export default function Header() {
   const portfolioCategories = [
     { name: "Pageant", href: "/portfolio/pageant" },
     { name: "Advertising", href: "/portfolio/advertising" },
-    { name: "Models", href: "/portfolio/models" },
+    { name: "Modeling", href: "/portfolio/modeling" },
     { name: "Clothing", href: "/portfolio/clothing" },
     { name: "Muse", href: "/portfolio/muse" },
     { name: "Photoshoots", href: "/portfolio/photoshoots" },
@@ -73,15 +73,15 @@ export default function Header() {
                     }`}
                 >
                   <div className="py-2 px-1">
-                    {portfolioCategories.map((category) => (
+                    {categories.map((category) => (
                       <Link
-                        key={category.name}
-                        href={category.href}
+                        key={category.title}
+                        href={category.link}
                         className={`block px-4 py-2 text-sm text-white hover:bg-white/10 rounded-md transition-colors ${
-                          pathname === category.href ? "bg-white/10" : ""
+                          pathname === category.link ? "bg-white/10" : ""
                         }`}
                       >
-                        {category.name}
+                        {category.title}
                       </Link>
                     ))}
                   </div>

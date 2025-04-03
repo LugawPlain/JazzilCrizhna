@@ -1,15 +1,10 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import Image from "next/image";
 import { categories } from "../CategoryData";
 import Link from "next/link";
-
-interface CategoryPageProps {
-  params: {
-    category: string;
-  };
-}
+import { useRouter } from "next/router";
 
 interface ImageData {
   src: string;
@@ -21,7 +16,13 @@ interface ImageData {
   event: string;
 }
 
-export default function CategoryPage({ params }: CategoryPageProps) {
+export default function CategoryPage({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
+  const { category } = use(params);
+
   const [images, setImages] = useState<ImageData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
@@ -29,14 +30,16 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const fullscreenRef = useRef<HTMLDivElement>(null);
 
-  const category = categories.find(
-    (cat) => cat.category.toLowerCase() === params.category
-  );
+  // Function to capitalize first letter
+  const capitalizeFirstLetter = (string: string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
 
   useEffect(() => {
+    console.log("params :" + category);
     const fetchImages = async () => {
       try {
-        const response = await fetch(`/api/images/${params.category}`);
+        const response = await fetch(`/api/images/${category}`);
         const data = await response.json();
 
         const mockMetadata = {
@@ -49,8 +52,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
         const formattedImages = data.images.map(
           (img: string, index: number) => ({
-            src: `/${params.category}/${img}`,
-            alt: `${category?.category} Image ${index + 1}`,
+            src: `/${category}/${img}`,
+            alt: `${category} Image ${index + 1}`,
             ...mockMetadata,
             date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
             photographer: `Photographer ${index + 1}`,
@@ -71,7 +74,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     if (category) {
       fetchImages();
     }
-  }, [params.category, category]);
+  }, [category, category]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -135,13 +138,13 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     setSelectedImage(images[prevIndex]);
   };
 
-  if (!category) {
-    return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-        <h1 className="text-white text-2xl">Category not found</h1>
-      </div>
-    );
-  }
+  // if (!category) {
+  //   return (
+  //     <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+  //       <h1 className="text-white text-2xl">Category not found</h1>
+  //     </div>
+  //   );
+  // }
 
   if (loading) {
     return (
@@ -242,9 +245,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           transition={{ delay: 0.2 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl font-bold text-white mb-4">
-            {category.category}
-          </h1>
+          <h1 className="text-4xl font-bold text-white mb-4">{category}</h1>
+          <p className="text-gray-400">{category}</p>
         </motion.div>
 
         {/* Mobile - 1 column */}
