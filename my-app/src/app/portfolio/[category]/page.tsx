@@ -1,8 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { categories } from "../CategoryData";
+import Link from "next/link";
 
 interface CategoryPageProps {
   params: {
@@ -13,11 +14,20 @@ interface CategoryPageProps {
 interface ImageData {
   src: string;
   alt: string;
+  date: string;
+  photographer: string;
+  photographerLink: string;
+  location: string;
+  event: string;
 }
 
 export default function CategoryPage({ params }: CategoryPageProps) {
   const [images, setImages] = useState<ImageData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
 
   const category = categories.find(
     (cat) => cat.category.toLowerCase() === params.category
@@ -29,10 +39,24 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         const response = await fetch(`/api/images/${params.category}`);
         const data = await response.json();
 
+        const mockMetadata = {
+          date: "2024-03-15",
+          photographer: "John Doe",
+          photographerLink: "/photographers/john-doe",
+          location: "New York City",
+          event: "Spring Fashion Show",
+        };
+
         const formattedImages = data.images.map(
           (img: string, index: number) => ({
             src: `/${params.category}/${img}`,
             alt: `${category?.category} Image ${index + 1}`,
+            ...mockMetadata,
+            date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
+            photographer: `Photographer ${index + 1}`,
+            photographerLink: `/photographers/photographer-${index + 1}`,
+            location: `Location ${index + 1}`,
+            event: `Event ${index + 1}`,
           })
         );
 
@@ -48,6 +72,69 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       fetchImages();
     }
   }, [params.category, category]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedImage) {
+        if (e.key === "Escape") {
+          handleClose();
+        } else if (e.key === "ArrowLeft") {
+          handlePrev();
+        } else if (e.key === "ArrowRight") {
+          handleNext();
+        }
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [selectedImage, currentIndex]);
+
+  const handleImageClick = async (image: ImageData, index: number) => {
+    setSelectedImage(image);
+    setCurrentIndex(index);
+    if (fullscreenRef.current) {
+      try {
+        await fullscreenRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } catch (err) {
+        console.error("Error entering fullscreen:", err);
+      }
+    }
+  };
+
+  const handleClose = async () => {
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (err) {
+        console.error("Error exiting fullscreen:", err);
+      }
+    }
+    setSelectedImage(null);
+    setIsFullscreen(false);
+  };
+
+  const handleNext = () => {
+    const nextIndex = (currentIndex + 1) % images.length;
+    setCurrentIndex(nextIndex);
+    setSelectedImage(images[nextIndex]);
+  };
+
+  const handlePrev = () => {
+    const prevIndex = (currentIndex - 1 + images.length) % images.length;
+    setCurrentIndex(prevIndex);
+    setSelectedImage(images[prevIndex]);
+  };
 
   if (!category) {
     return (
@@ -65,7 +152,6 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     );
   }
 
-  // Function to distribute images based on number of columns
   const distributeImages = (numColumns: number) => {
     const columns = Array.from({ length: numColumns }, () => [] as ImageData[]);
     images.forEach((image, index) => {
@@ -74,6 +160,56 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     });
     return columns;
   };
+
+  const ImageCard = ({
+    image,
+    index,
+    totalColumns,
+  }: {
+    image: ImageData;
+    index: number;
+    totalColumns: number;
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay:
+          ((index % totalColumns) +
+            Math.floor(index / totalColumns) * totalColumns) *
+          0.1,
+      }}
+      className="rounded-lg overflow-hidden group relative cursor-pointer"
+      onClick={() => handleImageClick(image, images.indexOf(image))}
+    >
+      <div className="relative">
+        <img
+          src={image.src}
+          alt={image.alt}
+          className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-110 group-hover:blur-xs"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end">
+          <div className="text-white p-6 w-full">
+            <div className="space-y-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+              <p className="text-xl font-semibold">Event: {image.event}</p>
+              <p className="text-sm opacity-90">📍: {image.location}</p>
+              <p className="text-sm opacity-80">Date: {image.date}</p>
+              <Link
+                href={image.photographerLink}
+                className="text-sm opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Photographer:{" "}
+                <span className="font-serif italic underline">
+                  {image.photographer}
+                </span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 
   return (
     <motion.div
@@ -98,19 +234,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         <div className="block sm:hidden">
           <div className="flex flex-col space-y-4">
             {images.map((image, index) => (
-              <motion.div
+              <ImageCard
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="rounded-lg overflow-hidden"
-              >
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full h-auto object-cover"
-                />
-              </motion.div>
+                image={image}
+                index={index}
+                totalColumns={1}
+              />
             ))}
           </div>
         </div>
@@ -124,19 +253,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 className="flex-col relative space-y-4 flex w-[48%]"
               >
                 {column.map((image, index) => (
-                  <motion.div
+                  <ImageCard
                     key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: (columnIndex + index * 2) * 0.1 }}
-                    className="rounded-lg overflow-hidden"
-                  >
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-full h-auto object-cover"
-                    />
-                  </motion.div>
+                    image={image}
+                    index={columnIndex + index * 2}
+                    totalColumns={2}
+                  />
                 ))}
               </div>
             ))}
@@ -152,19 +274,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 className="flex-col relative space-y-4 flex w-[31%]"
               >
                 {column.map((image, index) => (
-                  <motion.div
+                  <ImageCard
                     key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: (columnIndex + index * 3) * 0.1 }}
-                    className="rounded-lg overflow-hidden"
-                  >
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-full h-auto object-cover"
-                    />
-                  </motion.div>
+                    image={image}
+                    index={columnIndex + index * 3}
+                    totalColumns={3}
+                  />
                 ))}
               </div>
             ))}
@@ -179,24 +294,102 @@ export default function CategoryPage({ params }: CategoryPageProps) {
               className="flex-col relative space-y-4 flex w-[23%]"
             >
               {column.map((image, index) => (
-                <motion.div
+                <ImageCard
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: (columnIndex + index * 4) * 0.1 }}
-                  className="rounded-lg overflow-hidden"
-                >
-                  <img
-                    src={image.src}
-                    alt={image.alt}
-                    className="w-full h-auto object-cover"
-                  />
-                </motion.div>
+                  image={image}
+                  index={columnIndex + index * 4}
+                  totalColumns={4}
+                />
               ))}
             </div>
           ))}
         </div>
       </div>
+
+      {/* Fullscreen Image Viewer */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            ref={fullscreenRef}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center"
+          >
+            <div className="relative w-full h-full flex flex-col items-center">
+              {/* Navigation Arrows */}
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrev();
+                }}
+              >
+                ←
+              </button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNext();
+                }}
+              >
+                →
+              </button>
+
+              {/* Close Button */}
+              <button
+                className="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 transition-colors z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                }}
+              >
+                ✕
+              </button>
+
+              {/* Image */}
+              <div className="relative w-full h-full flex items-center justify-center">
+                <motion.img
+                  key={selectedImage.src}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  src={selectedImage.src}
+                  alt={selectedImage.alt}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+
+              {/* Image Info */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-8 text-white text-center">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-semibold">
+                    {selectedImage.event}
+                  </h2>
+                  <p className="text-lg opacity-90">
+                    📍 {selectedImage.location}
+                  </p>
+                  <p className="text-lg opacity-80">
+                    {new Date(selectedImage.date).toLocaleDateString()}
+                  </p>
+                  <Link
+                    href={selectedImage.photographerLink}
+                    className="text-lg opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Photographer:{" "}
+                    <span className="font-serif italic underline">
+                      {selectedImage.photographer}
+                    </span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
