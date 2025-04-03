@@ -12,16 +12,6 @@ export default function Header() {
     return null;
   }
 
-  const portfolioCategories = [
-    { name: "Pageant", href: "/portfolio/pageant" },
-    { name: "Advertising", href: "/portfolio/advertising" },
-    { name: "Modeling", href: "/portfolio/modeling" },
-    { name: "Clothing", href: "/portfolio/clothing" },
-    { name: "Muse", href: "/portfolio/muse" },
-    { name: "Photoshoots", href: "/portfolio/photoshoots" },
-    { name: "Cosplay", href: "/portfolio/cosplay" },
-  ];
-
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
       <nav className="bg-black/20 backdrop-blur-sm">
@@ -41,25 +31,29 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  onMouseEnter={() => setIsDropdownOpen(true)}
                   className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 py-2"
                 >
                   Portfolio
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-200 ${
-                      isDropdownOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                  <span
+                    onMouseEnter={() => setIsDropdownOpen(true)}
+                    className="p-2"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                    <svg
+                      className={`w-4 h-4  transition-transform duration-200 ${
+                        isDropdownOpen ? "rotate-180" : ""
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </span>
                 </button>
 
                 {/* Dropdown Menu */}

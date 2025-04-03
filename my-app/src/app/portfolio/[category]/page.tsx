@@ -250,8 +250,12 @@ export default function CategoryPage({
           transition={{ delay: 0.2 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl font-bold text-white mb-4">{category}</h1>
-          <p className="text-gray-400">{category}</p>
+          <h1 className="text-4xl font-bold text-white mb-4">
+            {capitalizeFirstLetter(category)}
+          </h1>
+          <p className="text-gray-400">
+            My {capitalizeFirstLetter(category)} Portfolio 🥰
+          </p>
         </motion.div>
 
         {/* Mobile - 1 column */}
@@ -290,7 +294,7 @@ export default function CategoryPage({
         </div>
 
         {/* Tablets - 3 columns */}
-        <div className="hidden md:block lg:hidden">
+        <div className="hidden md:block xl:hidden">
           <div className="flex flex-row justify-between gap-4">
             {distributeImages(3).map((column, columnIndex) => (
               <div
@@ -310,8 +314,29 @@ export default function CategoryPage({
           </div>
         </div>
 
-        {/* Desktop - 5 columns */}
-        <div className="hidden lg:flex flex-row justify-between gap-4">
+        {/* Large tablets/Small desktops - 4 columns */}
+        <div className="hidden xl:block 2xl:hidden">
+          <div className="flex flex-row justify-between gap-4">
+            {distributeImages(4).map((column, columnIndex) => (
+              <div
+                key={columnIndex}
+                className="flex-col relative space-y-4 flex w-[23%]"
+              >
+                {column.map((image, index) => (
+                  <ImageCard
+                    key={index}
+                    image={image}
+                    index={columnIndex + index * 4}
+                    totalColumns={4}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Large desktops - 5 columns */}
+        <div className="hidden 2xl:flex flex-row justify-between gap-4">
           {distributeImages(5).map((column, columnIndex) => (
             <div
               key={columnIndex}

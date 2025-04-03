@@ -1,27 +1,64 @@
 "use client";
 import { motion } from "framer-motion";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { HorizontalScrollCarousel } from "./components/HorizontalScrollCarousel";
 
 const Portfolio = () => {
+  const [showScrollIndicator, setShowScrollIndicator] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 500) {
+        setShowScrollIndicator(false);
+      } else {
+        setShowScrollIndicator(true);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="bg-neutral-900"
+      className=" bg-neutral-900"
     >
       <HorizontalScrollCarousel />
-      <div className="flex h-48 items-center justify-center px-4 bg-neutral-800">
-        <p className="font-light text-neutral-400 text-sm text-center max-w-2xl leading-relaxed">
-          Copyright © 2025 Jazzil Crizhna Sarinas. All Rights Reserved.
-          <br />
-          <span className="text-neutral-500 text-xs">
-            All material on this site may not be reproduced, distributed, cached
-            or otherwise used, except with prior written permission.
-          </span>
-        </p>
-      </div>
+
+      {showScrollIndicator && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2">
+          <motion.div
+            animate={{
+              y: [0, 10, 0],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="flex flex-col items-center gap-2"
+          >
+            <span className="text-white text-sm">Scroll Down</span>
+            <svg
+              className="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              />
+            </svg>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 };

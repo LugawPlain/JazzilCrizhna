@@ -47,7 +47,7 @@ export const HorizontalScrollCarousel = () => {
 
         {/* Scroll Progress Indicator */}
         <motion.div
-          className="fixed bottom-0 left-0 right-0 h-1 bg-neutral-700/30"
+          className="fixed bottom-0 left-0 right-0 h-2 bg-neutral-700/30"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
