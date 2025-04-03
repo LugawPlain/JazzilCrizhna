@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import Image from "next/image";
 import { categories } from "../CategoryData";
 import Link from "next/link";
@@ -102,13 +102,12 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const handleImageClick = async (image: ImageData, index: number) => {
     setSelectedImage(image);
     setCurrentIndex(index);
-    if (fullscreenRef.current) {
-      try {
-        await fullscreenRef.current.requestFullscreen();
-        setIsFullscreen(true);
-      } catch (err) {
-        console.error("Error entering fullscreen:", err);
-      }
+    try {
+      // Request fullscreen for the entire document
+      await document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } catch (err) {
+      console.error("Error entering fullscreen:", err);
     }
   };
 
@@ -169,47 +168,65 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     image: ImageData;
     index: number;
     totalColumns: number;
-  }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        delay:
-          ((index % totalColumns) +
-            Math.floor(index / totalColumns) * totalColumns) *
-          0.1,
-      }}
-      className="rounded-lg overflow-hidden group relative cursor-pointer"
-      onClick={() => handleImageClick(image, images.indexOf(image))}
-    >
-      <div className="relative">
-        <img
-          src={image.src}
-          alt={image.alt}
-          className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-110 group-hover:blur-xs"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end">
-          <div className="text-white p-6 w-full">
-            <div className="space-y-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-              <p className="text-xl font-semibold">Event: {image.event}</p>
-              <p className="text-sm opacity-90">📍: {image.location}</p>
-              <p className="text-sm opacity-80">Date: {image.date}</p>
-              <Link
-                href={image.photographerLink}
-                className="text-sm opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
-                onClick={(e) => e.stopPropagation()}
+  }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 50 }}
+        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+        transition={{
+          duration: 0.6,
+          delay:
+            ((index % totalColumns) +
+              Math.floor(index / totalColumns) * totalColumns) *
+            0.1,
+          ease: [0.25, 0.1, 0.25, 1],
+        }}
+        className="rounded-lg overflow-hidden group relative cursor-pointer"
+        onClick={() => handleImageClick(image, images.indexOf(image))}
+      >
+        <div className="relative">
+          <motion.img
+            src={image.src}
+            alt={image.alt}
+            className="w-full h-auto object-cover transition-all duration-500 group-hover:scale-110 group-hover:blur-xs"
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3 }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end">
+            <div className="text-white p-6 w-full">
+              <motion.div
+                className="space-y-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
+                initial={{ opacity: 0, y: 20 }}
+                animate={
+                  isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+                }
+                transition={{ delay: 0.3 }}
               >
-                Photographer:{" "}
-                <span className="font-serif italic underline">
-                  {image.photographer}
-                </span>
-              </Link>
+                <p className="text-xl font-semibold">Event: {image.event}</p>
+                <p className="text-sm opacity-90">📍: {image.location}</p>
+                <p className="text-sm opacity-80">Date: {image.date}</p>
+                <Link
+                  href={image.photographerLink}
+                  className="text-sm opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Photographer:{" "}
+                  <span className="font-serif italic underline">
+                    {image.photographer}
+                  </span>
+                </Link>
+              </motion.div>
             </div>
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   return (
     <motion.div
@@ -310,7 +327,6 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       <AnimatePresence>
         {selectedImage && (
           <motion.div
-            ref={fullscreenRef}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
