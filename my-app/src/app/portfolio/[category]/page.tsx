@@ -303,19 +303,19 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           </div>
         </div>
 
-        {/* Desktop - 4 columns */}
+        {/* Desktop - 5 columns */}
         <div className="hidden lg:flex flex-row justify-between gap-4">
-          {distributeImages(4).map((column, columnIndex) => (
+          {distributeImages(5).map((column, columnIndex) => (
             <div
               key={columnIndex}
-              className="flex-col relative space-y-4 flex w-[23%]"
+              className="flex-col relative space-y-4 flex w-[18%]"
             >
               {column.map((image, index) => (
                 <ImageCard
                   key={index}
                   image={image}
-                  index={columnIndex + index * 4}
-                  totalColumns={4}
+                  index={columnIndex + index * 5}
+                  totalColumns={5}
                 />
               ))}
             </div>
