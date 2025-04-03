@@ -36,7 +36,6 @@ export default function CategoryPage({
   };
 
   useEffect(() => {
-    console.log("params :" + category);
     const fetchImages = async () => {
       try {
         const response = await fetch(`/api/images/${category}`);
@@ -52,8 +51,8 @@ export default function CategoryPage({
 
         const formattedImages = data.images.map(
           (img: string, index: number) => ({
-            src: `/${category}/${img}`,
-            alt: `${category} Image ${index + 1}`,
+            src: `/categories/${category}/${img}`,
+            alt: `${category} image ${index + 1}`,
             ...mockMetadata,
             date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
             photographer: `Photographer ${index + 1}`,
@@ -74,16 +73,19 @@ export default function CategoryPage({
     if (category) {
       fetchImages();
     }
-  }, [category, category]);
+  }, [category]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedImage) {
         if (e.key === "Escape") {
+          e.preventDefault();
           handleClose();
         } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
           handlePrev();
         } else if (e.key === "ArrowRight") {
+          e.preventDefault();
           handleNext();
         }
       }
@@ -124,6 +126,9 @@ export default function CategoryPage({
     }
     setSelectedImage(null);
     setIsFullscreen(false);
+
+    // Prevent default behavior that might cause page reload
+    return false;
   };
 
   const handleNext = () => {
@@ -138,13 +143,13 @@ export default function CategoryPage({
     setSelectedImage(images[prevIndex]);
   };
 
-  // if (!category) {
-  //   return (
-  //     <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-  //       <h1 className="text-white text-2xl">Category not found</h1>
-  //     </div>
-  //   );
-  // }
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+        <h1 className="text-white text-2xl">Category not found</h1>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -359,6 +364,7 @@ export default function CategoryPage({
               <button
                 className="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 transition-colors z-10"
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   handleClose();
                 }}
