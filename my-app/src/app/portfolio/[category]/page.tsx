@@ -65,14 +65,15 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     );
   }
 
-  // Distribute images across columns in a snake pattern
-  const columns = 4;
-  const imageColumns = Array.from({ length: columns }, () => [] as ImageData[]);
-
-  images.forEach((image, index) => {
-    const columnIndex = index % columns;
-    imageColumns[columnIndex].push(image);
-  });
+  // Function to distribute images based on number of columns
+  const distributeImages = (numColumns: number) => {
+    const columns = Array.from({ length: numColumns }, () => [] as ImageData[]);
+    images.forEach((image, index) => {
+      const columnIndex = index % numColumns;
+      columns[columnIndex].push(image);
+    });
+    return columns;
+  };
 
   return (
     <motion.div
@@ -93,8 +94,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           </h1>
         </motion.div>
 
-        {/* Mobile view - single column */}
-        <div className="block md:hidden">
+        {/* Mobile - 1 column */}
+        <div className="block sm:hidden">
           <div className="flex flex-col space-y-4">
             {images.map((image, index) => (
               <motion.div
@@ -114,19 +115,75 @@ export default function CategoryPage({ params }: CategoryPageProps) {
           </div>
         </div>
 
-        {/* Desktop view - 4 columns */}
-        <div className="hidden md:flex flex-row justify-between">
-          {imageColumns.map((column, columnIndex) => (
+        {/* Small tablets - 2 columns */}
+        <div className="hidden sm:block md:hidden">
+          <div className="flex flex-row justify-between gap-4">
+            {distributeImages(2).map((column, columnIndex) => (
+              <div
+                key={columnIndex}
+                className="flex-col relative space-y-4 flex w-[48%]"
+              >
+                {column.map((image, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (columnIndex + index * 2) * 0.1 }}
+                    className="rounded-lg overflow-hidden"
+                  >
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      className="w-full h-auto object-cover"
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tablets - 3 columns */}
+        <div className="hidden md:block lg:hidden">
+          <div className="flex flex-row justify-between gap-4">
+            {distributeImages(3).map((column, columnIndex) => (
+              <div
+                key={columnIndex}
+                className="flex-col relative space-y-4 flex w-[31%]"
+              >
+                {column.map((image, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (columnIndex + index * 3) * 0.1 }}
+                    className="rounded-lg overflow-hidden"
+                  >
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      className="w-full h-auto object-cover"
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop - 4 columns */}
+        <div className="hidden lg:flex flex-row justify-between gap-4">
+          {distributeImages(4).map((column, columnIndex) => (
             <div
               key={columnIndex}
-              className="flex-col relative space-y-4 flex w-[24%]"
+              className="flex-col relative space-y-4 flex w-[23%]"
             >
               {column.map((image, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: (columnIndex + index * columns) * 0.1 }}
+                  transition={{ delay: (columnIndex + index * 4) * 0.1 }}
                   className="rounded-lg overflow-hidden"
                 >
                   <img
