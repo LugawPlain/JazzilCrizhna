@@ -1,7 +1,7 @@
 import { motion, useTransform, useScroll } from "framer-motion";
 import React, { useRef } from "react";
 import Link from "next/link";
-import { categories, Category } from "../category";
+import { categories, CategoryData } from "../CategoryData";
 import { ProjectCard } from "./ProjectCard";
 
 export const HorizontalScrollCarousel = () => {
@@ -30,7 +30,7 @@ export const HorizontalScrollCarousel = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            {categories.map((project: Category, index: number) => (
+            {categories.map((project: CategoryData, index: number) => (
               <motion.div
                 key={project.category}
                 initial={{ opacity: 0, y: 20 }}

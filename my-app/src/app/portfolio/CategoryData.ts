@@ -1,4 +1,4 @@
-export interface Category {
+export interface CategoryData {
   title: string;
   image: string;
   category: string;
@@ -6,54 +6,54 @@ export interface Category {
   photographer: string;
 }
 
-export const categories: Category[] = [
+export const categories: CategoryData[] = [
   {
     title: "",
     image: "/pageant.jpg",
     category: "PAGEANT",
-    link: "#",
+    link: "/portfolio/pageant",
     photographer: "📸 Troy Sarinas",
   },
   {
     title: "",
     image: "/model.jpg",
-    category: "MODELS",
-    link: "#",
+    category: "MODELING",
+    link: "/portfolio/model",
     photographer: "📸 ",
   },
   {
     title: "",
     image: "/advertising.jpg",
     category: "ADVERTISING",
-    link: "#",
+    link: "/portfolio/advertising",
     photographer: "📸 Allan Mendoza",
   },
   {
     title: "",
     image: "/clothing.jpg",
     category: "CLOTHING",
-    link: "#",
+    link: "/portfolio/clothing",
     photographer: "📸 ",
   },
   {
     title: "",
     image: "/muse.jpg",
     category: "MUSE",
-    link: "#",
+    link: "/portfolio/muse",
     photographer: "📸 Troy Sarinas ",
   },
   {
     title: "",
     image: "/photoshoot.jpg",
     category: "PHOTOSHOOTS",
-    link: "#",
+    link: "/portfolio/photoshoot",
     photographer: "📸 ",
   },
   {
     title: "",
     image: "/cosplay.jpg",
     category: "COSPLAY",
-    link: "#",
+    link: "/portfolio/cosplay",
     photographer: "📸 Robert Bardon",
   },
 ];

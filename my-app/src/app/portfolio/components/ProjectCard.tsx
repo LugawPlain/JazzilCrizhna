@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { Category } from "../category";
+import { CategoryData } from "../CategoryData";
 
 interface ProjectCardProps {
-  project: Category;
+  project: CategoryData;
 }
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
@@ -25,7 +25,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         />
 
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 -rotate-90 origin-center">
+          <div className="absolute -left-10 -rotate-90 top-1/2 -translate-y-1/2  origin-center">
             <span className="text-white/60 tracking-widest text-sm">
               VIEW PROJECT
             </span>

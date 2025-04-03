@@ -97,6 +97,14 @@ export default function Header() {
                 About
               </Link>
               <Link
+                href="/calendar"
+                className={`text-white hover:text-gray-200 transition-colors ${
+                  pathname === "/contact" ? "text-gray-200" : ""
+                }`}
+              >
+                Calendar
+              </Link>
+              <Link
                 href="/contact"
                 className={`text-white hover:text-gray-200 transition-colors ${
                   pathname === "/contact" ? "text-gray-200" : ""
