@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-neutral-900">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -16,6 +16,7 @@ export default function Home() {
           className="object-cover"
           priority
         />
+
         {/* Dark overlay for better text readability */}
         <div className="absolute inset-0 bg-black/20" />
         <div className="absolute inset-0 bg-gray-800/20" />
