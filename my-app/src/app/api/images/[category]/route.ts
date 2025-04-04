@@ -18,9 +18,20 @@ export async function GET(
     // Convert category to lowercase for case-insensitive matching
     const categoryLower = category.toLowerCase();
 
+    // Read the images-data.json file
+    const imagesDataPath = path.join(process.cwd(), "public/images-data.json");
+    const imagesData = JSON.parse(fs.readFileSync(imagesDataPath, "utf-8"));
+
+    // Get the category data from images-data.json
+    const categoryData = imagesData[categoryLower];
+    console.log(categoryData);
+    if (!categoryData) {
+      console.log(`No data found for category: ${category}`);
+      return NextResponse.json({ images: [], imageData: {} }, { status: 200 });
+    }
+
     // Check if the directory exists in public/categories
     const categoriesPath = path.join(process.cwd(), "public/categories");
-    console.log("categoriesPath: " + categoriesPath);
     const categoryDirs = fs.existsSync(categoriesPath)
       ? fs
           .readdirSync(categoriesPath)
@@ -29,22 +40,20 @@ export async function GET(
           )
       : [];
 
-    console.log("categoryDirs: " + categoryDirs);
     // Find the matching directory (case-insensitive)
     const matchingDir = categoryDirs.find(
       (dir) => dir.toLowerCase() === categoryLower
     );
-    console.log("matchingDir: " + matchingDir);
 
     if (!matchingDir) {
       console.log(`No matching directory found for category: ${category}`);
-      return NextResponse.json({ images: [] }, { status: 200 });
+      return NextResponse.json(
+        { images: [], imageData: categoryData },
+        { status: 200 }
+      );
     }
 
     const publicPath = path.join(categoriesPath, matchingDir);
-    console.log("publicPath: " + publicPath);
-
-    // Check if the directory exist
 
     // Read the directory and filter for image files
     const files = fs.readdirSync(publicPath);
@@ -53,7 +62,20 @@ export async function GET(
       return [".webp"].includes(ext);
     });
 
-    return NextResponse.json({ images: imageFiles }, { status: 200 });
+    // Sort the image files numerically
+    imageFiles.sort((a, b) => {
+      const numA = parseInt(a.replace(".webp", ""));
+      const numB = parseInt(b.replace(".webp", ""));
+      return numA - numB;
+    });
+
+    return NextResponse.json(
+      {
+        images: imageFiles,
+        imageData: categoryData,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error reading images:", error);
     return NextResponse.json(

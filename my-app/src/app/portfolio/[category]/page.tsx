@@ -40,6 +40,7 @@ export default function CategoryPage({
       try {
         const response = await fetch(`/api/images/${category}`);
         const data = await response.json();
+        console.log(data);
         const mockMetadata = {
           date: "2024-03-15",
           photographer: "John Doe",
