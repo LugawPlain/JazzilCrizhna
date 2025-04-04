@@ -51,17 +51,25 @@ export default function CalendarPage() {
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
-    <div className="min-h-screen bg-slate-900 py-20 px-4">
-      <div className="container mt-20 mx-auto px-4 py-8 max-w-4xl">
-        <div className="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+    <div className="min-h-screen  bg-neutral-900 py-20 px-4">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className=" bg-neutral-800 rounded-lg shadow-xl overflow-hidden border border-neutral-700 relative">
+          {/* Under Construction Overlay */}
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+            <div className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-bold text-xl transform -rotate-12 shadow-lg">
+              Under Construction
+            </div>
+          </div>
           {/* Calendar Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+          <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 p-6 text-white border-b border-neutral-700">
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-white">{monthYear}</h1>
+              <h1 className="text-2xl font-bold text-neutral-100">
+                {monthYear}
+              </h1>
               <div className="flex space-x-2">
                 <button
                   onClick={prevMonth}
-                  className="p-2 rounded-full hover:bg-blue-500/50 transition-colors"
+                  className="p-2 rounded-full hover:bg-neutral-600/50 transition-colors"
                   aria-label="Previous month"
                 >
                   <svg
@@ -79,13 +87,13 @@ export default function CalendarPage() {
                 </button>
                 <button
                   onClick={goToToday}
-                  className="px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 transition-colors text-sm text-white"
+                  className="px-3 py-1 rounded-md bg-neutral-600/50 hover:bg-neutral-600 transition-colors text-sm text-neutral-200"
                 >
                   Today
                 </button>
                 <button
                   onClick={nextMonth}
-                  className="p-2 rounded-full hover:bg-blue-500/50 transition-colors"
+                  className="p-2 rounded-full hover:bg-neutral-600/50 transition-colors"
                   aria-label="Next month"
                 >
                   <svg
@@ -112,7 +120,7 @@ export default function CalendarPage() {
               {dayNames.map((day) => (
                 <div
                   key={day}
-                  className="text-center text-sm font-medium text-slate-400 py-2"
+                  className="text-center text-sm font-medium text-neutral-300 py-2"
                 >
                   {day}
                 </div>
@@ -130,14 +138,14 @@ export default function CalendarPage() {
                     key={index}
                     className={`
                     aspect-square p-1 flex flex-col items-center justify-center
-                    ${isCurrentMonth ? "text-slate-200" : "text-slate-600"}
+                    ${isCurrentMonth ? "text-neutral-200" : "text-neutral-500"}
                     ${
                       isToday
-                        ? "bg-blue-500 rounded-full font-bold text-white"
+                        ? "bg-neutral-600 rounded-full font-bold text-white"
                         : ""
                     }
-                    hover:bg-slate-700 rounded-md transition-colors
-                    border border-slate-700
+                    hover:bg-neutral-700 rounded-md transition-colors
+                    border border-neutral-700
                   `}
                   >
                     <span className="text-sm">{format(day, "d")}</span>
@@ -149,14 +157,10 @@ export default function CalendarPage() {
         </div>
 
         {/* Placeholder for future Google Calendar integration */}
-        <div className="mt-8 p-6 bg-slate-800 rounded-lg border border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-200 mb-2">
-            Google Calendar Integration
-          </h2>
-          <p className="text-slate-400">
-            This calendar will be integrated with Google Calendar in the future.
-            You'll be able to view and manage your Google Calendar events
-            directly from this interface.
+        <div className="mt-8 p-6  bg-neutral-700 rounded-lg border border-neutral-700">
+          <h2 className="text-lg font-semibold text-neutral-200 mb-2"></h2>
+          <p className="text-neutral-400">
+            This calendar integration will be available soon.
           </p>
         </div>
       </div>
