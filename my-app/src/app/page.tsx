@@ -10,7 +10,7 @@ export default function Home() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/Expanded_Background.jpg"
+          src="/Expanded_Background.webp"
           alt="Background"
           fill
           className="object-cover"

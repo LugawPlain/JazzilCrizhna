@@ -50,7 +50,7 @@ export async function GET(
     const files = fs.readdirSync(publicPath);
     const imageFiles = files.filter((file) => {
       const ext = path.extname(file).toLowerCase();
-      return [".jpg", ".jpeg", ".png", ".webp, .heic"].includes(ext);
+      return [".webp"].includes(ext);
     });
 
     return NextResponse.json({ images: imageFiles }, { status: 200 });

@@ -37,34 +37,34 @@ export default function CategoryPage({
 
   useEffect(() => {
     const fetchImages = async () => {
-      // try {
-      //   const response = await fetch(`/api/images/${category}`);
-      //   const data = await response.json();
-      //   const mockMetadata = {
-      //     date: "2024-03-15",
-      //     photographer: "John Doe",
-      //     photographerLink: "/photographers/john-doe",
-      //     location: "New York City",
-      //     event: "Spring Fashion Show",
-      //   };
-      //   const formattedImages = data.images.map(
-      //     (img: string, index: number) => ({
-      //       src: `/categories/${category}/${img}`,
-      //       alt: `${category} image ${index + 1}`,
-      //       ...mockMetadata,
-      //       date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
-      //       photographer: `Photographer ${index + 1}`,
-      //       photographerLink: `/photographers/photographer-${index + 1}`,
-      //       location: `Location ${index + 1}`,
-      //       event: `Event ${index + 1}`,
-      //     })
-      //   );
-      //   setImages(formattedImages);
-      // } catch (error) {
-      //   console.error("Error fetching images:", error);
-      // } finally {
-      //   setLoading(false);
-      // }
+      try {
+        const response = await fetch(`/api/images/${category}`);
+        const data = await response.json();
+        const mockMetadata = {
+          date: "2024-03-15",
+          photographer: "John Doe",
+          photographerLink: "/photographers/john-doe",
+          location: "New York City",
+          event: "Spring Fashion Show",
+        };
+        const formattedImages = data.images.map(
+          (img: string, index: number) => ({
+            src: `/categories/${category}/${img}`,
+            alt: `${category} image ${index + 1}`,
+            ...mockMetadata,
+            date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
+            photographer: `Photographer ${index + 1}`,
+            photographerLink: `/photographers/photographer-${index + 1}`,
+            location: `Location ${index + 1}`,
+            event: `Event ${index + 1}`,
+          })
+        );
+        setImages(formattedImages);
+      } catch (error) {
+        console.error("Error fetching images:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     if (category) {
