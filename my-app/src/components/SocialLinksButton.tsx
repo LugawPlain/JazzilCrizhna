@@ -97,9 +97,9 @@ const SocialLinksButton = () => {
                 ? `translateY(${-60 * (index + 1)}px)`
                 : "translateY(0px)",
               opacity: isOpen ? 1 : 0,
-              transition: `transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${
+              transition: `transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${
                 index * 0.1
-              }s, opacity 0.5s ease-out ${index * 0.1}s`,
+              }s, opacity 0.3s ease-out ${index * 0.1}s`,
               bottom: "0",
               right: "0",
             }}

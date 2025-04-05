@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-neutral-900 py-12 sm:py-20 px-4">
+    <div className="min-h-screen bg-neutral-900 py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -134,7 +134,7 @@ export default function AboutPage() {
             </div>
           </div>
           <Link href="/contact">
-            <div className="absolute scale-50 group-hover:scale-100 inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+            <div className="absolute  lg:scale-50 group-hover:scale-100 inset-0 flex items-center justify-center lg:opacity-0 group-hover:opacity-100 transition-all">
               <button className="bg-white text-neutral-900 px-6 sm:px-8 py-2 sm:py-3 rounded-full text-sm sm:text-base font-semibold hover:bg-neutral-200 transition-colors">
                 Contact Us
               </button>
