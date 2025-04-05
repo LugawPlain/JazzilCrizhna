@@ -39,7 +39,7 @@ const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
         className="hover:bg-white/10 hover:backdrop-blur-xs transition-all duration-150 px-1 py-2 rounded-md z-10 group "
       >
         <p
-          className="text-white group-hover:text-black transition-all duration-150 text-5xl font-normal "
+          className="text-white group-hover:text-[#FFD700] transition-all duration-150 text-5xl font-normal "
           style={{ fontFamily: "acumin-pro-regular, sans-serif" }}
         >
           {text}

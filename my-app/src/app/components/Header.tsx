@@ -6,6 +6,7 @@ import { categories } from "../portfolio/CategoryData";
 export default function Header() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Don't render the header on the home page
   if (pathname === "/") {
@@ -109,7 +110,10 @@ export default function Header() {
             </div>
 
             {/* Mobile Menu Button */}
-            <button className="md:hidden text-white hover:text-gray-200 transition-colors">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden text-white hover:text-gray-200 transition-colors"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-6 w-6"
@@ -128,6 +132,114 @@ export default function Header() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      <div
+        className={`fixed inset-0 bg-black/90 backdrop-blur-sm transform transition-transform duration-300 ease-in-out md:hidden ${
+          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex flex-col h-full p-6">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex flex-col space-y-6 mt-8">
+            {/* Portfolio Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 py-2 text-xl"
+              >
+                Portfolio
+                <span className="p-2">
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </span>
+              </button>
+
+              {/* Mobile Dropdown Menu */}
+              <div
+                className={`mt-2 space-y-2 ${
+                  isDropdownOpen ? "block" : "hidden"
+                }`}
+              >
+                {categories.map((category) => (
+                  <Link
+                    key={category.title}
+                    href={category.link}
+                    className={`block px-4 py-2 text-lg text-white hover:bg-white/10 rounded-md transition-colors ${
+                      pathname === category.link ? "bg-white/10" : ""
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {category.title}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <Link
+              href="/about"
+              className={`text-white hover:text-gray-200 transition-colors text-xl ${
+                pathname === "/about" ? "text-gray-200" : ""
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              About
+            </Link>
+            <Link
+              href="/calendar"
+              className={`text-white hover:text-gray-200 transition-colors text-xl ${
+                pathname === "/calendar" ? "text-gray-200" : ""
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Calendar
+            </Link>
+            <Link
+              href="/contact"
+              className={`text-white hover:text-gray-200 transition-colors text-xl ${
+                pathname === "/contact" ? "text-gray-200" : ""
+              }`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Contact
+            </Link>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
