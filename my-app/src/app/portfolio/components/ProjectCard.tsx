@@ -10,7 +10,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
     <div
       className="group relative flex-shrink-0 cursor-pointer"
       style={{
-        width: "min(375px, 52vw)",
+        width: "min(375px, 60vw)",
         aspectRatio: "9/16",
       }}
     >

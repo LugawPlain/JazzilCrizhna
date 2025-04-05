@@ -1,5 +1,5 @@
 import { motion, useTransform, useScroll } from "framer-motion";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { categories, CategoryData } from "../CategoryData";
 import { ProjectCard } from "./ProjectCard";
@@ -10,7 +10,37 @@ export const HorizontalScrollCarousel = () => {
     target: targetRef,
   });
 
-  const x = useTransform(scrollYProgress, [0, 1], ["5%", "-40%"]);
+  // Add state to track screen width
+  const [scrollValue, setScrollValue] = useState("-40%");
+
+  // Update scroll value based on screen width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        // sm breakpoint
+        setScrollValue("-90%");
+      } else if (window.innerWidth < 768) {
+        // md breakpoint
+        setScrollValue("-80%");
+      } else if (window.innerWidth < 1024) {
+        // lg breakpoint
+        setScrollValue("-75%");
+      } else {
+        setScrollValue("-70%");
+      }
+    };
+
+    // Set initial value
+    handleResize();
+
+    // Add event listener
+    window.addEventListener("resize", handleResize);
+
+    // Clean up
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const x = useTransform(scrollYProgress, [0, 1], ["0%", scrollValue]);
   const progress = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
@@ -22,7 +52,7 @@ export const HorizontalScrollCarousel = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.8 }}
       >
-        <div className="sticky top-20 flex items-center overflow-hidden">
+        <div className="sticky top-20 flex items-center overflow-hidden pl-10 lg:pl-20">
           <motion.div
             style={{ x }}
             className="py-4 flex gap-8"

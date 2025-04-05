@@ -186,7 +186,7 @@ export default function ContactForm() {
         <h2 className="text-3xl font-bold text-center mb-8 text-white">
           Connect With Us
         </h2>
-        <div className="flex justify-center space-x-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 justify-items-center">
           <a
             href="https://www.facebook.com/yourpage"
             target="_blank"

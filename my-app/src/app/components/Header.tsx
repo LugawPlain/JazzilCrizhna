@@ -7,14 +7,14 @@ export default function Header() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  console.log("isMobileMenuOpen", isMobileMenuOpen);
   // Don't render the header on the home page
   if (pathname === "/") {
     return null;
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-0 left-0 right-0 z-50 ">
       <nav className="bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -135,7 +135,7 @@ export default function Header() {
 
       {/* Mobile Menu */}
       <div
-        className={`fixed inset-0 bg-black/90 backdrop-blur-sm transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed inset-0 bg-black/90 backdrop-blur-sm transform will-change-transform transition-transform duration-300 ease-in-out md:hidden ${
           isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -143,7 +143,7 @@ export default function Header() {
           <div className="flex justify-end">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-white hover:text-gray-200 transition-colors"
+              className="text-red-500 hover:text-gray-200 transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -191,17 +191,26 @@ export default function Header() {
 
               {/* Mobile Dropdown Menu */}
               <div
-                className={`mt-2 space-y-2 ${
-                  isDropdownOpen ? "block" : "hidden"
+                className={`mt-2 space-y-2 overflow-hidden transition-all duration-300 ease-in-out ${
+                  isDropdownOpen
+                    ? "max-h-[500px] opacity-100"
+                    : "max-h-0 opacity-0"
                 }`}
               >
                 {categories.map((category) => (
                   <Link
                     key={category.title}
                     href={category.link}
-                    className={`block px-4 py-2 text-lg text-white hover:bg-white/10 rounded-md transition-colors ${
+                    className={`block px-4 py-2 text-lg text-white hover:bg-white/10 rounded-md transition-colors transform ${
                       pathname === category.link ? "bg-white/10" : ""
+                    } ${
+                      isDropdownOpen
+                        ? "translate-y-0 opacity-100"
+                        : "-translate-y-4 opacity-0"
                     }`}
+                    style={{
+                      transitionDelay: `${categories.indexOf(category) * 50}ms`,
+                    }}
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {category.title}
