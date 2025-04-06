@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
 import FacebookPageIcon from "./icons/FacebookPageIcon";
-import socialLinksData from "../data/socialLinks.json";
+import socialLinks from "../data/socialLinks.json";
 
 interface FormData {
   name: string;
@@ -28,62 +28,10 @@ export default function ContactForm() {
   >("idle");
   const [showPreview, setShowPreview] = useState(false);
 
-  const getIconComponent = (iconType: string) => {
-    switch (iconType) {
-      case "tiktok":
-        return <TiktokIcon />;
-      case "youtube":
-        return <YoutubeIcon />;
-      case "facebook-page":
-        return <FacebookPageIcon />;
-      case "facebook":
-        return (
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
-          />
-        );
-      case "instagram":
-        return (
-          <>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M16.5 7.5V7.501"
-            />
-          </>
-        );
-      case "email":
-        return (
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Show preview modal instead of submitting directly
     setShowPreview(true);
   };
 
@@ -302,9 +250,7 @@ export default function ContactForm() {
                   <div className="flex flex-col">
                     <span className="text-gray-400 text-sm">To:</span>
                     <span className="text-white font-medium">
-                      {socialLinksData.socialLinks
-                        .find((link) => link.id === "email")
-                        ?.href.replace("mailto:", "")}
+                      Yorticia &lt;jazzilcrizhnasarinas04gmail.com&gt;
                     </span>
                   </div>
                   <div className="flex flex-col">
@@ -315,31 +261,177 @@ export default function ContactForm() {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-gray-400 text-sm">Message:</span>
-                    <span className="text-white whitespace-pre-wrap">
+                    <div className="text-white bg-white/10 p-4 rounded-lg mt-2 whitespace-pre-wrap">
                       {formData.message}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4">
+              <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  className="px-4 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-colors"
                 >
                   Cancel
                 </button>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={confirmSubmit}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 transition-colors"
                 >
-                  Send Email
-                </button>
+                  Confirm & Send
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="max-w-2xl mx-auto p-6 mt-8 bg-white/5 backdrop-blur-lg rounded-xl shadow-xl"
+      >
+        <h2 className="text-3xl font-bold text-center mb-8 text-white">
+          Connect With Us
+        </h2>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 justify-items-center">
+          <div className="flex flex-col items-center">
+            <a
+              href={socialLinks.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              title="Facebook"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
+                />
+              </svg>
+            </a>
+            <span className="text-sm text-gray-300 mt-2">Facebook</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <a
+              href={socialLinks.facebookPage}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              title="Facebook Page"
+            >
+              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
+                <FacebookPageIcon />
+              </div>
+            </a>
+            <span className="text-sm text-gray-300 text-center mt-2">
+              Facebook Page
+            </span>
+          </div>
+          <div className="flex flex-col items-center">
+            <a
+              href={socialLinks.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              title="Instagram"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16.5 7.5V7.501"
+                />
+              </svg>
+            </a>
+            <span className="text-sm text-gray-300 mt-2">Instagram</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <a
+              href={socialLinks.tiktok}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              title="TikTok"
+            >
+              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
+                <TiktokIcon />
+              </div>
+            </a>
+            <span className="text-sm text-gray-300 mt-2">TikTok</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <a
+              href={socialLinks.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              title="YouTube"
+            >
+              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
+                <YoutubeIcon />
+              </div>
+            </a>
+            <span className="text-sm text-gray-300 mt-2">YouTube</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <a
+              href={socialLinks.email}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              title="Email"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </a>
+            <span className="text-sm text-gray-300 mt-2">Email</span>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
