@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
 import FacebookPageIcon from "./icons/FacebookPageIcon";
+import socialLinksData from "../data/socialLinks.json";
 
 interface FormData {
   name: string;
@@ -25,18 +26,90 @@ export default function ContactForm() {
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
+  const [showPreview, setShowPreview] = useState(false);
+
+  const getIconComponent = (iconType: string) => {
+    switch (iconType) {
+      case "tiktok":
+        return <TiktokIcon />;
+      case "youtube":
+        return <YoutubeIcon />;
+      case "facebook-page":
+        return <FacebookPageIcon />;
+      case "facebook":
+        return (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
+          />
+        );
+      case "instagram":
+        return (
+          <>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16.5 7.5V7.501"
+            />
+          </>
+        );
+      case "email":
+        return (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowPreview(true);
+  };
+
+  const confirmSubmit = async () => {
+    setShowPreview(false);
     setIsSubmitting(true);
 
-    // TODO: Implement your form submission logic here
-    // For now, we'll just simulate a submission
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
       setSubmitStatus("success");
       setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch {
+    } catch (error) {
+      console.error("Error sending message:", error);
       setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
@@ -177,149 +250,96 @@ export default function ContactForm() {
         </form>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="max-w-2xl mx-auto p-6 mt-8 bg-white/5 backdrop-blur-lg rounded-xl shadow-xl"
-      >
-        <h2 className="text-3xl font-bold text-center mb-8 text-white">
-          Connect With Us
-        </h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 justify-items-center">
-          <div className="flex flex-col items-center">
-            <a
-              href="https://www.facebook.com/yourpage"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
-              title="Facebook"
+      {/* Email Preview Modal */}
+      <AnimatePresence>
+        {showPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowPreview(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-neutral-900 rounded-xl shadow-2xl max-w-2xl w-full p-6 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"
-                />
-              </svg>
-            </a>
-            <span className="text-sm text-gray-300 mt-2">Facebook</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <a
-              href="https://www.facebook.com/yourpage"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
-              title="Facebook Page"
-            >
-              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
-                <FacebookPageIcon />
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-white">Email Preview</h3>
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
               </div>
-            </a>
-            <span className="text-sm text-gray-300 text-center mt-2">
-              Facebook Page
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            <a
-              href="https://www.instagram.com/yourprofile"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
-              title="Instagram"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16.5 7.5V7.501"
-                />
-              </svg>
-            </a>
-            <span className="text-sm text-gray-300 mt-2">Instagram</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <a
-              href="https://www.tiktok.com/@yourprofile"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
-              title="TikTok"
-            >
-              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
-                <TiktokIcon />
+
+              <div className="bg-white/5 rounded-lg p-6 mb-6">
+                <div className="space-y-4">
+                  <div className="flex flex-col">
+                    <span className="text-gray-400 text-sm">From:</span>
+                    <span className="text-white font-medium">
+                      {formData.name} &lt;{formData.email}&gt;
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-400 text-sm">To:</span>
+                    <span className="text-white font-medium">
+                      {socialLinksData.socialLinks
+                        .find((link) => link.id === "email")
+                        ?.href.replace("mailto:", "")}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-400 text-sm">Subject:</span>
+                    <span className="text-white font-medium">
+                      {formData.subject}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-400 text-sm">Message:</span>
+                    <span className="text-white whitespace-pre-wrap">
+                      {formData.message}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </a>
-            <span className="text-sm text-gray-300 mt-2">TikTok</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <a
-              href="https://www.youtube.com/yourchannel"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
-              title="YouTube"
-            >
-              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
-                <YoutubeIcon />
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSubmit}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                >
+                  Send Email
+                </button>
               </div>
-            </a>
-            <span className="text-sm text-gray-300 mt-2">YouTube</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <a
-              href="mailto:contact@example.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
-              title="Email"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-            </a>
-            <span className="text-sm text-gray-300 mt-2">Email</span>
-          </div>
-        </div>
-      </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

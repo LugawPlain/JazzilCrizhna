@@ -1,0 +1,40 @@
+{
+  "socialLinks": [
+    {
+      "id": "facebook",
+      "icon": "facebook",
+      "href": "https://www.facebook.com/yourpage",
+      "label": "Facebook"
+    },
+    {
+      "id": "facebook-page",
+      "icon": "facebook-page",
+      "href": "https://www.facebook.com/yourpage",
+      "label": "Facebook Page"
+    },
+    {
+      "id": "instagram",
+      "icon": "instagram",
+      "href": "https://www.instagram.com/yourprofile",
+      "label": "Instagram"
+    },
+    {
+      "id": "tiktok",
+      "icon": "tiktok",
+      "href": "https://www.tiktok.com/@yourprofile",
+      "label": "TikTok"
+    },
+    {
+      "id": "youtube",
+      "icon": "youtube",
+      "href": "https://www.youtube.com/yourchannel",
+      "label": "YouTube"
+    },
+    {
+      "id": "email",
+      "icon": "email",
+      "href": "mailto:contact@example.com",
+      "label": "Email"
+    }
+  ]
+}
