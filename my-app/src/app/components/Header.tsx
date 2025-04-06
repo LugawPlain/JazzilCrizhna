@@ -7,7 +7,6 @@ export default function Header() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  console.log("isMobileMenuOpen", isMobileMenuOpen);
   // Don't render the header on the home page
   if (pathname === "/") {
     return null;

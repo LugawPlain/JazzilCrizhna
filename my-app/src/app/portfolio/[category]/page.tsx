@@ -3,15 +3,12 @@ import React, {
   useEffect,
   useState,
   useRef,
-  use,
   useMemo,
   useCallback,
+  use,
 } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import Image from "next/image";
-import { categories } from "../CategoryData";
 import Link from "next/link";
-import { useRouter } from "next/router";
 
 interface ImageData {
   src: string;
@@ -21,16 +18,34 @@ interface ImageData {
   photographerLink: string;
   location: string;
   event: string;
-  blurDataURL?: string; // Add blur data URL for placeholder
+  blurDataUrl?: string; // Added for blur placeholder
 }
 
-// Function to generate a tiny placeholder image
-const generateBlurPlaceholder = (src: string): string => {
-  // This is a base64 encoded tiny transparent image
-  // In a real app, you would generate this dynamically or use a service
-  return `data:image/svg+xml;base64,${Buffer.from(
-    `<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10" fill="#333"/></svg>`
-  ).toString("base64")}`;
+// Function to generate a blur placeholder
+const generateBlurPlaceholder = (width: number, height: number): string => {
+  // Create a small SVG with a gradient that mimics a blurred image
+  const svg = `
+    <svg width="${width}" height="${height}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <linearGradient id="g">
+          <stop stop-color="#333" offset="20%" />
+          <stop stop-color="#222" offset="50%" />
+          <stop stop-color="#333" offset="70%" />
+        </linearGradient>
+      </defs>
+      <rect width="${width}" height="${height}" fill="url(#g)" />
+      <rect id="r" width="${width}" height="${height}" fill="url(#g)" fill-opacity="0.1" />
+      <animate xlink:href="#r" attributeName="x" from="-${width}" to="${width}" dur="1s" repeatCount="indefinite" />
+    </svg>
+  `;
+
+  // Convert SVG to base64
+  const toBase64 = (str: string) =>
+    typeof window === "undefined"
+      ? Buffer.from(str).toString("base64")
+      : window.btoa(str);
+
+  return `data:image/svg+xml;base64,${toBase64(svg)}`;
 };
 
 // Memoized ImageCard component to prevent unnecessary re-renders
@@ -49,10 +64,25 @@ const ImageCard = React.memo(
     const ref = useRef<HTMLDivElement>(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
     const [isLoaded, setIsLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
+    const [isBlurLoaded, setIsBlurLoaded] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
 
-    // Generate blur placeholder if not provided
-    const blurDataURL = image.blurDataURL || generateBlurPlaceholder(image.src);
+    // Generate a unique blur placeholder for this image
+    const blurPlaceholder = useMemo(() => {
+      // Use a fixed aspect ratio for the placeholder
+      return generateBlurPlaceholder(800, 600);
+    }, []);
+
+    // Handle image load with progressive enhancement
+    const handleImageLoad = () => {
+      setIsLoaded(true);
+      // Add a small delay before showing the full image for a smoother transition
+      setTimeout(() => {
+        if (imgRef.current) {
+          imgRef.current.style.filter = "none";
+        }
+      }, 100);
+    };
 
     return (
       <motion.div
@@ -70,27 +100,38 @@ const ImageCard = React.memo(
         className="rounded-lg overflow-hidden group relative cursor-pointer"
         onClick={() => onImageClick(image, index)}
       >
-        <div className="relative w-full aspect-[4/3]">
-          {/* Blurred placeholder */}
-          <div className="absolute inset-0 bg-gray-800 animate-pulse" />
+        <div className="relative">
+          {/* Blur placeholder */}
+          {!isLoaded && (
+            <div className="absolute inset-0 bg-gray-800">
+              <img
+                src={blurPlaceholder}
+                alt="Loading..."
+                className="w-full h-full object-cover"
+                onLoad={() => setIsBlurLoaded(true)}
+              />
+            </div>
+          )}
 
-          <div className="relative w-full h-full">
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-              className={`object-cover transition-all duration-500 group-hover:scale-110 ${
-                isLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              priority={index < 4} // Prioritize first 4 images
-              quality={85}
-              placeholder="blur"
-              blurDataURL={blurDataURL}
-              onLoadingComplete={() => setIsLoaded(true)}
-              onError={() => setImageError(true)}
-            />
-          </div>
+          <motion.img
+            ref={imgRef}
+            src={image.src}
+            alt={image.alt}
+            className={`w-full h-auto object-cover transition-all duration-500 group-hover:scale-110 group-hover:blur-xs ${
+              isLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              filter: isLoaded ? "none" : "blur(20px)",
+              transition: "filter 0.5s ease-out",
+            }}
+            initial={{ scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3 }}
+            loading={index < 4 ? "eager" : "lazy"} // Prioritize first 4 images
+            onLoad={handleImageLoad}
+            decoding="async"
+            fetchPriority={index < 4 ? "high" : "low"}
+          />
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end">
             <div className="text-white p-6 w-full">
@@ -140,6 +181,24 @@ const FullscreenViewer = React.memo(
     onPrev: () => void;
   }) => {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isBlurLoaded, setIsBlurLoaded] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    // Generate a unique blur placeholder for this image
+    const blurPlaceholder = useMemo(() => {
+      return generateBlurPlaceholder(1200, 800);
+    }, []);
+
+    // Handle image load with progressive enhancement
+    const handleImageLoad = () => {
+      setIsLoaded(true);
+      // Add a small delay before showing the full image for a smoother transition
+      setTimeout(() => {
+        if (imgRef.current) {
+          imgRef.current.style.filter = "none";
+        }
+      }, 100);
+    };
 
     return (
       <motion.div
@@ -183,12 +242,20 @@ const FullscreenViewer = React.memo(
 
           {/* Image */}
           <div className="relative w-full h-full flex items-center justify-center">
-            {/* Loading placeholder */}
+            {/* Blur placeholder */}
             {!isLoaded && (
-              <div className="absolute inset-0 bg-gray-800 animate-pulse" />
+              <div className="absolute inset-0 bg-gray-800">
+                <img
+                  src={blurPlaceholder}
+                  alt="Loading..."
+                  className="w-full h-full object-cover"
+                  onLoad={() => setIsBlurLoaded(true)}
+                />
+              </div>
             )}
 
             <motion.img
+              ref={imgRef}
               key={selectedImage.src}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: isLoaded ? 1 : 0, scale: 1 }}
@@ -197,9 +264,14 @@ const FullscreenViewer = React.memo(
               src={selectedImage.src}
               alt={selectedImage.alt}
               className="max-w-full max-h-full object-contain"
+              style={{
+                filter: isLoaded ? "none" : "blur(20px)",
+                transition: "filter 0.5s ease-out",
+              }}
               loading="eager"
-              onLoad={() => setIsLoaded(true)}
+              onLoad={handleImageLoad}
               decoding="async"
+              fetchPriority="high"
             />
           </div>
 
@@ -259,25 +331,37 @@ export default function CategoryPage({
 
         // Pre-fetch images for better performance
         const preloadImages = async (imageUrls: string[]) => {
-          const promises = imageUrls.map((url) => {
-            return new Promise((resolve) => {
-              const img = new window.Image();
-              img.src = url;
-              img.onload = resolve;
-              img.onerror = resolve; // Resolve even on error to not block other images
+          // Create a queue to load images in batches to avoid overwhelming the browser
+          const batchSize = 3;
+          const batches = [];
+
+          for (let i = 0; i < imageUrls.length; i += batchSize) {
+            batches.push(imageUrls.slice(i, i + batchSize));
+          }
+
+          // Process batches sequentially
+          for (const batch of batches) {
+            const promises = batch.map((url) => {
+              return new Promise((resolve) => {
+                const img = new window.Image();
+                img.src = url;
+                img.onload = resolve;
+                img.onerror = resolve; // Resolve even on error to not block other images
+              });
             });
-          });
-          // Don't await here to not block the UI
-          Promise.all(promises).catch(console.error);
+
+            // Wait for the current batch to complete before moving to the next
+            await Promise.all(promises);
+          }
         };
 
         const formattedImages = data.images.map(
           (img: string, index: number) => ({
-            src: `/categories/${category}/${img}`,
+            src: `/categories/${data.imageData.category || category}/${img}`,
             alt: `${category} image ${index + 1}`,
             date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
             photographer: `Photographer ${index + 1}`,
-            photographerLink: `/photographers/photographer-${index + 1}`,
+            photographerLink: `#`, // Changed to a hash link since photographer pages don't exist
             location: `Location ${index + 1}`,
             event: `Event ${index + 1}`,
           })
@@ -299,35 +383,37 @@ export default function CategoryPage({
     }
   }, [category]);
 
-  // Handle keyboard events for navigation
+  const handleClose = useCallback(() => {
+    setSelectedImage(null);
+    setCurrentIndex(0);
+  }, []);
+
+  const handleNext = useCallback(() => {
+    if (currentIndex < images.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  }, [currentIndex, images.length]);
+
+  const handlePrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  }, [currentIndex]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedImage) {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          handleClose();
-        } else if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          handlePrev();
-        } else if (e.key === "ArrowRight") {
-          e.preventDefault();
-          handleNext();
-        }
+      if (e.key === "Escape") {
+        handleClose();
+      } else if (e.key === "ArrowRight") {
+        handleNext();
+      } else if (e.key === "ArrowLeft") {
+        handlePrev();
       }
     };
 
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, [selectedImage, currentIndex]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleClose, handleNext, handlePrev]);
 
   // Memoized handlers
   const handleImageClick = useCallback(
@@ -343,31 +429,6 @@ export default function CategoryPage({
     },
     []
   );
-
-  const handleClose = useCallback(async () => {
-    if (document.fullscreenElement) {
-      try {
-        await document.exitFullscreen();
-      } catch (err) {
-        console.error("Error exiting fullscreen:", err);
-      }
-    }
-    setSelectedImage(null);
-    setIsFullscreen(false);
-    return false;
-  }, []);
-
-  const handleNext = useCallback(() => {
-    const nextIndex = (currentIndex + 1) % images.length;
-    setCurrentIndex(nextIndex);
-    setSelectedImage(images[nextIndex]);
-  }, [currentIndex, images]);
-
-  const handlePrev = useCallback(() => {
-    const prevIndex = (currentIndex - 1 + images.length) % images.length;
-    setCurrentIndex(prevIndex);
-    setSelectedImage(images[prevIndex]);
-  }, [currentIndex, images]);
 
   // Memoized distributeImages function
   const distributeImages = useCallback(

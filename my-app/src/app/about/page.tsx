@@ -87,7 +87,7 @@ export default function AboutPage() {
             <div className="text-center">
               <p className="text-gray-400 text-xs sm:text-sm">Height</p>
               <p className="text-white text-lg sm:text-xl font-medium blur-sm group-hover:blur-[4px] transition-all">
-                7'9"
+                7&apos;9&quot;
               </p>
             </div>
             <div className="text-center">
@@ -99,19 +99,19 @@ export default function AboutPage() {
             <div className="text-center">
               <p className="text-gray-400 text-xs sm:text-sm">Bust</p>
               <p className="text-white text-lg sm:text-xl font-medium blur-sm group-hover:blur-xs transition-all">
-                90"
+                90&quot;
               </p>
             </div>
             <div className="text-center">
               <p className="text-gray-400 text-xs sm:text-sm">Waist</p>
               <p className="text-white text-lg sm:text-xl font-medium blur-sm group-hover:blur-xs transition-all">
-                11"
+                11&quot;
               </p>
             </div>
             <div className="text-center">
               <p className="text-gray-400 text-xs sm:text-sm">Hips</p>
               <p className="text-white text-lg sm:text-xl font-medium blur-sm group-hover:blur-xs transition-all">
-                250"
+                250&quot;
               </p>
             </div>
             <div className="text-center">

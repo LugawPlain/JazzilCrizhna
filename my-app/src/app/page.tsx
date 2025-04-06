@@ -1,7 +1,5 @@
 import Image from "next/image";
 import Herobutton from "@/components/Herobutton";
-import SocialLinksButton from "@/components/SocialLinksButton";
-import TiktokIcon from "@/components/icons/TiktokIcon";
 import Link from "next/link";
 
 export default function Home() {

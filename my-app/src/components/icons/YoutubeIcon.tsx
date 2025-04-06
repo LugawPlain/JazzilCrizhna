@@ -1,10 +1,6 @@
 import * as React from "react";
 
-interface SVGComponentProps extends React.SVGProps<SVGSVGElement> {
-  // Add any additional props you need
-}
-
-const YoutubeIcon: React.FC<SVGComponentProps> = (props) => (
+const YoutubeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={24}

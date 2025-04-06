@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   format,
   startOfMonth,
@@ -16,15 +16,6 @@ import {
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showExpanded, setShowExpanded] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowExpanded(true);
-    }, 1000); // Delay of 1 second before showing expanded background
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Get the first day of the current month
   const monthStart = startOfMonth(currentDate);

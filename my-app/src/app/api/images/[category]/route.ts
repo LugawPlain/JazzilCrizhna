@@ -24,7 +24,7 @@ export async function GET(
 
     // Get the category data from images-data.json
     const categoryData = imagesData[categoryLower];
-    console.log(categoryData);
+
     if (!categoryData) {
       console.log(`No data found for category: ${category}`);
       return NextResponse.json({ images: [], imageData: {} }, { status: 200 });
@@ -72,7 +72,10 @@ export async function GET(
     return NextResponse.json(
       {
         images: imageFiles,
-        imageData: categoryData,
+        imageData: {
+          ...categoryData,
+          category: matchingDir,
+        },
       },
       { status: 200 }
     );
