@@ -6,12 +6,14 @@ import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
 import FacebookPageIcon from "./icons/FacebookPageIcon";
 import socialLinks from "../data/socialLinks.json";
+import ReCAPTCHA from "react-google-recaptcha";
 
 interface FormData {
   name: string;
   email: string;
   subject: string;
   message: string;
+  website?: string; // honeypot field
 }
 
 export default function ContactForm() {
@@ -20,6 +22,7 @@ export default function ContactForm() {
     email: "",
     subject: "",
     message: "",
+    website: "", // honeypot field
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,9 +30,30 @@ export default function ContactForm() {
     "idle" | "success" | "error"
   >("idle");
   const [showPreview, setShowPreview] = useState(false);
+  const [recaptchaValue, setRecaptchaValue] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if honeypot field is filled
+    if (formData.website) {
+      // Silently succeed if honeypot is filled
+      setSubmitStatus("success");
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        website: "",
+      });
+      return;
+    }
+
+    // Check if reCAPTCHA is completed
+    if (!recaptchaValue) {
+      setSubmitStatus("error");
+      return;
+    }
 
     // Show preview modal instead of submitting directly
     setShowPreview(true);
@@ -45,7 +69,10 @@ export default function ContactForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          recaptchaToken: recaptchaValue,
+        }),
       });
 
       const data = await response.json();
@@ -55,7 +82,14 @@ export default function ContactForm() {
       }
 
       setSubmitStatus("success");
-      setFormData({ name: "", email: "", subject: "", message: "" });
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        website: "",
+      });
+      setRecaptchaValue(null);
     } catch (error) {
       console.error("Error sending message:", error);
       setSubmitStatus("error");
@@ -83,6 +117,19 @@ export default function ContactForm() {
           Get in Touch
         </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Honeypot field - hidden from real users */}
+          <div className="hidden">
+            <input
+              type="text"
+              name="website"
+              value={formData.website}
+              onChange={handleChange}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label
@@ -160,21 +207,64 @@ export default function ContactForm() {
             />
           </div>
 
+          <div className="flex justify-center my-4">
+            <ReCAPTCHA
+              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
+              onChange={(value) => setRecaptchaValue(value)}
+            />
+          </div>
+
           <div className="flex justify-center">
             <motion.button
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={isSubmitting}
-              className={`px-8 py-3 rounded-lg font-medium text-white transition-all duration-200 ${
-                isSubmitting
-                  ? "bg-gray-600 cursor-not-allowed"
-                  : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              disabled={isSubmitting || !recaptchaValue}
+              className={`px-8 py-3 rounded-lg font-medium text-white transition-all duration-300 ${
+                isSubmitting || !recaptchaValue
+                  ? "bg-gray-600 cursor-not-allowed opacity-70"
+                  : "bg-gradient-to-r from-[#DC143C] to-[#FF4500] hover:from-[#FF4500] hover:to-[#DC143C] shadow-lg hover:shadow-[#DC143C]/30"
               }`}
             >
-              {isSubmitting ? "Sending..." : "Send Message"}
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Sending...
+                </span>
+              ) : (
+                "Send Message"
+              )}
             </motion.button>
           </div>
+
+          {submitStatus === "error" && !recaptchaValue && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center text-red-400 mt-4"
+            >
+              Please complete the reCAPTCHA verification.
+            </motion.div>
+          )}
 
           {submitStatus === "success" && (
             <motion.div
@@ -186,7 +276,7 @@ export default function ContactForm() {
             </motion.div>
           )}
 
-          {submitStatus === "error" && (
+          {submitStatus === "error" && recaptchaValue && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

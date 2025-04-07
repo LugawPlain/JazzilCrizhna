@@ -9,7 +9,16 @@ import React, {
 } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { FiSettings, FiGrid, FiColumns } from "react-icons/fi";
+import SettingsToggle from "@/app/components/SettingsToggle";
+import OneColumnIcon from "@/components/icons/OneColumnIcon";
+import ThreeColumnIcon from "@/components/icons/ThreeColumnIcon";
+import SettingsPanel from "@/app/components/SettingsPanel";
+
+// ==========================================
+// Types and Interfaces
+// ==========================================
 
 interface ImageData {
   src: string;
@@ -22,7 +31,29 @@ interface ImageData {
   blurDataUrl?: string; // Added for blur placeholder
 }
 
-// Function to generate a blur placeholder
+// ==========================================
+// Utility Functions
+// ==========================================
+
+/**
+ * Checks if fullscreen API is supported in the current browser
+ * @returns boolean indicating if fullscreen is supported
+ */
+const isFullscreenSupported = (): boolean => {
+  return !!(
+    document.fullscreenEnabled ||
+    (document as any).webkitFullscreenEnabled ||
+    (document as any).mozFullScreenEnabled ||
+    (document as any).msFullscreenEnabled
+  );
+};
+
+/**
+ * Generates a blur placeholder SVG for image loading
+ * @param width - Width of the placeholder
+ * @param height - Height of the placeholder
+ * @returns Base64 encoded SVG string
+ */
 const generateBlurPlaceholder = (width: number, height: number): string => {
   // Create a small SVG with a gradient that mimics a blurred image
   const svg = `
@@ -49,7 +80,13 @@ const generateBlurPlaceholder = (width: number, height: number): string => {
   return `data:image/svg+xml;base64,${toBase64(svg)}`;
 };
 
-// Memoized ImageCard component to prevent unnecessary re-renders
+// ==========================================
+// Component: ImageCard
+// ==========================================
+
+/**
+ * Displays a single image card with hover effects and loading states
+ */
 const ImageCard = React.memo(
   ({
     image,
@@ -134,6 +171,7 @@ const ImageCard = React.memo(
             fetchPriority={index < 4 ? "high" : "low"}
           />
 
+          {/* Image Info Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end">
             <div className="text-white p-6 w-full">
               <motion.div
@@ -168,7 +206,13 @@ const ImageCard = React.memo(
 
 ImageCard.displayName = "ImageCard";
 
-// Memoized FullscreenViewer component
+// ==========================================
+// Component: FullscreenViewer
+// ==========================================
+
+/**
+ * Displays a fullscreen image viewer with navigation controls
+ */
 const FullscreenViewer = React.memo(
   ({
     selectedImage,
@@ -184,6 +228,51 @@ const FullscreenViewer = React.memo(
     const [isLoaded, setIsLoaded] = useState(false);
     const [isBlurLoaded, setIsBlurLoaded] = useState(false);
     const imgRef = useRef<HTMLImageElement>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+
+    // Handle fullscreen change events
+    useEffect(() => {
+      const handleFullscreenChange = () => {
+        // Check if we're no longer in fullscreen mode
+        if (
+          !document.fullscreenElement &&
+          !(document as any).webkitFullscreenElement &&
+          !(document as any).mozFullScreenElement &&
+          !(document as any).msFullscreenElement
+        ) {
+          onClose();
+        }
+      };
+
+      // Add event listeners for fullscreen changes
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+      document.addEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+      // Cleanup
+      return () => {
+        document.removeEventListener(
+          "fullscreenchange",
+          handleFullscreenChange
+        );
+        document.removeEventListener(
+          "webkitfullscreenchange",
+          handleFullscreenChange
+        );
+        document.removeEventListener(
+          "mozfullscreenchange",
+          handleFullscreenChange
+        );
+        document.removeEventListener(
+          "MSFullscreenChange",
+          handleFullscreenChange
+        );
+      };
+    }, [onClose]);
 
     // Generate a unique blur placeholder for this image
     const blurPlaceholder = useMemo(() => {
@@ -193,12 +282,26 @@ const FullscreenViewer = React.memo(
     // Handle image load with progressive enhancement
     const handleImageLoad = () => {
       setIsLoaded(true);
+      setIsNavigating(false);
       // Add a small delay before showing the full image for a smoother transition
       setTimeout(() => {
         if (imgRef.current) {
           imgRef.current.style.filter = "none";
         }
       }, 100);
+    };
+
+    // Handle navigation with visual feedback
+    const handleNext = () => {
+      setIsNavigating(true);
+      setIsLoaded(false);
+      onNext();
+    };
+
+    const handlePrev = () => {
+      setIsNavigating(true);
+      setIsLoaded(false);
+      onPrev();
     };
 
     return (
@@ -211,37 +314,40 @@ const FullscreenViewer = React.memo(
         <div className="relative w-full h-full flex flex-col items-center">
           {/* Navigation Arrows */}
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors z-10"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors z-10 bg-black/30 flex items-center justify-center px-2 rounded-full"
             onClick={(e) => {
               e.stopPropagation();
-              onPrev();
+              handlePrev();
             }}
+            aria-label="Previous image"
           >
-            ←
+            <span>←</span>
           </button>
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors z-10"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 transition-colors flex items-center justify-center px-2 z-10 bg-black/30  rounded-full"
             onClick={(e) => {
               e.stopPropagation();
-              onNext();
+              handleNext();
             }}
+            aria-label="Next image"
           >
-            →
+            <span>→</span>
           </button>
 
           {/* Close Button */}
           <button
-            className="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 transition-colors z-10"
+            className="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 transition-colors z-10 bg-black/30 p-2 rounded-full"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onClose();
             }}
+            aria-label="Close fullscreen view"
           >
             ✕
           </button>
 
-          {/* Image */}
+          {/* Image Container */}
           <div className="relative w-full h-full flex items-center justify-center">
             {/* Blur placeholder */}
             {!isLoaded && (
@@ -277,7 +383,7 @@ const FullscreenViewer = React.memo(
           </div>
 
           {/* Image Info */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-8 text-white text-center">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-8 pb-18 text-white text-center">
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold">{selectedImage.event}</h2>
               <p className="text-lg opacity-90">📍 {selectedImage.location}</p>
@@ -304,6 +410,13 @@ const FullscreenViewer = React.memo(
 
 FullscreenViewer.displayName = "FullscreenViewer";
 
+// ==========================================
+// Main Component: CategoryPage
+// ==========================================
+
+/**
+ * Main page component for displaying a category of portfolio images
+ */
 export default function CategoryPage({
   params,
 }: {
@@ -311,15 +424,17 @@ export default function CategoryPage({
 }) {
   const { category } = use(params);
 
+  // State management
   const [images, setImages] = useState<ImageData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const fullscreenRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [userColumnCount, setUserColumnCount] = useState<number | null>(null);
-  const settingsRef = useRef<HTMLDivElement>(null);
+  const [activeLayout, setActiveLayout] = useState<ImageData[][]>([]);
+  const [activeColumnCount, setActiveColumnCount] = useState(1);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
 
   // Function to capitalize first letter - memoized
   const capitalizeFirstLetter = useCallback((string: string) => {
@@ -387,51 +502,86 @@ export default function CategoryPage({
     }
   }, [category]);
 
+  // Event handlers
   const handleClose = useCallback(() => {
     setSelectedImage(null);
     setCurrentIndex(0);
-  }, []);
+
+    // Exit fullscreen mode if we're in it
+    if (isFullscreen) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch((err) => {
+          console.error("Error exiting fullscreen:", err);
+          setIsFullscreen(false);
+        });
+      } else if ((document as any).webkitExitFullscreen) {
+        // Safari
+        (document as any).webkitExitFullscreen();
+        setIsFullscreen(false);
+      } else if ((document as any).mozCancelFullScreen) {
+        // Firefox
+        (document as any).mozCancelFullScreen();
+        setIsFullscreen(false);
+      } else if ((document as any).msExitFullscreen) {
+        // IE/Edge
+        (document as any).msExitFullscreen();
+        setIsFullscreen(false);
+      } else {
+        setIsFullscreen(false);
+      }
+    }
+  }, [isFullscreen]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < images.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      setSelectedImage(images[newIndex]);
     }
-  }, [currentIndex, images.length]);
+  }, [currentIndex, images.length, images]);
 
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      const newIndex = currentIndex - 1;
+      setCurrentIndex(newIndex);
+      setSelectedImage(images[newIndex]);
     }
-  }, [currentIndex]);
+  }, [currentIndex, images]);
 
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         handleClose();
-      } else if (e.key === "ArrowRight") {
+      } else if (e.key === "ArrowRight" && selectedImage) {
         handleNext();
-      } else if (e.key === "ArrowLeft") {
+      } else if (e.key === "ArrowLeft" && selectedImage) {
         handlePrev();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, handleNext, handlePrev]);
+  }, [handleClose, handleNext, handlePrev, selectedImage]);
 
-  // Memoized handlers
+  // Image click handler
   const handleImageClick = useCallback(
     async (image: ImageData, index: number) => {
       setSelectedImage(image);
       setCurrentIndex(index);
       try {
-        await document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
+        // Check if fullscreen is supported and not already in fullscreen mode
+        if (!isFullscreen && isFullscreenSupported()) {
+          await document.documentElement.requestFullscreen();
+          setIsFullscreen(true);
+        }
       } catch (err) {
         console.error("Error entering fullscreen:", err);
+        // Continue showing the image even if fullscreen fails
+        setIsFullscreen(false);
       }
     },
-    []
+    [isFullscreen]
   );
 
   // Memoized distributeImages function
@@ -461,23 +611,38 @@ export default function CategoryPage({
     };
   }, [distributeImages]);
 
-  // Close settings when clicking outside
+  // Update active layout and column count based on window size
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        settingsRef.current &&
-        !settingsRef.current.contains(event.target as Node)
-      ) {
-        setShowSettings(false);
+    const updateLayout = () => {
+      let columnsToUse: number;
+
+      if (userColumnCount) {
+        columnsToUse = userColumnCount;
+      } else {
+        // Default responsive layouts
+        const width = window.innerWidth;
+        if (width < 640) columnsToUse = 1;
+        else if (width < 768) columnsToUse = 2;
+        else if (width < 1280) columnsToUse = 3;
+        else if (width < 1536) columnsToUse = 4;
+        else columnsToUse = 5;
       }
+
+      setActiveColumnCount(columnsToUse);
+      setActiveLayout(distributeImages(columnsToUse));
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    // Initial update
+    updateLayout();
 
+    // Add resize listener
+    window.addEventListener("resize", updateLayout);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", updateLayout);
+  }, [userColumnCount, distributeImages, columnLayouts]);
+
+  // Loading state
   if (!category) {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
@@ -494,33 +659,6 @@ export default function CategoryPage({
     );
   }
 
-  // Determine which layout to use based on user selection or screen size
-  const getActiveLayout = () => {
-    if (userColumnCount) {
-      return distributeImages(userColumnCount);
-    }
-
-    // Default responsive layouts
-    if (window.innerWidth < 640) return columnLayouts.mobile;
-    if (window.innerWidth < 768) return columnLayouts.smallTablet;
-    if (window.innerWidth < 1280) return columnLayouts.tablet;
-    if (window.innerWidth < 1536) return columnLayouts.largeTablet;
-    return columnLayouts.desktop;
-  };
-
-  const activeLayout = getActiveLayout();
-  const activeColumnCount =
-    userColumnCount ||
-    (window.innerWidth < 640
-      ? 1
-      : window.innerWidth < 768
-      ? 2
-      : window.innerWidth < 1280
-      ? 3
-      : window.innerWidth < 1536
-      ? 4
-      : 5);
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -529,6 +667,7 @@ export default function CategoryPage({
       className="min-h-screen bg-neutral-900 py-20"
     >
       <div className="mx-auto px-4">
+        {/* Header */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -565,72 +704,12 @@ export default function CategoryPage({
         </div>
       </div>
 
-      {/* Floating Settings Panel */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-        <div className="relative" ref={settingsRef}>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="bg-neutral-800 hover:bg-neutral-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
-            aria-label="Settings"
-          >
-            <FiSettings className="text-xl" />
-          </button>
-
-          <AnimatePresence>
-            {showSettings && (
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-neutral-800 rounded-lg shadow-xl p-4 w-64"
-              >
-                <h3 className="text-white font-medium mb-3 flex items-center">
-                  <FiGrid className="mr-2" /> Layout Settings
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-gray-300 text-sm block mb-2">
-                      Number of Columns
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[1, 2, 3, 4, 5].map((count) => (
-                        <button
-                          key={count}
-                          onClick={() => {
-                            setUserColumnCount(count);
-                            setShowSettings(false);
-                          }}
-                          className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
-                            activeColumnCount === count
-                              ? "bg-blue-600 text-white"
-                              : "bg-neutral-700 text-gray-300 hover:bg-neutral-600"
-                          }`}
-                          aria-label={`${count} columns`}
-                        >
-                          <FiColumns className="text-sm" />
-                          <span className="ml-1 text-xs">{count}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="pt-2 border-t border-neutral-700">
-                    <button
-                      onClick={() => {
-                        setUserColumnCount(null);
-                        setShowSettings(false);
-                      }}
-                      className="text-sm text-gray-300 hover:text-white transition-colors"
-                    >
-                      Reset to Default
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {/* Settings Panel */}
+      <SettingsPanel
+        userColumnCount={userColumnCount}
+        setUserColumnCount={setUserColumnCount}
+        activeColumnCount={activeColumnCount}
+      />
 
       {/* Fullscreen Image Viewer */}
       <AnimatePresence>
