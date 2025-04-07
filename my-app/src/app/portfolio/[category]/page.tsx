@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import Link from "next/link";
+import { FiSettings, FiGrid, FiColumns } from "react-icons/fi";
 
 interface ImageData {
   src: string;
@@ -316,6 +317,9 @@ export default function CategoryPage({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const fullscreenRef = useRef<HTMLDivElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [userColumnCount, setUserColumnCount] = useState<number | null>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   // Function to capitalize first letter - memoized
   const capitalizeFirstLetter = useCallback((string: string) => {
@@ -457,6 +461,23 @@ export default function CategoryPage({
     };
   }, [distributeImages]);
 
+  // Close settings when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target as Node)
+      ) {
+        setShowSettings(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   if (!category) {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
@@ -472,6 +493,33 @@ export default function CategoryPage({
       </div>
     );
   }
+
+  // Determine which layout to use based on user selection or screen size
+  const getActiveLayout = () => {
+    if (userColumnCount) {
+      return distributeImages(userColumnCount);
+    }
+
+    // Default responsive layouts
+    if (window.innerWidth < 640) return columnLayouts.mobile;
+    if (window.innerWidth < 768) return columnLayouts.smallTablet;
+    if (window.innerWidth < 1280) return columnLayouts.tablet;
+    if (window.innerWidth < 1536) return columnLayouts.largeTablet;
+    return columnLayouts.desktop;
+  };
+
+  const activeLayout = getActiveLayout();
+  const activeColumnCount =
+    userColumnCount ||
+    (window.innerWidth < 640
+      ? 1
+      : window.innerWidth < 768
+      ? 2
+      : window.innerWidth < 1280
+      ? 3
+      : window.innerWidth < 1536
+      ? 4
+      : 5);
 
   return (
     <motion.div
@@ -495,105 +543,92 @@ export default function CategoryPage({
           </p>
         </motion.div>
 
-        {/* Mobile - 1 column */}
-        <div className="block sm:hidden">
-          <div className="flex flex-col space-y-4">
-            {images.map((image, index) => (
-              <ImageCard
-                key={`${image.src}-${index}`}
-                image={image}
-                index={index}
-                totalColumns={1}
-                onImageClick={handleImageClick}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Small tablets - 2 columns */}
-        <div className="hidden sm:block md:hidden">
-          <div className="flex flex-row justify-between gap-4">
-            {columnLayouts.smallTablet.map((column, columnIndex) => (
-              <div
-                key={`col-2-${columnIndex}`}
-                className="flex-col relative space-y-4 flex w-[48%]"
-              >
-                {column.map((image, index) => (
-                  <ImageCard
-                    key={`${image.src}-${columnIndex}-${index}`}
-                    image={image}
-                    index={columnIndex + index * 2}
-                    totalColumns={2}
-                    onImageClick={handleImageClick}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tablets - 3 columns */}
-        <div className="hidden md:block xl:hidden">
-          <div className="flex flex-row justify-between gap-4">
-            {columnLayouts.tablet.map((column, columnIndex) => (
-              <div
-                key={`col-3-${columnIndex}`}
-                className="flex-col relative space-y-4 flex w-[31%]"
-              >
-                {column.map((image, index) => (
-                  <ImageCard
-                    key={`${image.src}-${columnIndex}-${index}`}
-                    image={image}
-                    index={columnIndex + index * 3}
-                    totalColumns={3}
-                    onImageClick={handleImageClick}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Large tablets/Small desktops - 4 columns */}
-        <div className="hidden xl:block 2xl:hidden">
-          <div className="flex flex-row justify-between gap-4">
-            {columnLayouts.largeTablet.map((column, columnIndex) => (
-              <div
-                key={`col-4-${columnIndex}`}
-                className="flex-col relative space-y-4 flex w-[23%]"
-              >
-                {column.map((image, index) => (
-                  <ImageCard
-                    key={`${image.src}-${columnIndex}-${index}`}
-                    image={image}
-                    index={columnIndex + index * 4}
-                    totalColumns={4}
-                    onImageClick={handleImageClick}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Large desktops - 5 columns */}
-        <div className="hidden 2xl:flex flex-row justify-between gap-4">
-          {columnLayouts.desktop.map((column, columnIndex) => (
+        {/* Dynamic Column Layout */}
+        <div className="flex flex-row justify-between gap-4">
+          {activeLayout.map((column, columnIndex) => (
             <div
-              key={`col-5-${columnIndex}`}
-              className="flex-col relative space-y-4 flex w-[18%]"
+              key={`col-${activeColumnCount}-${columnIndex}`}
+              className="flex-col relative space-y-4 flex"
+              style={{ width: `${100 / activeColumnCount - 2}%` }}
             >
               {column.map((image, index) => (
                 <ImageCard
                   key={`${image.src}-${columnIndex}-${index}`}
                   image={image}
-                  index={columnIndex + index * 5}
-                  totalColumns={5}
+                  index={columnIndex + index * activeColumnCount}
+                  totalColumns={activeColumnCount}
                   onImageClick={handleImageClick}
                 />
               ))}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Floating Settings Panel */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+        <div className="relative" ref={settingsRef}>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="bg-neutral-800 hover:bg-neutral-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+            aria-label="Settings"
+          >
+            <FiSettings className="text-xl" />
+          </button>
+
+          <AnimatePresence>
+            {showSettings && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-neutral-800 rounded-lg shadow-xl p-4 w-64"
+              >
+                <h3 className="text-white font-medium mb-3 flex items-center">
+                  <FiGrid className="mr-2" /> Layout Settings
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-gray-300 text-sm block mb-2">
+                      Number of Columns
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5].map((count) => (
+                        <button
+                          key={count}
+                          onClick={() => {
+                            setUserColumnCount(count);
+                            setShowSettings(false);
+                          }}
+                          className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                            activeColumnCount === count
+                              ? "bg-blue-600 text-white"
+                              : "bg-neutral-700 text-gray-300 hover:bg-neutral-600"
+                          }`}
+                          aria-label={`${count} columns`}
+                        >
+                          <FiColumns className="text-sm" />
+                          <span className="ml-1 text-xs">{count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-neutral-700">
+                    <button
+                      onClick={() => {
+                        setUserColumnCount(null);
+                        setShowSettings(false);
+                      }}
+                      className="text-sm text-gray-300 hover:text-white transition-colors"
+                    >
+                      Reset to Default
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
