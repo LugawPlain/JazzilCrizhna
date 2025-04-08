@@ -68,7 +68,7 @@ export async function GET(
       const numB = parseInt(b.replace(".webp", ""));
       return numA - numB;
     });
-
+    console.log(imagesData);
     return NextResponse.json(
       {
         images: imageFiles,

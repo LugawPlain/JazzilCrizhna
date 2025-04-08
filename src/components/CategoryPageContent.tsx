@@ -97,7 +97,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             event: `Event ${index + 1}`,
           })
         );
-
         setImages(formattedImages);
 
         // Start preloading images in the background
@@ -119,12 +118,21 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     setSelectedImage(null);
     setCurrentIndex(0);
 
-    // Exit fullscreen mode if we're in it
-    if (isFullscreen) {
+    // Check if the document is actually in fullscreen mode
+    const isActuallyFullscreen = !!(
+      document.fullscreenElement ||
+      (document as Document & { webkitFullscreenElement?: Element })
+        .webkitFullscreenElement ||
+      (document as Document & { mozFullScreenElement?: Element })
+        .mozFullScreenElement ||
+      (document as Document & { msFullscreenElement?: Element })
+        .msFullscreenElement
+    );
+
+    if (isFullscreen && isActuallyFullscreen) {
       if (document.exitFullscreen) {
         document.exitFullscreen().catch((err: Error) => {
           console.error("Error exiting fullscreen:", err);
-          setIsFullscreen(false);
         });
       } else {
         const webkitExitFullscreen = (
@@ -138,21 +146,14 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         ).msExitFullscreen;
 
         if (webkitExitFullscreen) {
-          // Safari
           webkitExitFullscreen();
-          setIsFullscreen(false);
         } else if (mozCancelFullScreen) {
-          // Firefox
           mozCancelFullScreen();
-          setIsFullscreen(false);
         } else if (msExitFullscreen) {
-          // IE/Edge
           msExitFullscreen();
-          setIsFullscreen(false);
-        } else {
-          setIsFullscreen(false);
         }
       }
+      setIsFullscreen(false);
     }
   }, [isFullscreen]);
 
