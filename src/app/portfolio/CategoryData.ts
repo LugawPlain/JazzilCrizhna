@@ -45,7 +45,7 @@ export const categories: CategoryData[] = [
   {
     title: "Photoshoot",
     image: "/portfolio/PHOTOSHOOT.webp",
-    category: "PHOTOSHOOTS",
+    category: "PHOTOSHOOT",
     link: "/portfolio/photoshoot",
     photographer: "📸 ",
   },

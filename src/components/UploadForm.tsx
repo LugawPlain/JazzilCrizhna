@@ -22,7 +22,7 @@ function UploadForm() {
     "ADVERTISING",
     "CLOTHING",
     "MUSE",
-    "PHOTOSHOOTS",
+    "PHOTOSHOOT",
     "COSPLAY",
     "OTHERS",
   ];
