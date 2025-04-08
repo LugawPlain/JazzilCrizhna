@@ -14,6 +14,13 @@ export default function Home() {
           className="object-cover"
           priority
         />
+        {/* <Image
+          src="/BACKG.jpg"
+          alt="Background"
+          fill
+          className="object-cover"
+          priority
+        /> */}
 
         {/* Dark overlay for better text readability */}
         <div className="absolute inset-0 bg-black/20" />

@@ -20,8 +20,8 @@ const Footer = () => {
           or otherwise used, except with prior written permission.
         </span>
       </p>
-      <p className="text-neutral-400 text-md mt-4">Need a Website? </p>
-      <p className="text-neutral-400 text-md">
+      <p className="text-neutral-400 text-md mt-4 hidden">Need a Website? </p>
+      <p className="text-neutral-400 text-md hidden">
         Contact
         <Link href="#">
           {" "}

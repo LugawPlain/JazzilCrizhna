@@ -26,17 +26,21 @@ export default function AboutPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative aspect-square rounded-lg overflow-hidden w-full lg:w-3/4 "
+            className="relative aspect-square rounded-lg overflow-hidden w-full lg:w-3/4 h-full "
           >
-            <Image
-              src="/about/1.webp"
+            <img
+              src="/about/about.webp"
+              alt="Profile Picture"
+              className="object-cover"
+            />
+            {/* <Image
+              src="/about/about.webp"
               alt="Profile Picture"
               fill
               className="object-cover"
               priority
-            />
+            />*/}
           </motion.div>
-
           {/* Biography */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}

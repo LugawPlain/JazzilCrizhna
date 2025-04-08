@@ -42,9 +42,12 @@ interface ImageData {
 const isFullscreenSupported = (): boolean => {
   return !!(
     document.fullscreenEnabled ||
-    (document as any).webkitFullscreenEnabled ||
-    (document as any).mozFullScreenEnabled ||
-    (document as any).msFullscreenEnabled
+    (document as Document & { webkitFullscreenEnabled?: boolean })
+      .webkitFullscreenEnabled ||
+    (document as Document & { mozFullScreenEnabled?: boolean })
+      .mozFullScreenEnabled ||
+    (document as Document & { msFullscreenEnabled?: boolean })
+      .msFullscreenEnabled
   );
 };
 
@@ -236,9 +239,12 @@ const FullscreenViewer = React.memo(
         // Check if we're no longer in fullscreen mode
         if (
           !document.fullscreenElement &&
-          !(document as any).webkitFullscreenElement &&
-          !(document as any).mozFullScreenElement &&
-          !(document as any).msFullscreenElement
+          !(document as Document & { webkitFullscreenElement?: Element })
+            .webkitFullscreenElement &&
+          !(document as Document & { mozFullScreenElement?: Element })
+            .mozFullScreenElement &&
+          !(document as Document & { msFullscreenElement?: Element })
+            .msFullscreenElement
         ) {
           onClose();
         }
@@ -461,11 +467,11 @@ export default function CategoryPage({
           // Process batches sequentially
           for (const batch of batches) {
             const promises = batch.map((url) => {
-              return new Promise((resolve) => {
+              return new Promise<void>((resolve) => {
                 const img = new window.Image();
                 img.src = url;
-                img.onload = resolve;
-                img.onerror = resolve; // Resolve even on error to not block other images
+                img.onload = () => resolve();
+                img.onerror = () => resolve(); // Resolve even on error to not block other images
               });
             });
 
@@ -490,7 +496,7 @@ export default function CategoryPage({
 
         // Start preloading images in the background
         preloadImages(formattedImages.map((img: ImageData) => img.src));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error fetching images:", error);
       } finally {
         setLoading(false);
@@ -510,24 +516,36 @@ export default function CategoryPage({
     // Exit fullscreen mode if we're in it
     if (isFullscreen) {
       if (document.exitFullscreen) {
-        document.exitFullscreen().catch((err) => {
+        document.exitFullscreen().catch((err: Error) => {
           console.error("Error exiting fullscreen:", err);
           setIsFullscreen(false);
         });
-      } else if ((document as any).webkitExitFullscreen) {
-        // Safari
-        (document as any).webkitExitFullscreen();
-        setIsFullscreen(false);
-      } else if ((document as any).mozCancelFullScreen) {
-        // Firefox
-        (document as any).mozCancelFullScreen();
-        setIsFullscreen(false);
-      } else if ((document as any).msExitFullscreen) {
-        // IE/Edge
-        (document as any).msExitFullscreen();
-        setIsFullscreen(false);
       } else {
-        setIsFullscreen(false);
+        const webkitExitFullscreen = (
+          document as Document & { webkitExitFullscreen?: () => Promise<void> }
+        ).webkitExitFullscreen;
+        const mozCancelFullScreen = (
+          document as Document & { mozCancelFullScreen?: () => Promise<void> }
+        ).mozCancelFullScreen;
+        const msExitFullscreen = (
+          document as Document & { msExitFullscreen?: () => Promise<void> }
+        ).msExitFullscreen;
+
+        if (webkitExitFullscreen) {
+          // Safari
+          webkitExitFullscreen();
+          setIsFullscreen(false);
+        } else if (mozCancelFullScreen) {
+          // Firefox
+          mozCancelFullScreen();
+          setIsFullscreen(false);
+        } else if (msExitFullscreen) {
+          // IE/Edge
+          msExitFullscreen();
+          setIsFullscreen(false);
+        } else {
+          setIsFullscreen(false);
+        }
       }
     }
   }, [isFullscreen]);
@@ -538,7 +556,7 @@ export default function CategoryPage({
       setCurrentIndex(newIndex);
       setSelectedImage(images[newIndex]);
     }
-  }, [currentIndex, images.length, images]);
+  }, [currentIndex, images]);
 
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
@@ -575,7 +593,7 @@ export default function CategoryPage({
           await document.documentElement.requestFullscreen();
           setIsFullscreen(true);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error entering fullscreen:", err);
         // Continue showing the image even if fullscreen fails
         setIsFullscreen(false);
@@ -640,7 +658,7 @@ export default function CategoryPage({
 
     // Cleanup
     return () => window.removeEventListener("resize", updateLayout);
-  }, [userColumnCount, distributeImages, columnLayouts]);
+  }, [userColumnCount, distributeImages]);
 
   // Loading state
   if (!category) {

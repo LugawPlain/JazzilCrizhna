@@ -19,6 +19,8 @@ const SettingsPanel = React.memo(
     userColumnCount,
     setUserColumnCount,
     activeColumnCount,
+    showSettings,
+    setShowSettings,
   }: {
     showSettings?: boolean;
     setShowSettings?: (show: boolean) => void;
