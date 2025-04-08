@@ -8,7 +8,7 @@ const Portfolio = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 500) {
+      if (window.scrollY > 1000) {
         setShowScrollIndicator(false);
       } else {
         setShowScrollIndicator(true);
