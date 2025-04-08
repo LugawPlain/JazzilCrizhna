@@ -29,7 +29,7 @@ export default function AboutPage() {
             className="relative aspect-square rounded-lg overflow-hidden w-full lg:w-3/4 h-full "
           >
             <img
-              src="/about/about.webp"
+              src="/about/About.webp"
               alt="Profile Picture"
               className="object-cover"
             />
