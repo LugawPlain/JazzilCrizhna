@@ -191,19 +191,17 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   }, [isFullscreen]);
 
   const handleNext = useCallback(() => {
-    if (currentIndex < images.length - 1) {
-      const newIndex = currentIndex + 1;
-      setCurrentIndex(newIndex);
-      setSelectedImage(images[newIndex]);
-    }
+    // Circular navigation: if at the end, go to the beginning
+    const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
+    setCurrentIndex(newIndex);
+    setSelectedImage(images[newIndex]);
   }, [currentIndex, images]);
 
   const handlePrev = useCallback(() => {
-    if (currentIndex > 0) {
-      const newIndex = currentIndex - 1;
-      setCurrentIndex(newIndex);
-      setSelectedImage(images[newIndex]);
-    }
+    // Circular navigation: if at the beginning, go to the end
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
+    setCurrentIndex(newIndex);
+    setSelectedImage(images[newIndex]);
   }, [currentIndex, images]);
 
   // Keyboard navigation
