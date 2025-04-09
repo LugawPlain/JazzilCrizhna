@@ -32,7 +32,7 @@ export default function Header() {
                 <div
                   onMouseEnter={() => setIsDropdownOpen(true)}
                   onMouseLeave={() => setIsDropdownOpen(false)}
-                  className="flex items-center"
+                  className="flex items-center pl-8"
                 >
                   <Link
                     href="/portfolio"
@@ -63,7 +63,7 @@ export default function Header() {
                 <div
                   onMouseEnter={() => setIsDropdownOpen(true)}
                   onMouseLeave={() => setIsDropdownOpen(false)}
-                  className={`absolute right-0 mt-1 w-48 rounded-lg shadow-lg bg-black/90 backdrop-blur-sm ring-1 ring-white/10 
+                  className={`absolute right-0 w-48 rounded-lg shadow-lg bg-black/90 backdrop-blur-sm ring-1 ring-white/10 
                     transition-all duration-200 origin-top ${
                       isDropdownOpen
                         ? "opacity-100 scale-100 translate-y-0"

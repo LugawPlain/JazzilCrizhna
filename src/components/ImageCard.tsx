@@ -94,7 +94,14 @@ const ImageCard = React.memo(
           />
 
           {/* Image Info Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end">
+          <div
+            className="absolute inset-0
+            bg-gradient-to-t from-black/80 via-black/40 to-transparent
+            opacity-0 group-hover:opacity-100                   
+            pointer-events-none group-hover:pointer-events-auto     
+            transition-opacity duration-500
+            flex items-end"
+          >
             <div className="text-white p-6 w-full">
               <motion.div
                 className="space-y-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
