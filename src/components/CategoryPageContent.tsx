@@ -89,12 +89,18 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         const formattedImages = data.images.map(
           (img: string, index: number) => ({
             src: `/categories/${data.imageData.category || category}/${img}`,
-            alt: `${category} image ${index + 1}`,
-            date: new Date(2024, 2, 15 + index).toISOString().split("T")[0],
-            photographer: `Photographer ${index + 1}`,
-            photographerLink: `#`, // Changed to a hash link since photographer pages don't exist
-            location: `Location ${index + 1}`,
-            event: `Event ${index + 1}`,
+            alt:
+              data.imageData?.alt?.[index] || `${category} image ${index + 1}`,
+            date:
+              data.imageData?.date?.[index] ||
+              new Date(2024, 2, 15 + index).toISOString().split("T")[0],
+            photographer:
+              data.imageData?.photographer?.[index] ||
+              `Photographer ${index + 1}`,
+            photographerLink: data.imageData?.photographerLink?.[index] || `#`,
+            location:
+              data.imageData?.location?.[index] || `Location ${index + 1}`,
+            event: data.imageData?.event?.[index] || `Event ${index + 1}`,
           })
         );
         setImages(formattedImages);

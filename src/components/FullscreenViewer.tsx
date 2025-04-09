@@ -25,6 +25,7 @@ const FullscreenViewer = React.memo(
   ({ selectedImage, onClose, onNext, onPrev }: FullscreenViewerProps) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isBlurLoaded, setIsBlurLoaded] = useState(false);
+    const [showLabels, setShowLabels] = useState(true);
     const imgRef = useRef<HTMLImageElement>(null);
     const [isNavigating, setIsNavigating] = useState(false);
 
@@ -184,24 +185,62 @@ const FullscreenViewer = React.memo(
           </div>
 
           {/* Image Info */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-8 pb-18 text-white text-center">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold">{selectedImage.event}</h2>
-              <p className="text-lg opacity-90">📍 {selectedImage.location}</p>
-              <p className="text-lg opacity-80">
-                {new Date(selectedImage.date).toLocaleDateString()}
-              </p>
-              <Link
-                href={selectedImage.photographerLink}
-                className="text-lg opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
-                onClick={(e) => e.stopPropagation()}
+          <div className="absolute bottom-0 left-0 right-0">
+            {/* Toggle Button */}
+            <button
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 z-20"
+              onClick={() => setShowLabels(!showLabels)}
+              aria-label={
+                showLabels ? "Hide image information" : "Show image information"
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-6 w-6 transform transition-transform duration-300 ${
+                  showLabels ? "rotate-180" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                Photographer:{" "}
-                <span className="font-serif italic underline">
-                  {selectedImage.photographer}
-                </span>
-              </Link>
-            </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {/* Info Panel */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: showLabels ? "0%" : "100%" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="bg-gradient-to-t from-black to-transparent p-8 pb-18 text-white text-center"
+            >
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold">
+                  {selectedImage.event}
+                </h2>
+                <p className="text-lg opacity-90">
+                  📍 {selectedImage.location}
+                </p>
+                <p className="text-lg opacity-80">
+                  {new Date(selectedImage.date).toLocaleDateString()}
+                </p>
+                <Link
+                  href={selectedImage.photographerLink}
+                  className="text-lg opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Photographer:{" "}
+                  <span className="font-serif italic underline">
+                    {selectedImage.photographer}
+                  </span>
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </div>
       </motion.div>
