@@ -114,16 +114,25 @@ const ImageCard = React.memo(
                 <p className="text-xl font-semibold">Event: {image.event}</p>
                 <p className="text-sm opacity-90">📍: {image.location}</p>
                 <p className="text-sm opacity-80">Date: {image.date}</p>
-                <Link
-                  href={image.photographerLink}
-                  className="text-sm opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Photographer:{" "}
-                  <span className="font-serif italic underline">
-                    {image.photographer}
-                  </span>
-                </Link>
+                {image.photographerLink && image.photographerLink !== "#" ? (
+                  <Link
+                    href={image.photographerLink}
+                    className="text-sm opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Photographer:{" "}
+                    <span className="font-serif italic underline">
+                      {image.photographer}
+                    </span>
+                  </Link>
+                ) : (
+                  <p className="text-sm opacity-70 inline-flex items-center gap-1">
+                    Photographer:{" "}
+                    <span className="font-serif italic">
+                      {image.photographer}
+                    </span>
+                  </p>
+                )}
               </motion.div>
             </div>
           </div>

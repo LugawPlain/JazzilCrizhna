@@ -87,26 +87,53 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         };
 
         const formattedImages = data.images.map(
-          (img: string, index: number) => ({
-            src: `/categories/${data.imageData.category || category}/${img}`,
-            alt:
-              data.imageData?.alt?.[index] || `${category} image ${index + 1}`,
-            date:
-              data.imageData?.date?.[index] ||
-              new Date(2024, 2, 15 + index).toISOString().split("T")[0],
-            photographer:
-              data.imageData?.photographer?.[index] ||
-              `Photographer ${index + 1}`,
-            photographerLink: data.imageData?.photographerLink?.[index] || `#`,
-            location:
-              data.imageData?.location?.[index] || `Location ${index + 1}`,
-            event: data.imageData?.event?.[index] || `Event ${index + 1}`,
-          })
+          (img: string, index: number) => {
+            // Get the image number from the filename (e.g., "1.webp" -> "1")
+            const imageNumber = img.replace(".webp", "");
+
+            return {
+              src: `/categories/${data.imageData.category || category}/${img}`,
+              alt:
+                data.imageData?.[imageNumber]?.alt ||
+                `${category} image ${index + 1}`,
+              date:
+                data.imageData?.[imageNumber]?.date ||
+                new Date(2024, 2, 15 + index).toISOString().split("T")[0],
+              photographer:
+                data.imageData?.[imageNumber]?.photographer ||
+                `Photographer ${index + 1}`,
+              photographerLink:
+                data.imageData?.[imageNumber]?.photographerLink || `#`,
+              location:
+                data.imageData?.[imageNumber]?.location ||
+                `Location ${index + 1}`,
+              event:
+                data.imageData?.[imageNumber]?.event || `Event ${index + 1}`,
+            };
+          }
         );
-        setImages(formattedImages);
+
+        // Sort images by date in descending order, handling both available and fallback dates
+        const sortedImages = formattedImages.sort(
+          (a: ImageData, b: ImageData) => {
+            // Convert dates to timestamps, using 0 for empty dates
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+
+            // If both dates are available or both are fallback, sort normally
+            if ((dateA && dateB) || (!dateA && !dateB)) {
+              return dateB - dateA;
+            }
+
+            // If one is available and one is fallback, prioritize the available date
+            return dateB - dateA;
+          }
+        );
+
+        setImages(sortedImages);
 
         // Start preloading images in the background
-        preloadImages(formattedImages.map((img: ImageData) => img.src));
+        preloadImages(sortedImages.map((img: ImageData) => img.src));
       } catch (error: unknown) {
         console.error("Error fetching images:", error);
       } finally {

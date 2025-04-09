@@ -229,16 +229,26 @@ const FullscreenViewer = React.memo(
                 <p className="text-lg opacity-80">
                   {new Date(selectedImage.date).toLocaleDateString()}
                 </p>
-                <Link
-                  href={selectedImage.photographerLink}
-                  className="text-lg opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Photographer:{" "}
-                  <span className="font-serif italic underline">
-                    {selectedImage.photographer}
-                  </span>
-                </Link>
+                {selectedImage.photographerLink &&
+                selectedImage.photographerLink !== "#" ? (
+                  <Link
+                    href={selectedImage.photographerLink}
+                    className="text-lg opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Photographer:{" "}
+                    <span className="font-serif italic underline">
+                      {selectedImage.photographer}
+                    </span>
+                  </Link>
+                ) : (
+                  <p className="text-lg opacity-70 inline-flex items-center gap-1">
+                    Photographer:{" "}
+                    <span className="font-serif italic">
+                      {selectedImage.photographer}
+                    </span>
+                  </p>
+                )}
               </div>
             </motion.div>
           </div>
