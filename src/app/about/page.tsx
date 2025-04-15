@@ -31,7 +31,7 @@ export default function AboutPage() {
             <img
               src="/about/About.webp"
               alt="Profile Picture"
-              className="object-cover"
+              className="object-cover lg:scale-100 scale-120"
             />
             {/* <Image
               src="/about/about.webp"

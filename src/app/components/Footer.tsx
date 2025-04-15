@@ -11,7 +11,7 @@ const Footer = () => {
   }
 
   return (
-    <div className="flex flex-col h-48 py-4 items-center justify-center px-4 bg-neutral-800">
+    <div className="flex flex-col h-40 py-4 items-center justify-center px-4 bg-neutral-800">
       <p className="font-light text-neutral-400 text-sm text-center max-w-2xl leading-relaxed">
         Copyright © 2025 Jazzil Crizhna Sarinas. All Rights Reserved.
         <br />
@@ -20,12 +20,13 @@ const Footer = () => {
           or otherwise used, except with prior written permission.
         </span>
       </p>
-      <p className="text-neutral-400 text-md mt-4 hidden">Need a Website? </p>
-      <p className="text-neutral-400 text-md hidden">
-        Contact
-        <Link href="#">
-          {" "}
-          <span className="text-neutral-400 underline">YorTech</span>
+      <p className="text-neutral-400 text-md mt-4 ">
+        A Photo of yours have been infringed?{" "}
+      </p>
+      <p className="text-neutral-400 text-sm">
+        Contact Us
+        <Link href="mailto:jazzilcrizhnasarinas04@gmail.com">
+          <span className="text-xs"> JazzilCrizhnaSarinas04@gmail.com</span>
         </Link>
       </p>
     </div>

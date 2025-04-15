@@ -80,87 +80,6 @@
       "date": "",
       "photographer": "",
       "photographerLink": ""
-    },
-    "10": {
-      "filename": "10.webp",
-      "filepath": "/portfolio/pageant/10.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "11": {
-      "filename": "11.webp",
-      "filepath": "/portfolio/pageant/11.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "12": {
-      "filename": "12.webp",
-      "filepath": "/portfolio/pageant/12.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "13": {
-      "filename": "13.webp",
-      "filepath": "/portfolio/pageant/13.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "14": {
-      "filename": "14.webp",
-      "filepath": "/portfolio/pageant/14.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "15": {
-      "filename": "15.webp",
-      "filepath": "/portfolio/pageant/15.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "16": {
-      "filename": "16.webp",
-      "filepath": "/portfolio/pageant/16.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "17": {
-      "filename": "17.webp",
-      "filepath": "/portfolio/pageant/17.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "18": {
-      "filename": "18.webp",
-      "filepath": "/portfolio/pageant/18.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
     }
   },
   "modeling": {
@@ -173,27 +92,9 @@
       "photographer": "",
       "photographerLink": ""
     },
-    "2": {
-      "filename": "2.webp",
-      "filepath": "/portfolio/modeling/2.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
     "3": {
       "filename": "3.webp",
       "filepath": "/portfolio/modeling/3.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "4": {
-      "filename": "4.webp",
-      "filepath": "/portfolio/modeling/4.webp",
       "event": "",
       "location": "",
       "date": "",
@@ -212,114 +113,6 @@
     "6": {
       "filename": "6.webp",
       "filepath": "/portfolio/modeling/6.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "7": {
-      "filename": "7.webp",
-      "filepath": "/portfolio/modeling/7.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "8": {
-      "filename": "8.webp",
-      "filepath": "/portfolio/modeling/8.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "9": {
-      "filename": "9.webp",
-      "filepath": "/portfolio/modeling/9.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "10": {
-      "filename": "10.webp",
-      "filepath": "/portfolio/modeling/10.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "11": {
-      "filename": "11.webp",
-      "filepath": "/portfolio/modeling/11.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "12": {
-      "filename": "12.webp",
-      "filepath": "/portfolio/modeling/12.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "13": {
-      "filename": "13.webp",
-      "filepath": "/portfolio/modeling/13.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "14": {
-      "filename": "14.webp",
-      "filepath": "/portfolio/modeling/14.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "15": {
-      "filename": "15.webp",
-      "filepath": "/portfolio/modeling/15.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "16": {
-      "filename": "16.webp",
-      "filepath": "/portfolio/modeling/16.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "17": {
-      "filename": "17.webp",
-      "filepath": "/portfolio/modeling/17.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "18": {
-      "filename": "18.webp",
-      "filepath": "/portfolio/modeling/18.webp",
       "event": "",
       "location": "",
       "date": "",
@@ -462,33 +255,6 @@
       "date": "",
       "photographer": "",
       "photographerLink": ""
-    },
-    "16": {
-      "filename": "16.webp",
-      "filepath": "/portfolio/advertising/16.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "17": {
-      "filename": "17.webp",
-      "filepath": "/portfolio/advertising/17.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "18": {
-      "filename": "18.webp",
-      "filepath": "/portfolio/advertising/18.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
     }
   },
   "clothing": {
@@ -563,96 +329,6 @@
       "date": "",
       "photographer": "",
       "photographerLink": ""
-    },
-    "9": {
-      "filename": "9.webp",
-      "filepath": "/portfolio/clothing/9.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "10": {
-      "filename": "10.webp",
-      "filepath": "/portfolio/clothing/10.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "11": {
-      "filename": "11.webp",
-      "filepath": "/portfolio/clothing/11.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "12": {
-      "filename": "12.webp",
-      "filepath": "/portfolio/clothing/12.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "13": {
-      "filename": "13.webp",
-      "filepath": "/portfolio/clothing/13.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "14": {
-      "filename": "14.webp",
-      "filepath": "/portfolio/clothing/14.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "15": {
-      "filename": "15.webp",
-      "filepath": "/portfolio/clothing/15.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "16": {
-      "filename": "16.webp",
-      "filepath": "/portfolio/clothing/16.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "17": {
-      "filename": "17.webp",
-      "filepath": "/portfolio/clothing/17.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "18": {
-      "filename": "18.webp",
-      "filepath": "/portfolio/clothing/18.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
     }
   },
   "muse": {
@@ -695,123 +371,6 @@
     "5": {
       "filename": "5.webp",
       "filepath": "/portfolio/muse/5.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "6": {
-      "filename": "6.webp",
-      "filepath": "/portfolio/muse/6.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "7": {
-      "filename": "7.webp",
-      "filepath": "/portfolio/muse/7.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "8": {
-      "filename": "8.webp",
-      "filepath": "/portfolio/muse/8.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "9": {
-      "filename": "9.webp",
-      "filepath": "/portfolio/muse/9.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "10": {
-      "filename": "10.webp",
-      "filepath": "/portfolio/muse/10.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "11": {
-      "filename": "11.webp",
-      "filepath": "/portfolio/muse/11.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "12": {
-      "filename": "12.webp",
-      "filepath": "/portfolio/muse/12.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "13": {
-      "filename": "13.webp",
-      "filepath": "/portfolio/muse/13.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "14": {
-      "filename": "14.webp",
-      "filepath": "/portfolio/muse/14.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "15": {
-      "filename": "15.webp",
-      "filepath": "/portfolio/muse/15.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "16": {
-      "filename": "16.webp",
-      "filepath": "/portfolio/muse/16.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "17": {
-      "filename": "17.webp",
-      "filepath": "/portfolio/muse/17.webp",
-      "event": "",
-      "location": "",
-      "date": "",
-      "photographer": "",
-      "photographerLink": ""
-    },
-    "18": {
-      "filename": "18.webp",
-      "filepath": "/portfolio/muse/18.webp",
       "event": "",
       "location": "",
       "date": "",
@@ -981,6 +540,105 @@
       "date": "",
       "photographer": "",
       "photographerLink": ""
+    },
+    "19": {
+      "filename": "19.webp",
+      "filepath": "/portfolio/photoshoot/19.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "20": {
+      "filename": "20.webp",
+      "filepath": "/portfolio/photoshoot/20.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "21": {
+      "filename": "21.webp",
+      "filepath": "/portfolio/photoshoot/21.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "22": {
+      "filename": "22.webp",
+      "filepath": "/portfolio/photoshoot/22.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "23": {
+      "filename": "23.webp",
+      "filepath": "/portfolio/photoshoot/23.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "24": {
+      "filename": "24.webp",
+      "filepath": "/portfolio/photoshoot/24.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "25": {
+      "filename": "25.webp",
+      "filepath": "/portfolio/photoshoot/25.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "26": {
+      "filename": "26.webp",
+      "filepath": "/portfolio/photoshoot/26.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "27": {
+      "filename": "27.webp",
+      "filepath": "/portfolio/photoshoot/27.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "28": {
+      "filename": "28.webp",
+      "filepath": "/portfolio/photoshoot/28.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
+    },
+    "29": {
+      "filename": "29.webp",
+      "filepath": "/portfolio/photoshoot/29.webp",
+      "event": "",
+      "location": "",
+      "date": "",
+      "photographer": "",
+      "photographerLink": ""
     }
   },
   "cosplay": {
@@ -1137,9 +795,9 @@
       "photographer": "",
       "photographerLink": ""
     },
-    "18": {
-      "filename": "18.webp",
-      "filepath": "/portfolio/cosplay/18.webp",
+    "YAWA": {
+      "filename": "YAWA.webp",
+      "filepath": "/portfolio/cosplay/YAWA.webp",
       "event": "",
       "location": "",
       "date": "",
