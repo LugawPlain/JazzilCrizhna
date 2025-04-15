@@ -186,6 +186,11 @@ const FullscreenViewer = React.memo(
 
           {/* Image Info */}
           <div className="absolute bottom-0 left-0 right-0">
+            {/* Filename Popup */}
+            <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs px-3 py-1 rounded-full">
+              {selectedImage.src.split("/").pop()}
+            </div>
+
             {/* Toggle Button */}
             <button
               className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 z-20"

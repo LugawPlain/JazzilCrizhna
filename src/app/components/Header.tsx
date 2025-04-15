@@ -1,12 +1,29 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { categories } from "../portfolio/CategoryData";
+import Marquee from "react-fast-marquee";
+import { motion, AnimatePresence } from "framer-motion";
+
 export default function Header() {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
+
+  useEffect(() => {
+    // Initially show the announcement
+    setShowAnnouncement(true);
+
+    // Hide after 10 seconds
+    const timer = setTimeout(() => {
+      setShowAnnouncement(false);
+    }, 20000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Don't render the header on the home page
   if (pathname === "/") {
     return null;
@@ -14,6 +31,23 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 ">
+      <AnimatePresence>
+        {showAnnouncement && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ duration: 0.5 }}
+            className="text-[13px] bg-gradient-to-r from-purple-700 via-pink-600 to-purple-700 text-white py-1 overflow-hidden"
+          >
+            <Marquee pauseOnHover speed={100}>
+              <p>Website is still on Beta🥰, Developments are underway </p>
+            </Marquee>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Announcement Marquee */}
+
       <nav className="bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">

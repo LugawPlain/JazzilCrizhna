@@ -58,4 +58,22 @@ body {
   .animate-scroll-indicator {
     animation: scroll-indicator 2s ease-in-out infinite;
   }
+
+  /* Marquee animation */
+  @keyframes marquee {
+    0% {
+      transform: translateX(100);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  .animate-marquee {
+    animation: marquee 20s linear infinite;
+  }
+
+  .animate-marquee + .animate-marquee {
+    left: 100%;
+  }
 }

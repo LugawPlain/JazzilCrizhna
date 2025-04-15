@@ -26,7 +26,10 @@ const Footer = () => {
       <p className="text-neutral-400 text-sm">
         Contact Us
         <Link href="mailto:jazzilcrizhnasarinas04@gmail.com">
-          <span className="text-xs"> JazzilCrizhnaSarinas04@gmail.com</span>
+          <span className="text-xs text-cyan-600 underline">
+            {" "}
+            JazzilCrizhnaSarinas04@gmail.com
+          </span>
         </Link>
       </p>
     </div>
