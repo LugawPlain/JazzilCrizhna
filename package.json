@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "update-images": "node src/scripts/update-images-data.js"
+    "update-images": "node scripts/update-images-data.js"
   },
   "dependencies": {
     "@googleapis/calendar": "^9.8.0",
