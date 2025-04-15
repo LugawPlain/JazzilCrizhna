@@ -1,5 +1,7 @@
+"use client";
 import Link from "next/link";
 import React from "react";
+import { motion } from "framer-motion";
 
 interface HerobuttonProps {
   text?: string;
@@ -8,13 +10,21 @@ interface HerobuttonProps {
 const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
   return (
     <div className="relative flex items-center justify-center ">
-      <svg
-        className="absolute z-0 motion-preset-expand motion-duration-1000"
+      <motion.svg
+        className="absolute z-0"
         width="200"
         height="100"
         viewBox="0 0 200 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        animate={{
+          scale: [0.95, 1, 0.95],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
       >
         <path
           d="M0 50 L0 0 L100 0"
@@ -32,7 +42,7 @@ const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
           strokeOpacity="0.5"
           fill="none"
         />
-      </svg>
+      </motion.svg>
 
       <Link
         href="/portfolio"
