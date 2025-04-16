@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReCAPTCHA from "react-google-recaptcha";
+// Social icons
 import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
 import FacebookPageIcon from "./icons/FacebookPageIcon";
 import socialLinks from "../data/socialLinks.json";
-import ReCAPTCHA from "react-google-recaptcha";
 
 interface FormData {
   name: string;

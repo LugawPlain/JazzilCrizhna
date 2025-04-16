@@ -6,10 +6,9 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import Image from "next/image";
 import OneColumnIcon from "@/components/icons/OneColumnIcon";
-import ThreeColumnIcon from "@/components/icons/ThreeColumnIcon";
 import TwoColumnIcon from "@/components/icons/TwoColumnIcon";
+import ThreeColumnIcon from "@/components/icons/ThreeColumnIcon";
 
 /**
  * Fixed column layout switcher at the bottom of the screen

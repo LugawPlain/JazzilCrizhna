@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { categories, CategoryData } from "../CategoryData";
 import { ProjectCard } from "./ProjectCard";
@@ -24,7 +24,7 @@ export const HorizontalScrollCarousel = () => {
   }, []);
 
   return (
-    <div className="relative bg-neutral-900 pt-20 lg:pt-4">
+    <div className="relative bg-neutral-900 pt-20 lg:pt-4 pb-24">
       <div
         ref={scrollContainerRef}
         className="flex flex-row gap-8 p-10 lg:pt-25 lg:pb-5 max-w-screen overflow-auto scrollbar-thin scrollbar-thumb-red-500 scrollbar-track-black hover:scrollbar-thumb-amber-500 "
