@@ -13,6 +13,7 @@ interface ImageData {
   photographerLink: string;
   location: string;
   event: string;
+  pinned?: boolean;
 }
 
 interface CategoryPageContentProps {
@@ -109,12 +110,20 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
                 `Location ${index + 1}`,
               event:
                 data.imageData?.[imageNumber]?.event || `Event ${index + 1}`,
+              pinned: data.imageData?.[imageNumber]?.pinned === true,
             };
           }
         );
 
         // Sort images by date in descending order, handling both available and fallback dates
-        const sortedImages = formattedImages.sort(
+        const topPinnedImages = formattedImages.filter(
+          (img: ImageData) => img.pinned === true
+        );
+        const remainingImages = formattedImages.filter(
+          (img: ImageData) => img.pinned !== true
+        );
+
+        const sortedRemainingImages = remainingImages.sort(
           (a: ImageData, b: ImageData) => {
             // Extract end date from range format (if present)
             const getEndDate = (dateString: string) => {
@@ -138,6 +147,9 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             return dateB - dateA;
           }
         );
+
+        // Combine pinned images at the top with the sorted remaining images
+        const sortedImages = [...topPinnedImages, ...sortedRemainingImages];
 
         setImages(sortedImages);
         console.log("Sorted images:", sortedImages);

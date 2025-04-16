@@ -116,8 +116,14 @@ function updateImagesData() {
 
       // If entry exists, preserve its metadata
       if (imagesData[categoryLower][imageNumber]) {
+        // Update only filename and filepath
         imagesData[categoryLower][imageNumber].filename = image.filename;
         imagesData[categoryLower][imageNumber].filepath = image.filepath;
+
+        // Only add pinned property if it doesn't exist yet, don't modify existing values
+        if (!imagesData[categoryLower][imageNumber].hasOwnProperty("pinned")) {
+          imagesData[categoryLower][imageNumber].pinned = false;
+        }
       } else {
         // Create new entry with default empty values
         imagesData[categoryLower][imageNumber] = {
@@ -128,6 +134,7 @@ function updateImagesData() {
           date: "",
           photographer: "",
           photographerLink: "",
+          pinned: false, // Default to false for new entries
         };
       }
     });
@@ -142,8 +149,44 @@ function updateImagesData() {
   writeImagesData(imagesData);
 }
 
+// Function to add pinned property to all existing images that don't have it yet
+function addPinnedPropertyToExistingImages() {
+  console.log(
+    "Adding 'pinned: false' property only to images that don't have it yet..."
+  );
+
+  // Read the current data
+  const imagesData = readImagesData();
+  let modifiedCount = 0;
+
+  // Process each category
+  Object.keys(imagesData).forEach((category) => {
+    // Process each image in the category
+    Object.keys(imagesData[category]).forEach((imageKey) => {
+      // Add pinned property ONLY if it doesn't exist
+      if (!imagesData[category][imageKey].hasOwnProperty("pinned")) {
+        imagesData[category][imageKey].pinned = false;
+        modifiedCount++;
+      }
+    });
+  });
+
+  // Save the updated data only if changes were made
+  if (modifiedCount > 0) {
+    writeImagesData(imagesData);
+    console.log(`Added 'pinned: false' property to ${modifiedCount} images.`);
+  } else {
+    console.log(
+      "All images already have the 'pinned' property, no changes needed."
+    );
+  }
+}
+
 // Run the update
 updateImagesData();
+
+// Add pinned property to all existing images that don't have it yet
+addPinnedPropertyToExistingImages();
 
 // Output help message
 console.log("");
