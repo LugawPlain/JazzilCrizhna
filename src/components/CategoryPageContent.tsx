@@ -98,7 +98,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
                 `${category} image ${index + 1}`,
               date:
                 data.imageData?.[imageNumber]?.date ||
-                new Date(2024, 2, 15 + index).toISOString().split("T")[0],
+                new Date(2000, 0, 1 + index).toLocaleDateString("en-US", {}),
               photographer:
                 data.imageData?.[imageNumber]?.photographer ||
                 `Photographer ${index + 1}`,
@@ -116,21 +116,31 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         // Sort images by date in descending order, handling both available and fallback dates
         const sortedImages = formattedImages.sort(
           (a: ImageData, b: ImageData) => {
-            // Convert dates to timestamps, using 0 for empty dates
-            const dateA = a.date ? new Date(a.date).getTime() : 0;
-            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            // Extract end date from range format (if present)
+            const getEndDate = (dateString: string) => {
+              if (!dateString) return 0;
 
-            // If both dates are available or both are fallback, sort normally
-            if ((dateA && dateB) || (!dateA && !dateB)) {
-              return dateB - dateA;
-            }
+              // Check if it's a range format like "4/10/2025 - 4/13/2025"
+              if (dateString.includes("-")) {
+                const parts = dateString.split(" - ");
+                const endDatePart = parts[1].trim();
+                return new Date(endDatePart).getTime();
+              }
 
-            // If one is available and one is fallback, prioritize the available date
+              // Regular date format (m/d/yyyy)
+              return new Date(dateString).getTime();
+            };
+
+            const dateA = a.date ? getEndDate(a.date) : 0;
+            const dateB = b.date ? getEndDate(b.date) : 0;
+
+            // Sort in descending order (newest first)
             return dateB - dateA;
           }
         );
 
         setImages(sortedImages);
+        console.log("Sorted images:", sortedImages);
 
         // Start preloading images in the background
         preloadImages(sortedImages.map((img: ImageData) => img.src));

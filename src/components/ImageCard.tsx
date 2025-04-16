@@ -111,9 +111,16 @@ const ImageCard = React.memo(
                 }
                 transition={{ delay: 0.3 }}
               >
-                <p className="text-xl font-semibold">Event: {image.event}</p>
-                <p className="text-sm opacity-90">📍: {image.location}</p>
-                <p className="text-sm opacity-80">Date: {image.date}</p>
+                <p className="text-xl font-semibold">
+                  Event:{" "}
+                  <span className="text-md font-mono">{image.event}</span>
+                </p>
+                <p className="text-xs opacity-90">
+                  📍: <span className="text-sm">{image.location}</span>
+                </p>
+                <p className="text-xs opacity-80">
+                  Date: <span className="text-sm">{image.date}</span>
+                </p>
                 {image.photographerLink && image.photographerLink !== "#" ? (
                   <Link
                     href={image.photographerLink}

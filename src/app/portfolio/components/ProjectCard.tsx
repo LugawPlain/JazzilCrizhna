@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { CategoryData } from "../CategoryData";
+import Link from "next/link";
 
 interface ProjectCardProps {
   project: CategoryData;
@@ -42,7 +43,19 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
               {project.title}
             </h3>
             <p className="text-white/80 font-serif text-sm transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-200">
-              {project.photographer}
+              {project.photographerlink ? (
+                <Link
+                  href={project.photographerlink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pointer-events-auto underline pl-5 pt-5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {project.photographer}
+                </Link>
+              ) : (
+                project.photographer
+              )}
             </p>
           </div>
         </div>

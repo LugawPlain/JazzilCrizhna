@@ -62,13 +62,6 @@ export async function GET(
       return [".webp"].includes(ext);
     });
 
-    // Sort the image files numerically
-    imageFiles.sort((a, b) => {
-      const numA = parseInt(a.replace(".webp", ""));
-      const numB = parseInt(b.replace(".webp", ""));
-      return numA - numB;
-    });
-    console.log(imagesData);
     return NextResponse.json(
       {
         images: imageFiles,
