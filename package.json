@@ -11,11 +11,13 @@
     "start": "next start",
     "lint": "next lint",
     "update-images": "node scripts/update-images-data.js",
-    "cloudflare:deploy": "wrangler pages deploy .next --project-name=my-app ",
+    "cloudflare:deploy": "npm run build && wrangler pages deploy .next --project-name=jazzilcrizhna",
     "cloudflare:optimize": "node scripts/cloudflare-optimize.js"
   },
   "dependencies": {
     "@googleapis/calendar": "^9.8.0",
+    "@netlify/next": "^1.4.9",
+    "@netlify/plugin-nextjs": "^5.10.7",
     "@react-oauth/google": "^0.12.1",
     "@types/nodemailer": "^6.4.17",
     "@types/react-google-recaptcha": "^2.1.9",
