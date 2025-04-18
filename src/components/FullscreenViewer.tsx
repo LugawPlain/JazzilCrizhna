@@ -232,7 +232,7 @@ const FullscreenViewer = React.memo(
                   📍 {selectedImage.location}
                 </p>
                 <p className="text-lg opacity-80">
-                  {new Date(selectedImage.date).toLocaleDateString()}
+                  Date : {selectedImage.date}
                 </p>
                 {selectedImage.photographerLink &&
                 selectedImage.photographerLink !== "#" ? (
