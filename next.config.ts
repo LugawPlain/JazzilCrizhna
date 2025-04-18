@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     ],
     // Useful for images stored in GitHub LFS
     minimumCacheTTL: 60 * 60 * 24 * 7, // 1 week
+    unoptimized: true, // Required for static export with default loader
   },
   // Ensure compatibility with Cloudflare Pages
   webpack: (config) => {
@@ -37,7 +38,7 @@ const nextConfig: NextConfig = {
     return config;
   },
   // Ensure output is appropriate for Cloudflare Pages
-  output: "standalone",
+  output: "export",
 };
 
 // Wrap the existing export with the analyzer
