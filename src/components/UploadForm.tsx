@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, ChangeEvent, FormEvent } from "react";
-import { db, storage } from "../lib/firebase"; // Adjust path if needed
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+// import { db, storage } from "../lib/firebase"; // Commented out
+// import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
+// import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"; // Commented out
 
 function UploadForm() {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -40,6 +40,15 @@ function UploadForm() {
       return;
     }
 
+    // --- Firebase Logic Removed ---
+    console.log("Form submitted, Firebase logic is commented out.");
+    setError("Firebase logic is disabled in this form.");
+    // Set dummy success/progress for UI testing if needed
+    // setProgress(100);
+    // setSuccess(true);
+    // setIsUploading(false);
+
+    /* --- Original Firebase Logic Start ---
     setIsUploading(true);
     setError(null);
     setSuccess(false);
@@ -116,6 +125,7 @@ function UploadForm() {
           });
       }
     );
+    --- Original Firebase Logic End --- */
   };
 
   return (

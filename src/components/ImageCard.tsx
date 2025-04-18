@@ -45,6 +45,13 @@ const ImageCard = React.memo(
       }, 100);
     };
 
+    // Optimize image source for GitHub LFS and Cloudflare
+    const optimizedSrc = useMemo(() => {
+      // For GitHub LFS through Cloudflare, we can use the raw URL directly
+      // It will be properly cached by our Cloudflare worker
+      return image.src;
+    }, [image.src]);
+
     return (
       <motion.div
         ref={ref}
@@ -75,7 +82,7 @@ const ImageCard = React.memo(
 
           <motion.img
             ref={imgRef}
-            src={image.src}
+            src={optimizedSrc}
             alt={image.alt}
             className={`w-full h-auto object-cover transition-all duration-500 group-hover:scale-110 group-hover:blur-xs ${
               isLoaded ? "opacity-100" : "opacity-0"

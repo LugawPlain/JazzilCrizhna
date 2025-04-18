@@ -1,0 +1,32 @@
+[build]
+command = "npm run build"
+build_output_directory = ".next"
+node_version = "18.17.0"
+
+[site]
+compatibility_date = "2023-10-30"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+NODE_ENV = "production"
+
+[build.environment]
+NODE_VERSION = "18.17.0"
+
+# Optimize for LFS-stored images
+[build.processing]
+  skip_processing = false
+  
+  [build.processing.css]
+    bundle = true
+    minify = true
+  
+  [build.processing.js]
+    bundle = true
+    minify = true
+  
+  [build.processing.html]
+    pretty_urls = true
+  
+  [build.processing.images]
+    compress = true 
