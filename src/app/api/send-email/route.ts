@@ -86,13 +86,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify reCAPTCHA
-    const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
-    if (!isRecaptchaValid) {
-      return NextResponse.json(
-        { error: "reCAPTCHA verification failed" },
-        { status: 400 }
-      );
+    // Verify reCAPTCHA (only in production)
+    if (process.env.NODE_ENV !== "development") {
+      const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+      if (!isRecaptchaValid) {
+        console.error("reCAPTCHA verification failed."); // Log for clarity
+        return NextResponse.json(
+          { error: "reCAPTCHA verification failed" },
+          { status: 400 }
+        );
+      }
+    } else {
+      console.log("Skipping reCAPTCHA verification in development mode."); // Log for clarity
     }
 
     // Email options
@@ -141,8 +146,13 @@ export async function POST(request: Request) {
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error sending email:", error);
+  } catch (error: any) {
+    // Log the specific error message
+    console.error(
+      "Error sending email:",
+      error.message || "Unknown error",
+      error.stack // Optionally log the stack trace for more detail
+    );
     return NextResponse.json(
       { error: "Failed to send email" },
       { status: 500 }
