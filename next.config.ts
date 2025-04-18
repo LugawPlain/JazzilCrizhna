@@ -7,6 +7,7 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  swcMinify: true,
   devIndicators: false,
   images: {
     formats: ["image/webp"],
