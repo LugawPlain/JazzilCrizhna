@@ -11,7 +11,7 @@ const Footer = () => {
   }
 
   return (
-    <div className="flex flex-col h-40 py-4 items-center justify-center px-4 bg-neutral-800">
+    <div className="flex flex-col min-h-40 py-8 items-center justify-center px-4 bg-neutral-800">
       <p className="font-light text-neutral-400 text-sm text-center max-w-2xl leading-relaxed">
         Copyright © 2025 Jazzil Crizhna Sarinas. All Rights Reserved.
         <br />

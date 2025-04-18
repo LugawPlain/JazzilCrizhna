@@ -23,8 +23,8 @@ export default function Home() {
         /> */}
 
         {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="absolute inset-0 bg-gray-800/20" />
+        <div className="absolute inset-0 bg-black/10 md:bg-black/20" />
+        <div className="absolute inset-0 bg-gray-800/20 md:bg-gray-800/20" />
       </div>
 
       {/* Content */}
@@ -39,7 +39,7 @@ export default function Home() {
             </h1>
           </Link>
           <p className="text-gray-200 max-w-2xl text-md md:text-base text-center w-full">
-            Model | Influencer | Ambasadress
+            Model | Influencer | Ambassadress
           </p>
         </div>
       </div>

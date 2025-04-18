@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Yorticia | Jazzil Sarinas",
-  description: "Model | Influencer | Ambasadress",
+  description: "Model | Influencer | Ambassadress",
 };
 
 export default function RootLayout({

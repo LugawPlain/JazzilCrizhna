@@ -70,7 +70,7 @@ export default function Header() {
                 >
                   <Link
                     href="/portfolio"
-                    className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 py-2"
+                    className="text-white underline underline-offset-4 hover:text-gray-200 transition-colors flex items-center gap-2 py-2"
                   >
                     Portfolio
                     <span className="p-2">
@@ -204,29 +204,32 @@ export default function Header() {
             <div className="relative">
               <div className="flex items-center">
                 <Link
+                  onClick={() => setIsMobileMenuOpen(false)}
                   href="/portfolio"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="text-white hover:text-gray-200 transition-colors flex items-center gap-2 py-2 text-xl"
+                  className="underline text-white underline-offset-4 hover:text-gray-200 transition-colors flex items-center gap-2 py-2 text-xl"
                 >
                   Portfolio
-                  <span className="p-2">
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        isDropdownOpen ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </span>
                 </Link>
+                <span
+                  className="p-4 pr-12 text-white "
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </span>
               </div>
 
               {/* Mobile Dropdown Menu */}
