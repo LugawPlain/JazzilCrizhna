@@ -1,7 +1,7 @@
 [build]
 command = "npm run build"
 build_output_directory = ".next"
-node_version = "18.17.0"
+node_version = "20.0.0"
 
 [site]
 compatibility_date = "2023-10-30"
@@ -11,7 +11,7 @@ compatibility_flags = ["nodejs_compat"]
 NODE_ENV = "production"
 
 [build.environment]
-NODE_VERSION = "18.17.0"
+NODE_VERSION = "20.0.0"
 
 # Optimize for LFS-stored images
 [build.processing]
