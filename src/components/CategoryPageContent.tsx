@@ -152,7 +152,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         const sortedImages = [...topPinnedImages, ...sortedRemainingImages];
 
         setImages(sortedImages);
-        console.log("Sorted images:", sortedImages);
 
         // Start preloading images in the background
         preloadImages(sortedImages.map((img: ImageData) => img.src));
