@@ -38,7 +38,6 @@ const nextConfig: NextConfig = {
     return config;
   },
   // Ensure output is appropriate for Cloudflare Pages
-  output: "export",
 };
 
 // Wrap the existing export with the analyzer
