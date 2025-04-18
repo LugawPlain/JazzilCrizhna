@@ -1,6 +1,0 @@
-{
-  "bucket": ".next",
-  "include": ["**/*"],
-  "exclude": [],
-  "assetManifest": false
-}
