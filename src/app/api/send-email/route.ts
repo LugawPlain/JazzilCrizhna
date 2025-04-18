@@ -146,12 +146,21 @@ export async function POST(request: Request) {
     await transporter.sendMail(mailOptions);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
+    let errorMessage = "Unknown error";
+    let errorStack = undefined;
+
+    // Check if the caught object is an Error instance
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorStack = error.stack;
+    }
+
     // Log the specific error message
     console.error(
       "Error sending email:",
-      error.message || "Unknown error",
-      error.stack // Optionally log the stack trace for more detail
+      errorMessage,
+      errorStack // Optionally log the stack trace for more detail
     );
     return NextResponse.json(
       { error: "Failed to send email" },
