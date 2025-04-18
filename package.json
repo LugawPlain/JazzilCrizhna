@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "update-images": "node scripts/update-images-data.js",
-    "cloudflare:deploy": "npm run build && wrangler pages deploy .next --project-name=my-app",
+    "cloudflare:deploy": "npm run build && wrangler pages deploy .next --project-name=jazzilcrizhna",
     "cloudflare:optimize": "node scripts/cloudflare-optimize.js"
   },
   "dependencies": {
@@ -34,6 +34,7 @@
     "tailwind-scrollbar": "^4.0.2"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.12",
     "@eslint/eslintrc": "^3",
     "@next/bundle-analyzer": "^15.3.1",
     "@tailwindcss/postcss": "^4",
