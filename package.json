@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "update-images": "node scripts/update-images-data.js",
-    "cloudflare:deploy": "wrangler pages deploy .next --project-name=my-app ",
+    "cloudflare:deploy": "npm run build && wrangler pages deploy .next --project-name=my-app",
     "cloudflare:optimize": "node scripts/cloudflare-optimize.js"
   },
   "dependencies": {
