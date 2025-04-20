@@ -84,11 +84,11 @@ function UploadForm() {
             id,
             file,
             previewUrl,
-            // Initialize specific metadata (can use global state as default if desired)
-            photographer: globalPhotographer,
-            dateTaken: globalDateTaken,
-            location: globalLocation,
-            event: globalEvent,
+            // Initialize specific metadata to empty strings
+            photographer: "",
+            dateTaken: "",
+            location: "",
+            event: "",
           };
         }
       );
@@ -121,25 +121,81 @@ function UploadForm() {
     setSuccess(false);
     setSuccessMessage("");
 
-    // --- IMPORTANT: Modify API call logic here ---
-    // The current API expects one set of metadata.
-    // To send per-file metadata, you'd need to either:
-    // 1. Modify the backend API to accept an array of metadata.
-    // 2. Send each file + its metadata in a separate API call.
-    // For now, we'll proceed sending the *global* metadata as before,
-    // but using the files from filesWithMetadata state.
-    const formData = new FormData();
-    filesWithMetadata.forEach((item) => {
-      formData.append(`file`, item.file); // Append each file
-    });
-    // Append GLOBAL metadata (as current API expects)
-    if (globalPhotographer) formData.append("photographer", globalPhotographer);
-    if (globalDateTaken) formData.append("date", globalDateTaken);
-    if (globalCategory) formData.append("category", globalCategory);
-    if (globalEvent) formData.append("event", globalEvent);
-    // We are NOT sending location or per-file metadata yet
+    // --- Prepare per-file metadata, applying global defaults ---
+    const finalMetadata = filesWithMetadata.map((item) => {
+      // Start with the specific metadata from the item
+      const specificMetadata = {
+        photographer: item.photographer,
+        dateTaken: item.dateTaken,
+        location: item.location,
+        event: item.event,
+        // Include original filename, might be useful for backend matching
+        originalFilename: item.file.name,
+      };
 
+      // Apply global defaults only if the specific field is empty
+      if (specificMetadata.photographer === "") {
+        specificMetadata.photographer = globalPhotographer;
+      }
+      if (specificMetadata.dateTaken === "") {
+        specificMetadata.dateTaken = globalDateTaken;
+      }
+      // Add location if it exists in specific or global
+      if (specificMetadata.location === "") {
+        specificMetadata.location = globalLocation;
+      }
+      if (specificMetadata.event === "") {
+        specificMetadata.event = globalEvent;
+      }
+
+      // Clean up empty strings if they weren't replaced by global defaults
+      // (Optional, depends on how backend handles null/empty)
+      // Object.keys(specificMetadata).forEach(key => {
+      //    if (specificMetadata[key as keyof typeof specificMetadata] === "") {
+      //        specificMetadata[key as keyof typeof specificMetadata] = null; // or delete specificMetadata[key]
+      //    }
+      // });
+
+      return specificMetadata;
+    });
+
+    // --- Create FormData ---
+    const formData = new FormData();
+
+    // 1. Append all the files (ensure field name matches backend expectations)
+    filesWithMetadata.forEach((item) => {
+      formData.append(`file`, item.file);
+    });
+
+    // 2. Append the global category (still required globally)
+    if (globalCategory) {
+      formData.append("category", globalCategory);
+    } else {
+      // This case should be caught by earlier validation, but added defensively
+      setError("Category is missing.");
+      setIsUploading(false);
+      return;
+    }
+
+    // 3. Append the array of final metadata as a JSON string
+    // IMPORTANT: Backend MUST be updated to parse this field!
+    formData.append("metadataArray", JSON.stringify(finalMetadata));
+
+    // Remove old global appends (except category)
+    // if (globalPhotographer) formData.append("photographer", globalPhotographer);
+    // if (globalDateTaken) formData.append("date", globalDateTaken);
+    // if (globalEvent) formData.append("event", globalEvent);
+
+    // --- Send Request ---
     try {
+      console.log("Submitting FormData:");
+      // Log the metadata being sent for debugging
+      console.log("Metadata Array:", finalMetadata);
+      // You can also iterate formData entries, but files make it tricky
+      // for(var pair of formData.entries()) {
+      //    console.log(pair[0]+ ': '+ pair[1]);
+      // }
+
       const response = await fetch("/api/uploadimages", {
         method: "POST",
         body: formData,
@@ -230,7 +286,7 @@ function UploadForm() {
 
   return (
     // --- Main Flex Container ---
-    <div className="flex flex-col md:flex-row gap-6 p-4 md:p-8 min-h-screen">
+    <div className="flex flex-col md:flex-row gap-6 p-4 md:p-8 min-h-screen mt-24">
       {/* --- Left Column: Form --- */}
       {/* Removed mx-auto, added width constraints */}
       <div className="w-full md:w-2/5 lg:w-1/3 p-6 bg-white rounded-lg shadow-md self-start">
@@ -308,46 +364,6 @@ function UploadForm() {
                 </ul>
               </div>
             )} */}
-
-            {/* --- Image Preview Section --- */}
-            {filesWithMetadata.length > 0 && (
-              <div className="mt-4 grid grid-cols-3 gap-4">
-                {filesWithMetadata.map((item) => (
-                  <div
-                    key={item.id}
-                    className="relative group cursor-pointer"
-                    onClick={() => {
-                      setSelectedFileId(item.id);
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    <img
-                      src={item.previewUrl}
-                      alt={`Preview of ${item.file.name}`}
-                      className="h-24 w-full object-cover rounded-md border border-gray-300"
-                    />
-                    {/* Optional: Add an overlay or icon indicating clickability */}
-                    {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity duration-200">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6 text-white opacity-0 group-hover:opacity-100"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                        />
-                      </svg>
-                    </div> */}
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* --- End Image Preview Section --- */}
           </div>
 
           <div>

@@ -85,11 +85,12 @@ export async function POST(request: NextRequest) {
     const { fields, files } = await parseFormData(request);
 
     // Extract metadata from fields (formidable wraps fields in arrays)
-    const photographer = fields.photographer?.[0] || null;
-    const photographerLink = fields.photographerLink?.[0] || null;
-    const date = fields.date?.[0] || null; // Consider parsing this into a Date object or Timestamp
-    const event = fields.event?.[0] || null;
-    const category = fields.category?.[0] || null; // Extract category
+    // const photographer = fields.photographer?.[0] || null; // No longer needed globally here
+    // const photographerLink = fields.photographerLink?.[0] || null; // Assuming not sent per file, keep if needed
+    // const date = fields.date?.[0] || null; // No longer needed globally here
+    // const event = fields.event?.[0] || null; // No longer needed globally here
+    const category = fields.category?.[0] || null; // Still needed globally for collection name
+    const metadataArrayString = fields.metadataArray?.[0] || null; // Get the JSON string
 
     // formidable v3+ wraps files in arrays
     // --- Handle multiple files ---
@@ -110,6 +111,33 @@ export async function POST(request: NextRequest) {
       );
     }
     // --- End validation ---
+
+    // --- Parse the metadata array ---
+    let parsedMetadata: any[] = [];
+    if (!metadataArrayString) {
+      return NextResponse.json(
+        { error: "Missing metadata array." },
+        { status: 400 }
+      );
+    }
+    try {
+      parsedMetadata = JSON.parse(metadataArrayString);
+      if (!Array.isArray(parsedMetadata)) {
+        throw new Error("Metadata is not an array.");
+      }
+      // Optional: Add more validation for the structure of each metadata object
+    } catch (parseError: any) {
+      console.error("Failed to parse metadataArray:", parseError);
+      return NextResponse.json(
+        { error: "Invalid metadata format.", details: parseError.message },
+        { status: 400 }
+      );
+    }
+
+    // --- Create a map for quick metadata lookup by filename ---
+    const metadataMap = new Map(
+      parsedMetadata.map((meta) => [meta.originalFilename, meta])
+    );
 
     // --- Process each file ---
     const results = [];
@@ -155,16 +183,39 @@ export async function POST(request: NextRequest) {
         // --- Save metadata to Firestore ---
         let firestoreDocId: string | null = null;
         try {
+          // --- Find corresponding metadata for this file ---
+          const specificMetadata = metadataMap.get(file.originalFilename);
+
+          if (!specificMetadata) {
+            // Should not happen if frontend sends correctly, but handle defensively
+            console.warn(
+              `Metadata not found for file: ${file.originalFilename}. Skipping Firestore save or using defaults.`
+            );
+            errors.push(`Metadata missing for ${file.originalFilename}`);
+            // Option 1: Skip this file's Firestore save
+            // continue;
+            // Option 2: Use defaults (less ideal here)
+            // specificMetadata = { photographer: null, dateTaken: null, location: null, event: null };
+            // For now, let's push an error and potentially let it save with nulls/defaults below
+            // throw new Error(`Metadata missing for ${file.originalFilename}`); // Or throw to fail faster
+          }
+
+          // --- Construct uploadData using specific metadata ---
           const uploadData = {
             r2FileKey: fileKey,
             originalFilename: file.originalFilename || "unknownfile",
             contentType: file.mimetype || "application/octet-stream",
-            photographer: photographer,
-            photographerLink: photographerLink,
-            eventDate: date ? new Date(date) : null, // Store as Date object
-            event: event,
-            category: category, // Keep category in the document data as well
-            uploadedAt: FieldValue.serverTimestamp(), // Use server timestamp
+            // Use data from the matched specificMetadata object
+            photographer: specificMetadata?.photographer || null,
+            // Assuming photographerLink is NOT sent per-file currently
+            // photographerLink: specificMetadata?.photographerLink || photographerLink || null, // Example if it was sent
+            eventDate: specificMetadata?.dateTaken
+              ? new Date(specificMetadata.dateTaken)
+              : null,
+            location: specificMetadata?.location || null, // Add location
+            event: specificMetadata?.event || null,
+            category: category, // Global category still used
+            uploadedAt: FieldValue.serverTimestamp(),
           };
 
           // Use the pre-calculated collectionName
