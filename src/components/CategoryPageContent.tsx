@@ -13,7 +13,13 @@ interface ImageData {
   photographerLink: string;
   location: string;
   event: string;
-  pinned?: boolean;
+  id?: string;
+  r2FileKey?: string;
+  originalFilename?: string;
+  eventDate?: string | null;
+  uploadedAt?: string | null;
+  contentType?: string;
+  category?: string;
 }
 
 interface CategoryPageContentProps {
@@ -37,126 +43,110 @@ const isFullscreenSupported = (): boolean => {
 };
 
 const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
-  category,
+  category: rawCategory,
 }) => {
   // State management
   const [images, setImages] = useState<ImageData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [userColumnCount, setUserColumnCount] = useState<number | null>(null);
   const [activeLayout, setActiveLayout] = useState<ImageData[][]>([]);
   const [activeColumnCount, setActiveColumnCount] = useState(1);
 
+  // Decode category name from URL
+  const category = decodeURIComponent(rawCategory);
+
+  // Get R2 Public URL from environment variable
+  const r2PublicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+
   // Function to capitalize first letter - memoized
   const capitalizeFirstLetter = useCallback((string: string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+    if (!string) return "";
+    return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   }, []);
 
   // Fetch images on component mount
   useEffect(() => {
+    if (!r2PublicUrl) {
+      setError("Configuration error: R2 public URL is not set.");
+      setLoading(false);
+      return;
+    }
+
     const fetchImages = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch(`/api/images/${category}`);
-        const data = await response.json();
-
-        // Pre-fetch images for better performance
-        const preloadImages = async (imageUrls: string[]) => {
-          // Create a queue to load images in batches to avoid overwhelming the browser
-          const batchSize = 3;
-          const batches = [];
-
-          for (let i = 0; i < imageUrls.length; i += batchSize) {
-            batches.push(imageUrls.slice(i, i + batchSize));
-          }
-
-          // Process batches sequentially
-          for (const batch of batches) {
-            const promises = batch.map((url) => {
-              return new Promise<void>((resolve) => {
-                const img = new window.Image();
-                img.src = url;
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // Resolve even on error to not block other images
-              });
-            });
-
-            // Wait for the current batch to complete before moving to the next
-            await Promise.all(promises);
-          }
-        };
-
-        const formattedImages = data.images.map(
-          (img: string, index: number) => {
-            // Get the image number from the filename (e.g., "1.webp" -> "1")
-            const imageNumber = img.replace(".webp", "");
-
-            return {
-              src: `/categories/${data.imageData.category || category}/${img}`,
-              alt:
-                data.imageData?.[imageNumber]?.alt ||
-                `${category} image ${index + 1}`,
-              date:
-                data.imageData?.[imageNumber]?.date ||
-                new Date(2000, 0, 1 + index).toLocaleDateString("en-US", {}),
-              photographer:
-                data.imageData?.[imageNumber]?.photographer ||
-                `Photographer ${index + 1}`,
-              photographerLink:
-                data.imageData?.[imageNumber]?.photographerLink || `#`,
-              location:
-                data.imageData?.[imageNumber]?.location ||
-                `Location ${index + 1}`,
-              event:
-                data.imageData?.[imageNumber]?.event || `Event ${index + 1}`,
-              pinned: data.imageData?.[imageNumber]?.pinned === true,
-            };
-          }
+        const response = await fetch(
+          `/api/getimages?category=${encodeURIComponent(category)}`
         );
 
-        // Sort images by date in descending order, handling both available and fallback dates
-        const topPinnedImages = formattedImages.filter(
-          (img: ImageData) => img.pinned === true
-        );
-        const remainingImages = formattedImages.filter(
-          (img: ImageData) => img.pinned !== true
-        );
-
-        const sortedRemainingImages = remainingImages.sort(
-          (a: ImageData, b: ImageData) => {
-            // Extract end date from range format (if present)
-            const getEndDate = (dateString: string) => {
-              if (!dateString) return 0;
-
-              // Check if it's a range format like "4/10/2025 - 4/13/2025"
-              if (dateString.includes("-")) {
-                const parts = dateString.split(" - ");
-                const endDatePart = parts[1].trim();
-                return new Date(endDatePart).getTime();
-              }
-
-              // Regular date format (m/d/yyyy)
-              return new Date(dateString).getTime();
-            };
-
-            const dateA = a.date ? getEndDate(a.date) : 0;
-            const dateB = b.date ? getEndDate(b.date) : 0;
-
-            // Sort in descending order (newest first)
-            return dateB - dateA;
+        if (!response.ok) {
+          let errorMsg = `Error fetching images: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorData.message || errorMsg;
+          } catch (e) {
+            /* Ignore parsing error, use status text */
           }
-        );
+          throw new Error(errorMsg);
+        }
 
-        // Combine pinned images at the top with the sorted remaining images
-        const sortedImages = [...topPinnedImages, ...sortedRemainingImages];
+        const fetchedData: any[] = await response.json();
+        console.log("Fetched raw data:", fetchedData);
+
+        const formattedImages: ImageData[] = fetchedData.map((item) => {
+          const imageUrl = `${r2PublicUrl}/${item.r2FileKey}`;
+          const displayDate = item.eventDate
+            ? new Date(item.eventDate).toLocaleDateString()
+            : item.uploadedAt
+            ? new Date(item.uploadedAt).toLocaleDateString()
+            : "N/A";
+
+          return {
+            src: imageUrl,
+            alt: item.originalFilename || `Image for ${category}`,
+            date: displayDate,
+            photographer: item.photographer || "Unknown",
+            photographerLink: "#",
+            location: item.location || "Unknown",
+            event: item.event || "Unknown",
+            id: item.id,
+            r2FileKey: item.r2FileKey,
+            originalFilename: item.originalFilename,
+            eventDate: item.eventDate,
+            uploadedAt: item.uploadedAt,
+            contentType: item.contentType,
+            category: item.category,
+          };
+        });
+
+        const sortedImages = [...formattedImages].sort((a, b) => {
+          const dateA = a.eventDate
+            ? new Date(a.eventDate).getTime()
+            : a.uploadedAt
+            ? new Date(a.uploadedAt).getTime()
+            : 0;
+          const dateB = b.eventDate
+            ? new Date(b.eventDate).getTime()
+            : b.uploadedAt
+            ? new Date(b.uploadedAt).getTime()
+            : 0;
+          const timeA = isNaN(dateA) ? 0 : dateA;
+          const timeB = isNaN(dateB) ? 0 : dateB;
+          return timeB - timeA;
+        });
 
         setImages(sortedImages);
-
-        // Start preloading images in the background
-        preloadImages(sortedImages.map((img: ImageData) => img.src));
       } catch (error: unknown) {
         console.error("Error fetching images:", error);
+        setError(
+          error instanceof Error ? error.message : "An unknown error occurred"
+        );
       } finally {
         setLoading(false);
       }
@@ -165,25 +155,16 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     if (category) {
       fetchImages();
     }
-  }, [category]);
+  }, [category, r2PublicUrl]);
 
   // Event handlers
   const handleClose = useCallback(() => {
-    setSelectedImage(null);
-    setCurrentIndex(0);
+    setSelectedImageIndex(null);
 
-    // Check if the document is actually in fullscreen mode
-    const isActuallyFullscreen = !!(
-      document.fullscreenElement ||
-      (document as Document & { webkitFullscreenElement?: Element })
-        .webkitFullscreenElement ||
-      (document as Document & { mozFullScreenElement?: Element })
-        .mozFullScreenElement ||
-      (document as Document & { msFullscreenElement?: Element })
-        .msFullscreenElement
-    );
-
-    if (isFullscreen && isActuallyFullscreen) {
+    if (
+      isFullscreen &&
+      (document.fullscreenElement || (document as any).webkitFullscreenElement)
+    ) {
       if (document.exitFullscreen) {
         document.exitFullscreen().catch((err: Error) => {
           console.error("Error exiting fullscreen:", err);
@@ -212,49 +193,48 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   }, [isFullscreen]);
 
   const handleNext = useCallback(() => {
-    // Circular navigation: if at the end, go to the beginning
-    const newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
-    setCurrentIndex(newIndex);
-    setSelectedImage(images[newIndex]);
-  }, [currentIndex, images]);
+    if (selectedImageIndex === null) return;
+    const newIndex =
+      selectedImageIndex < images.length - 1 ? selectedImageIndex + 1 : 0;
+    setSelectedImageIndex(newIndex);
+  }, [selectedImageIndex, images.length]);
 
   const handlePrev = useCallback(() => {
-    // Circular navigation: if at the beginning, go to the end
-    const newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
-    setCurrentIndex(newIndex);
-    setSelectedImage(images[newIndex]);
-  }, [currentIndex, images]);
+    if (selectedImageIndex === null) return;
+    const newIndex =
+      selectedImageIndex > 0 ? selectedImageIndex - 1 : images.length - 1;
+    setSelectedImageIndex(newIndex);
+  }, [selectedImageIndex, images.length]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      } else if (e.key === "ArrowRight" && selectedImage) {
-        handleNext();
-      } else if (e.key === "ArrowLeft" && selectedImage) {
-        handlePrev();
+      if (selectedImageIndex !== null) {
+        if (e.key === "Escape") {
+          handleClose();
+        } else if (e.key === "ArrowRight") {
+          handleNext();
+        } else if (e.key === "ArrowLeft") {
+          handlePrev();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, handleNext, handlePrev, selectedImage]);
+  }, [handleClose, handleNext, handlePrev, selectedImageIndex]);
 
   // Image click handler
   const handleImageClick = useCallback(
-    async (image: ImageData, index: number) => {
-      setSelectedImage(image);
-      setCurrentIndex(index);
+    async (index: number) => {
+      setSelectedImageIndex(index);
       try {
-        // Check if fullscreen is supported and not already in fullscreen mode
         if (!isFullscreen && isFullscreenSupported()) {
           await document.documentElement.requestFullscreen();
           setIsFullscreen(true);
         }
       } catch (err: unknown) {
         console.error("Error entering fullscreen:", err);
-        // Continue showing the image even if fullscreen fails
         setIsFullscreen(false);
       }
     },
@@ -285,12 +265,11 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       if (userColumnCount) {
         columnsToUse = userColumnCount;
       } else {
-        // Default responsive layouts
         const width = window.innerWidth;
         if (width < 640) columnsToUse = 1;
         else if (width < 768) columnsToUse = 2;
-        else if (width < 1280) columnsToUse = 3;
-        else if (width < 1536) columnsToUse = 4;
+        else if (width < 1024) columnsToUse = 3;
+        else if (width < 1280) columnsToUse = 4;
         else columnsToUse = 5;
       }
 
@@ -298,21 +277,17 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       setActiveLayout(distributeImages(columnsToUse));
     };
 
-    // Initial update
     updateLayout();
-
-    // Add resize listener
     window.addEventListener("resize", updateLayout);
-
-    // Cleanup
     return () => window.removeEventListener("resize", updateLayout);
   }, [userColumnCount, distributeImages]);
 
-  // Loading state
-  if (!category) {
+  // Render logic
+  if (!r2PublicUrl) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-        <h1 className="text-white text-2xl">Category not found</h1>
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-red-500 text-xl p-8">
+        Configuration Error: NEXT_PUBLIC_R2_PUBLIC_URL environment variable is
+        not set.
       </div>
     );
   }
@@ -325,6 +300,25 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-red-500 text-xl p-8">
+        Error loading images: {error}
+      </div>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-gray-400 text-xl p-8">
+        No images found for the category: {capitalizeFirstLetter(category)}
+      </div>
+    );
+  }
+
+  const selectedImageData =
+    selectedImageIndex !== null ? images[selectedImageIndex] : null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -333,7 +327,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       className="min-h-screen bg-neutral-900 pt-24 pb-16"
     >
       <div className="mx-auto px-4">
-        {/* Header */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -343,12 +336,9 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           <h1 className="text-4xl font-bold text-white mb-4">
             {capitalizeFirstLetter(category)}
           </h1>
-          <p className="text-gray-400">
-            My {capitalizeFirstLetter(category)} Portfolio 🥰
-          </p>
+          <p className="text-gray-400">{images.length} image(s)</p>
         </motion.div>
 
-        {/* Dynamic Column Layout */}
         <div className="flex flex-row justify-between gap-4">
           {activeLayout.map((column, columnIndex) => (
             <div
@@ -356,32 +346,35 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
               className="flex-col relative space-y-4 flex"
               style={{ width: `${100 / activeColumnCount - 2}%` }}
             >
-              {column.map((image, index) => (
-                <ImageCard
-                  key={`${image.src}-${columnIndex}-${index}`}
-                  image={image}
-                  index={columnIndex + index * activeColumnCount}
-                  totalColumns={activeColumnCount}
-                  onImageClick={handleImageClick}
-                />
-              ))}
+              {column.map((image) => {
+                const originalIndex = images.findIndex(
+                  (img) => img.id === image.id
+                );
+                return (
+                  <ImageCard
+                    key={image.id || image.src}
+                    image={image}
+                    index={originalIndex}
+                    onImageClick={() => handleImageClick(originalIndex)}
+                    totalColumns={activeColumnCount}
+                  />
+                );
+              })}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Settings Panel */}
       <SettingsPanel
         userColumnCount={userColumnCount}
         setUserColumnCount={setUserColumnCount}
         activeColumnCount={activeColumnCount}
       />
 
-      {/* Fullscreen Image Viewer */}
       <AnimatePresence>
-        {selectedImage && (
+        {selectedImageData && (
           <FullscreenViewer
-            selectedImage={selectedImage}
+            selectedImage={selectedImageData}
             onClose={handleClose}
             onNext={handleNext}
             onPrev={handlePrev}
