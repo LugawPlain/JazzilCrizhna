@@ -11,6 +11,17 @@ import Image from "next/image";
 export default function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
+
+  // --- Debugging Logs ---
+  console.log("Header Session Status:", status);
+  console.log("Header Session Data:", session);
+  // Check specific properties if session exists
+  if (session) {
+    console.log("Session User Role:", session.user?.role);
+    console.log("Session User Image:", session.user?.image);
+  }
+  // --- End Debugging Logs ---
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
@@ -148,10 +159,57 @@ export default function Header() {
                 Contact
               </Link>
 
-              {/* Auth Buttons - Desktop */}
+              {/* Desktop Admin Icon */}
+              {status === "authenticated" &&
+                session.user?.role === "admin" &&
+                session.user.image && (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name || "Admin avatar"}
+                    width={32} // Smaller size for header
+                    height={32} // Smaller size for header
+                    className="rounded-full" // Removed mx-auto
+                    referrerPolicy="no-referrer" // Add this for external images
+                  />
+                )}
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button (visible only below md) */}
+            <div className="md:hidden flex items-center">
+              {/* Display admin icon on mobile as well if needed, or just the button */}
+              {status === "authenticated" &&
+                session.user?.role === "admin" &&
+                session.user.image && (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name || "Admin avatar"}
+                    width={32}
+                    height={32}
+                    className="rounded-full mr-3" // Add margin
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="text-white hover:text-gray-200 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                aria-label="Open main menu"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16m-7 6h7"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -282,19 +340,24 @@ export default function Header() {
                 <div className="text-white text-center">Loading...</div>
               ) : session ? (
                 <div className="flex flex-col items-center space-y-4">
-                  {session.user?.image && (
+                  {/* Conditionally display admin image */}
+                  {session.user?.role === "admin" && session.user?.image && (
                     <Image
                       src={session.user.image}
-                      alt={session.user.name || "User avatar"}
+                      alt={session.user.name || "Admin avatar"}
                       width={40}
                       height={40}
                       className="rounded-full"
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  <span className="text-white text-lg">
-                    {session.user?.name}
-                  </span>
+                  {/* Always display name if available */}
+                  {session.user?.name && (
+                    <span className="text-white text-lg">
+                      {session.user.name}
+                    </span>
+                  )}
+                  {/* Always show logout for logged-in users */}
                   <button
                     onClick={() => {
                       signOut();
@@ -306,6 +369,7 @@ export default function Header() {
                   </button>
                 </div>
               ) : (
+                // Show login button if not authenticated
                 <button
                   onClick={() => {
                     signIn("google");

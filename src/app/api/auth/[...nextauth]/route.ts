@@ -29,25 +29,62 @@ const handler = NextAuth({
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      console.log("--- [SignIn Callback] --- Triggered ---");
+      console.log("[SignIn Callback] User:", JSON.stringify(user, null, 2));
+      console.log(
+        "[SignIn Callback] Account:",
+        JSON.stringify(account, null, 2)
+      );
+      console.log(
+        "[SignIn Callback] Profile:",
+        JSON.stringify(profile, null, 2)
+      );
+      // We don't need to modify anything here, just log.
+      // Returning true allows the sign-in to proceed.
+      return true;
+    },
     async jwt({ token, user, account, profile }) {
+      console.log("[JWT Callback] Triggered");
       if (user && account) {
-        const userEmail = user.email;
+        console.log("[JWT Callback] Initial sign in or update");
         token.id = user.id;
+        const userEmail = user.email;
+        console.log("[JWT Callback] User Email:", userEmail);
 
         if (userEmail) {
+          // --- Restoring Original Env Var Check ---
           const adminEmailsString = process.env.ADMIN_EMAILS || "";
+          console.log(
+            "[JWT Callback] ADMIN_EMAILS env var:",
+            adminEmailsString
+          );
+
           const adminEmails = adminEmailsString
             .split(",")
             .map((email) => email.trim())
             .filter((email) => email);
+          console.log("[JWT Callback] Parsed Admin Emails Array:", adminEmails);
 
-          if (adminEmails.includes(userEmail)) {
+          const isAdmin = adminEmails.includes(userEmail);
+          console.log(`[JWT Callback] Is ${userEmail} in admin list?`, isAdmin);
+          // --- End Original Env Var Check ---
+
+          if (isAdmin) {
             token.role = "admin";
           } else {
             token.role = "user";
           }
+          console.log("[JWT Callback] Assigned token.role:", token.role);
+        } else {
+          console.log("[JWT Callback] No user email found.");
         }
+      } else {
+        console.log(
+          "[JWT Callback] Not initial sign in, returning existing token."
+        );
       }
+      console.log("[JWT Callback] Returning token:", token);
       return token;
     },
     async session({ session, token }) {
