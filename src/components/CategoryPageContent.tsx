@@ -61,7 +61,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const category = decodeURIComponent(rawCategory);
 
   // Get R2 Public URL from environment variable
-  const r2PublicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+  const r2PublicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_SUB_URL;
 
   // Function to capitalize first letter - memoized
   const capitalizeFirstLetter = useCallback((string: string) => {
@@ -82,7 +82,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       setError(null);
       try {
         const response = await fetch(
-          `/api/getimages?category=${encodeURIComponent(category)}`
+          `/api/fetchimages?category=${encodeURIComponent(category)}`
         );
 
         if (!response.ok) {
