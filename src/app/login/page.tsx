@@ -1,85 +1,101 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/clientApp"; // Adjust path if needed
-import { useAuth } from "@/context/AuthContext"; // Adjust path if needed
+import React from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation"; // Keep for potential redirects if needed
+import Image from "next/image"; // Import Image component for profile picture
+
+// Simple Google SVG Icon component (or you could use a library like react-icons)
+const GoogleIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 48 48"
+    width="24px"
+    height="24px"
+  >
+    <path
+      fill="#FFC107"
+      d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+    />
+    <path
+      fill="#FF3D00"
+      d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+    />
+    <path
+      fill="#4CAF50"
+      d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+    />
+    <path
+      fill="#1976D2"
+      d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C42.012,35.195,44,30.028,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+    />
+  </svg>
+);
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const { user, loading } = useAuth();
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/"); // Redirect to home page after successful login
-    } catch (err: any) {
-      // Catch specific Firebase errors if needed
-      console.error("Login error:", err);
-      setError(err.message || "Failed to log in.");
-    }
-  };
-
-  // If user is already logged in or loading, don't show login form
-  // You might want a loading indicator here instead of null
-  if (loading) return <div>Loading...</div>;
-  if (user) {
-    // Optional: Redirect if already logged in
-    // useEffect(() => { router.push('/'); }, [router]);
-    return <div>Already logged in. Redirecting...</div>;
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-900">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
   }
 
+  if (session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-900">
+        <div className="bg-neutral-800 p-8 rounded-lg shadow-md w-full max-w-md text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Signed In</h1>
+          {session.user?.image && (
+            <Image
+              src={session.user.image}
+              alt="Profile Picture"
+              width={80}
+              height={80}
+              className="rounded-full mx-auto mb-4"
+            />
+          )}
+          <p className="text-gray-300 mb-2">
+            Welcome, {session.user?.name || session.user?.email}
+          </p>
+          <p className="text-gray-400 text-sm mb-6">
+            You are already logged in.
+          </p>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })} // Sign out and redirect to home
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mb-4"
+          >
+            Sign Out
+          </button>
+          <button
+            onClick={() => router.push("/")} // Button to go to home page
+            className="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-300"
+          >
+            Go to Homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If not loading and not signed in, show Sign in button
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-900">
-      <div className="bg-neutral-800 p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white mb-6 text-center">
-          Login
-        </h1>
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-gray-400 mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-400 mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-700 text-white rounded focus:outline-none focus:ring-2 focus:ring-pink-500"
-              required
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-          <button
-            type="submit"
-            className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded transition duration-300"
-          >
-            Login
-          </button>
-        </form>
-        {/* Optional: Add link to Sign Up page */}
-        {/* <p className="text-center text-gray-400 mt-4">
-          Don't have an account? <a href="/signup" className="text-pink-500 hover:underline">Sign up</a>
-        </p> */}
+      <div className="bg-neutral-800 p-8 rounded-lg shadow-md w-full max-w-md text-center">
+        <h1 className="text-2xl font-bold text-white mb-6">Login</h1>
+        <p className="text-gray-400 mb-8">
+          Sign in using your Google account to continue.
+        </p>
+        <button
+          onClick={() => signIn("google")} // Trigger Google Sign-In
+          className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 px-4 rounded transition duration-300 flex items-center justify-center space-x-2"
+        >
+          <GoogleIcon />
+          <span>Sign in with Google</span>
+        </button>
       </div>
     </div>
   );

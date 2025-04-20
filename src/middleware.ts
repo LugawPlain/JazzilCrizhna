@@ -1,45 +1,41 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from "next/server";
 
-export default withAuth(
-  // `withAuth` enhances your `Request` object with the user's token.
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const pathname = req.nextUrl.pathname;
+export async function middleware(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const pathname = req.nextUrl.pathname;
 
-    // Redirect non-admins trying to access admin routes
-    if (
-      (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) &&
-      token?.role !== "admin"
-    ) {
-      console.log(
-        "Unauthorized access attempt to:",
-        pathname,
-        "by user:",
-        token?.email
-      );
-      // You could redirect them to an unauthorized page or the home page
-      // For API routes, returning a 403 Forbidden response might be more appropriate
-      if (pathname.startsWith("/api/admin")) {
-        return new NextResponse("Unauthorized", { status: 403 });
-      }
-      // For pages, redirect to home or a specific unauthorized page
-      return NextResponse.redirect(new URL("/", req.url));
+  // Check if the user is trying to access an admin route
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    // If no token, redirect to login page
+    if (!token) {
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("callbackUrl", req.url); // Optional: redirect back after login
+      return NextResponse.redirect(loginUrl);
     }
 
-    // Allow the request to proceed if authorized
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      // This ensures that the middleware function itself is only run
-      // if the user is authenticated. Unauthenticated users trying to
-      // access protected routes defined in the matcher will be redirected
-      // to the login page automatically by `withAuth`.
-      authorized: ({ token }) => !!token,
-    },
+    // If token exists but role is not admin, deny access
+    if (token.role !== "admin") {
+      console.log(
+        "Unauthorized access attempt to (logged in, not admin):",
+        pathname,
+        "by user:",
+        token.email
+      );
+      // For API routes, return 403 Forbidden
+      if (pathname.startsWith("/api/admin")) {
+        return new NextResponse("Forbidden: Requires admin role", {
+          status: 403,
+        });
+      }
+      // For pages, redirect to home page
+      return NextResponse.redirect(new URL("/", req.url));
+    }
   }
-);
+
+  // Allow the request to proceed for non-admin routes or authorized admins
+  return NextResponse.next();
+}
 
 // Apply middleware to specific paths
 export const config = {
@@ -50,13 +46,11 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - login page itself
-     * We apply the middleware broadly and then specifically check
-     * for admin routes inside the middleware function.
-     * You could also be more specific here and only match '/admin/:path*'
-     * and '/api/admin/:path*', but this approach allows flexibility
-     * if you add more role-based routes later.
+     * We apply the middleware broadly and check roles inside.
+     * Note: The login page ('/login') is NOT excluded here.
+     * If an unauthenticated user hits an admin route, they will be
+     * redirected to '/login'.
      */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|login).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico).*) ",
   ],
 };
