@@ -8,43 +8,73 @@ interface FileMetadata {
   dateTaken: string;
   location: string;
   event: string;
-  previewUrl: string;
+  previewUrl: string; // This is for the list preview, not used directly by modal anymore
   file: File;
 }
 
 interface MetadataEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  fileMetadata: FileMetadata | null; // Can be null initially
-  onSave: (id: string, updatedMetadata: Partial<FileMetadata>) => void;
+  // Pass the essential data, including the raw file
+  selectedFileData: {
+    id: string;
+    file: File;
+    currentMetadata: Omit<FileMetadata, "id" | "file" | "previewUrl">; // Pass current metadata separately
+  } | null;
+  // Update onSave signature to match the separated metadata
+  onSave: (
+    id: string,
+    updatedMetadata: Omit<FileMetadata, "id" | "file" | "previewUrl">
+  ) => void;
 }
 
 const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
   isOpen,
   onClose,
-  fileMetadata,
+  selectedFileData, // Use selectedFileData prop
   onSave,
 }) => {
-  // Local state for form inputs, initialized when fileMetadata changes
+  // Local state for form inputs
   const [photographer, setPhotographer] = useState("");
   const [dateTaken, setDateTaken] = useState("");
   const [location, setLocation] = useState("");
   const [event, setEvent] = useState("");
+  // State for the modal's own preview URL
+  const [modalPreviewUrl, setModalPreviewUrl] = useState<string | null>(null);
 
-  // Effect to update local state when the selected file changes
+  // Effect to update local state and create/revoke modal preview URL
   useEffect(() => {
-    if (fileMetadata) {
-      setPhotographer(fileMetadata.photographer || "");
-      setDateTaken(fileMetadata.dateTaken || "");
-      setLocation(fileMetadata.location || "");
-      setEvent(fileMetadata.event || "");
+    if (isOpen && selectedFileData) {
+      // Set metadata fields from the passed currentMetadata
+      setPhotographer(selectedFileData.currentMetadata.photographer || "");
+      setDateTaken(selectedFileData.currentMetadata.dateTaken || "");
+      setLocation(selectedFileData.currentMetadata.location || "");
+      setEvent(selectedFileData.currentMetadata.event || "");
+
+      // Create a new object URL specifically for the modal preview
+      const url = URL.createObjectURL(selectedFileData.file);
+      setModalPreviewUrl(url);
+
+      // Cleanup function for this specific URL
+      return () => {
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+        setModalPreviewUrl(null); // Reset URL state
+      };
+    } else {
+      // Reset fields and URL if modal is closing or no file selected
+      setModalPreviewUrl(null);
+      // Optional: reset form fields if desired when modal closes
+      // setPhotographer(''); setDateTaken(''); setLocation(''); setEvent('');
     }
-  }, [fileMetadata]);
+  }, [isOpen, selectedFileData]); // Depend on isOpen and the selected file data
 
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
-    if (fileMetadata) {
-      onSave(fileMetadata.id, {
+    if (selectedFileData) {
+      // Pass only the updatable metadata fields
+      onSave(selectedFileData.id, {
         photographer,
         dateTaken,
         location,
@@ -61,8 +91,9 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
     }
   };
 
-  if (!isOpen || !fileMetadata) {
-    return null; // Don't render anything if not open or no file selected
+  // Check for isOpen, selectedFileData, AND modalPreviewUrl before rendering
+  if (!isOpen || !selectedFileData || !modalPreviewUrl) {
+    return null;
   }
 
   return (
@@ -72,13 +103,13 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
     >
       <div
         className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden"
-        onClick={(e) => e.stopPropagation()} // Prevent click inside modal from closing it
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Left Side: Image Preview */}
         <div className="w-full md:w-1/2 p-4 flex justify-center items-center bg-gray-100">
           <img
-            src={fileMetadata.previewUrl}
-            alt={`Preview of ${fileMetadata.file.name}`}
+            src={modalPreviewUrl} // Use the modal-specific URL
+            alt={`Preview of ${selectedFileData.file.name}`}
             className="max-h-[80vh] max-w-full object-contain rounded"
           />
         </div>
@@ -90,9 +121,9 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
           </h3>
           <p
             className="text-sm text-gray-600 mb-4 truncate"
-            title={fileMetadata.file.name}
+            title={selectedFileData.file.name}
           >
-            File: {fileMetadata.file.name}
+            File: {selectedFileData.file.name}
           </p>
 
           <form

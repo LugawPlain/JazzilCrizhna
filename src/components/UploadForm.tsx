@@ -196,7 +196,7 @@ function UploadForm() {
   // --- Add handleSaveMetadata function ---
   const handleSaveMetadata = (
     id: string,
-    updatedMetadata: Partial<FileMetadata>
+    updatedMetadata: Omit<FileMetadata, "id" | "file" | "previewUrl">
   ) => {
     setFilesWithMetadata((prevFiles) =>
       prevFiles.map((file) =>
@@ -209,9 +209,24 @@ function UploadForm() {
   };
 
   // --- Find the selected file for the modal ---
-  const selectedFileMetadata = filesWithMetadata.find(
+  const selectedFileForModal = filesWithMetadata.find(
     (f) => f.id === selectedFileId
   );
+
+  // Prepare props for the modal in the new format
+  const modalPropsData = selectedFileForModal
+    ? {
+        id: selectedFileForModal.id,
+        file: selectedFileForModal.file,
+        currentMetadata: {
+          // Extract current metadata part
+          photographer: selectedFileForModal.photographer,
+          dateTaken: selectedFileForModal.dateTaken,
+          location: selectedFileForModal.location,
+          event: selectedFileForModal.event,
+        },
+      }
+    : null;
 
   return (
     // --- Main Flex Container ---
@@ -537,7 +552,8 @@ function UploadForm() {
           setIsModalOpen(false);
           setSelectedFileId(null);
         }}
-        fileMetadata={selectedFileMetadata || null} // Pass the found metadata or null
+        // Pass the prepared data object in the selectedFileData prop
+        selectedFileData={modalPropsData}
         onSave={handleSaveMetadata}
       />
       {/* --- End Modal --- */}
