@@ -1,5 +1,14 @@
-import NextAuth from "next-auth";
+import NextAuth, { type DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+
+// Define an extended Session type
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      role?: "admin" | "user";
+    } & DefaultSession["user"];
+  }
+}
 
 const handler = NextAuth({
   providers: [
@@ -9,20 +18,26 @@ const handler = NextAuth({
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
-  // You can add callbacks here if needed, e.g., to store user info in a database
-  // callbacks: {
-  //   async session({ session, token, user }) {
-  //     // Send properties to the client, like an access_token.
-  //     return session
-  //   },
-  //   async jwt({ token, account }) {
-  //     // Persist the OAuth access_token to the token right after signin
-  //     if (account) {
-  //       token.accessToken = account.access_token
-  //     }
-  //     return token
-  //   }
-  // }
+  callbacks: {
+    async session({ session, token, user }) {
+      if (!session.user?.email) {
+        return session;
+      }
+
+      const adminEmailsString = process.env.ADMIN_EMAILS || "";
+      const adminEmails = adminEmailsString
+        .split(",")
+        .map((email) => email.trim())
+        .filter((email) => email);
+
+      if (adminEmails.includes(session.user.email)) {
+        session.user.role = "admin";
+      } else {
+        session.user.role = "user";
+      }
+      return session;
+    },
+  },
 });
 
 export { handler as GET, handler as POST };
