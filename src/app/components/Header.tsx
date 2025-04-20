@@ -149,57 +149,9 @@ export default function Header() {
               </Link>
 
               {/* Auth Buttons - Desktop */}
-              {status === "loading" ? (
-                <div className="text-white">Loading...</div>
-              ) : session ? (
-                <div className="flex items-center space-x-4">
-                  {session.user?.image && (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name || "User avatar"}
-                      width={32}
-                      height={32}
-                      className="rounded-full"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  <button
-                    onClick={() => signOut()}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => signIn("google")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
-                >
-                  Login with Google
-                </button>
-              )}
             </div>
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-white hover:text-gray-200 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
           </div>
         </div>
       </nav>
