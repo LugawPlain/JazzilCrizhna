@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import MetadataEditModal from "./MetadataEditModal"; // Import the modal
 // import { db, storage } from "../lib/firebase"; // Commented out
 // import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
 // import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"; // Commented out
@@ -192,257 +193,356 @@ function UploadForm() {
     }
   };
 
+  // --- Add handleSaveMetadata function ---
+  const handleSaveMetadata = (
+    id: string,
+    updatedMetadata: Partial<FileMetadata>
+  ) => {
+    setFilesWithMetadata((prevFiles) =>
+      prevFiles.map((file) =>
+        file.id === id ? { ...file, ...updatedMetadata } : file
+      )
+    );
+    // Optionally close modal here, although the modal closes itself too
+    // setIsModalOpen(false);
+    // setSelectedFileId(null);
+  };
+
+  // --- Find the selected file for the modal ---
+  const selectedFileMetadata = filesWithMetadata.find(
+    (f) => f.id === selectedFileId
+  );
+
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md mt-40">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-        Upload New Photo
-      </h2>
+    // --- Main Flex Container ---
+    <div className="flex flex-col md:flex-row gap-6 p-4 md:p-8 min-h-screen">
+      {/* --- Left Column: Form --- */}
+      {/* Removed mx-auto, added width constraints */}
+      <div className="w-full md:w-2/5 lg:w-1/3 p-6 bg-white rounded-lg shadow-md self-start">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Upload New Photos
+        </h2>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-
-      {success && successMessage && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-          {successMessage}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label
-            htmlFor="fileInput"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Photo:
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-            <div className="space-y-1 text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 48 48"
-                aria-hidden="true"
-              >
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div className="flex text-sm text-gray-600">
-                <label
-                  htmlFor="fileInput"
-                  className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-                >
-                  <span>Upload a file</span>
-                  <input
-                    id="fileInput"
-                    type="file"
-                    className="sr-only"
-                    accept="image/*,video/*"
-                    onChange={handleFileChange}
-                    required
-                    multiple
-                  />
-                </label>
-                <p className="pl-1">or drag and drop</p>
-              </div>
-              <p className="text-xs text-gray-500">Images or Videos</p>
-            </div>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
           </div>
-          {/* Display names of selected files - REMOVED */}
-          {/* {filesWithMetadata.length > 0 && ( 
-            <div className="mt-2 text-sm text-gray-600">
-              <p>Selected files:</p>
-              <ul className="list-disc list-inside pl-4 max-h-20 overflow-y-auto">
-                {filesWithMetadata.map((item, index) => (
-                  <li key={index} className="truncate">
-                    {item.file.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )} */}
+        )}
 
-          {/* --- Image Preview Section --- */}
-          {filesWithMetadata.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              {filesWithMetadata.map((item) => (
-                <div
-                  key={item.id}
-                  className="relative group cursor-pointer"
-                  onClick={() => {
-                    setSelectedFileId(item.id);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <img
-                    src={item.previewUrl}
-                    alt={`Preview of ${item.file.name}`}
-                    className="h-24 w-full object-cover rounded-md border border-gray-300"
-                  />
-                  {/* Optional: Add an overlay or icon indicating clickability */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity duration-200">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-white opacity-0 group-hover:opacity-100"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {/* --- End Image Preview Section --- */}
-        </div>
+        {success && successMessage && (
+          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+            {successMessage}
+          </div>
+        )}
 
-        <div>
-          <label
-            htmlFor="dateTaken"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Date Taken: (Optional)
-          </label>
-          <input
-            type="date"
-            id="dateTaken"
-            value={globalDateTaken}
-            onChange={(e) => setGlobalDateTaken(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="location"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Location: (Optional)
-          </label>
-          <input
-            type="text"
-            id="location"
-            value={globalLocation}
-            onChange={(e) => setGlobalLocation(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Where was the photo taken?"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="photographer"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Photographer: (Optional)
-          </label>
-          <input
-            type="text"
-            id="photographer"
-            value={globalPhotographer}
-            onChange={(e) => setGlobalPhotographer(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Who took the photo?"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="event"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Event: (Optional)
-          </label>
-          <input
-            type="text"
-            id="event"
-            value={globalEvent}
-            onChange={(e) => setGlobalEvent(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="What event was this for?"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="category"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Category:
-          </label>
-          <select
-            id="category"
-            value={globalCategory}
-            onChange={(e) => setGlobalCategory(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            required
-          >
-            <option value="">Select a category</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="pt-4">
-          <button
-            type="submit"
-            disabled={isUploading || filesWithMetadata.length === 0}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              isUploading || filesWithMetadata.length === 0
-                ? "bg-indigo-400 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            }`}
-          >
-            {isUploading ? (
-              <span className="flex items-center">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label
+              htmlFor="fileInput"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Photo:
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <div className="space-y-1 text-center">
                 <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  stroke="currentColor"
                   fill="none"
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 48 48"
+                  aria-hidden="true"
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
                   <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
-                Uploading...
-              </span>
-            ) : (
-              `Upload ${
-                filesWithMetadata.length > 0 ? filesWithMetadata.length : ""
-              } Photo(s)`
+                <div className="flex text-sm text-gray-600">
+                  <label
+                    htmlFor="fileInput"
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                  >
+                    <span>Upload a file</span>
+                    <input
+                      id="fileInput"
+                      type="file"
+                      className="sr-only"
+                      accept="image/*,video/*"
+                      onChange={handleFileChange}
+                      required
+                      multiple
+                    />
+                  </label>
+                  <p className="pl-1">or drag and drop</p>
+                </div>
+                <p className="text-xs text-gray-500">Images or Videos</p>
+              </div>
+            </div>
+            {/* Display names of selected files - REMOVED */}
+            {/* {filesWithMetadata.length > 0 && ( 
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Selected files:</p>
+                <ul className="list-disc list-inside pl-4 max-h-20 overflow-y-auto">
+                  {filesWithMetadata.map((item, index) => (
+                    <li key={index} className="truncate">
+                      {item.file.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )} */}
+
+            {/* --- Image Preview Section --- */}
+            {filesWithMetadata.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-4">
+                {filesWithMetadata.map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative group cursor-pointer"
+                    onClick={() => {
+                      setSelectedFileId(item.id);
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <img
+                      src={item.previewUrl}
+                      alt={`Preview of ${item.file.name}`}
+                      className="h-24 w-full object-cover rounded-md border border-gray-300"
+                    />
+                    {/* Optional: Add an overlay or icon indicating clickability */}
+                    {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity duration-200">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6 text-white opacity-0 group-hover:opacity-100"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
+                      </svg>
+                    </div> */}
+                  </div>
+                ))}
+              </div>
             )}
-          </button>
-        </div>
-      </form>
+            {/* --- End Image Preview Section --- */}
+          </div>
+
+          <div>
+            <label
+              htmlFor="dateTaken"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Date Taken: (Optional)
+            </label>
+            <input
+              type="date"
+              id="dateTaken"
+              value={globalDateTaken}
+              onChange={(e) => setGlobalDateTaken(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="location"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Location: (Optional)
+            </label>
+            <input
+              type="text"
+              id="location"
+              value={globalLocation}
+              onChange={(e) => setGlobalLocation(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Where was the photo taken?"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="photographer"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Photographer: (Optional)
+            </label>
+            <input
+              type="text"
+              id="photographer"
+              value={globalPhotographer}
+              onChange={(e) => setGlobalPhotographer(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Who took the photo?"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="event"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Event: (Optional)
+            </label>
+            <input
+              type="text"
+              id="event"
+              value={globalEvent}
+              onChange={(e) => setGlobalEvent(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="What event was this for?"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="category"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Category:
+            </label>
+            <select
+              id="category"
+              value={globalCategory}
+              onChange={(e) => setGlobalCategory(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={isUploading || filesWithMetadata.length === 0}
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isUploading || filesWithMetadata.length === 0
+                  ? "bg-indigo-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              }`}
+            >
+              {isUploading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Uploading...
+                </span>
+              ) : (
+                `Upload ${
+                  filesWithMetadata.length > 0 ? filesWithMetadata.length : ""
+                } Photo(s)`
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+      {/* --- End Left Column: Form --- */}
+
+      {/* --- Right Column: Preview Area --- */}
+      <div className="w-full md:w-3/5 lg:w-2/3 bg-gray-50 p-4 rounded-lg shadow-inner md:h-[calc(100vh-4rem)] overflow-y-auto">
+        {" "}
+        {/* Adjusted height and overflow */}
+        <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
+          Previews
+        </h3>
+        {filesWithMetadata.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            <p>Selected image previews will appear here.</p>
+          </div>
+        ) : (
+          // Moved and adjusted preview grid
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filesWithMetadata.map((item) => (
+              <div
+                key={item.id}
+                className="relative group cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:shadow-md"
+                onClick={() => {
+                  setSelectedFileId(item.id);
+                  setIsModalOpen(true);
+                }}
+              >
+                <img
+                  src={item.previewUrl}
+                  alt={`Preview of ${item.file.name}`}
+                  // Increased image size
+                  className="h-48 w-full object-contain"
+                />
+                {/* Overlay */}
+                {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-opacity duration-200">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8 text-white opacity-0 group-hover:opacity-100"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </div> */}
+                {/* Optional: Display filename below image */}
+                <p
+                  className="text-xs text-center p-1 bg-gray-100 truncate"
+                  title={item.file.name}
+                >
+                  {item.file.name}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* --- End Right Column: Preview Area --- */}
+
+      {/* --- Render the Modal --- */}
+      <MetadataEditModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedFileId(null);
+        }}
+        fileMetadata={selectedFileMetadata || null} // Pass the found metadata or null
+        onSave={handleSaveMetadata}
+      />
+      {/* --- End Modal --- */}
     </div>
+    // --- End Main Flex Container ---
   );
 }
 
