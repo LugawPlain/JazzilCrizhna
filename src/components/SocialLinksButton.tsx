@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
@@ -9,6 +9,7 @@ import socialLinks from "../data/socialLinks.json";
 
 const SocialLinksButton = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const socialLinksData = [
     {
@@ -27,6 +28,32 @@ const SocialLinksButton = () => {
       icon: <FacebookPageIcon />,
       href: socialLinks.facebookPage,
       label: "Facebook Page",
+    },
+    {
+      icon: (
+        <>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 4H8C5.79086 4 4 5.79086 4 8V16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16V8C20 5.79086 18.2091 4 16 4Z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16.5 7.5V7.501"
+          />
+        </>
+      ),
+      href: socialLinks.instagram,
+      label: "Instagram",
     },
     {
       icon: (
@@ -82,8 +109,29 @@ const SocialLinksButton = () => {
     },
   ];
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="fixed right-8 bottom-8 z-50 cursor-pointer">
+    <div
+      className="fixed right-8 bottom-8 z-50 cursor-pointer"
+      ref={containerRef}
+    >
       {/* Social Media Icons */}
       <div className="flex flex-col-reverse gap-4 mb-4">
         {socialLinksData.map((link, index) => (
