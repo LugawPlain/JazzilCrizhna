@@ -1,19 +1,48 @@
 "use client";
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 // import { db, storage } from "../lib/firebase"; // Commented out
 // import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
 // import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"; // Commented out
 
+// Define a type for individual file metadata
+interface FileMetadata {
+  id: string; // Use a unique ID, maybe based on file name + index
+  photographer: string;
+  dateTaken: string;
+  location: string; // Added location state
+  event: string;
+  previewUrl: string;
+  file: File; // Keep the original file object associated
+}
+
 function UploadForm() {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [dateTaken, setDateTaken] = useState("");
-  const [location, setLocation] = useState("");
-  const [photographer, setPhotographer] = useState("");
-  const [category, setCategory] = useState("");
+  // Keep global states for now, might be used as defaults or if no specific metadata is set
+  const [globalDateTaken, setGlobalDateTaken] = useState("");
+  const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
+  const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
+  const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
+  const [globalEvent, setGlobalEvent] = useState(""); // Changed from event
+
+  // State for individual files and their metadata
+  const [filesWithMetadata, setFilesWithMetadata] = useState<FileMetadata[]>(
+    []
+  );
+
+  // const [imageFiles, setImageFiles] = useState<File[]>([]); // Remove old state
+  // const [dateTaken, setDateTaken] = useState(""); // Remove old state
+  // const [location, setLocation] = useState(""); // Remove old state
+  // const [photographer, setPhotographer] = useState(""); // Remove old state
+  // const [category, setCategory] = useState(""); // Remove old state
+  // const [event, setEvent] = useState(""); // Remove old state
+
   const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // State for the modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
   // Categories for the dropdown
   const categories = [
@@ -27,105 +56,140 @@ function UploadForm() {
     "OTHERS",
   ];
 
+  // --- Cleanup Object URLs ---
+  useEffect(() => {
+    // This function will run when the component unmounts or before the effect runs again
+    return () => {
+      filesWithMetadata.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    };
+  }, [filesWithMetadata]); // Dependency array ensures cleanup happens when files change
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
+    if (e.target.files) {
+      // Clear previous errors/success messages
+      setError(null);
+      setSuccess(false);
+      setSuccessMessage("");
+
+      // Revoke previous URLs before creating new ones
+      filesWithMetadata.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+
+      const selectedFiles = Array.from(e.target.files);
+      const newFilesWithMetadata: FileMetadata[] = selectedFiles.map(
+        (file, index) => {
+          const previewUrl = URL.createObjectURL(file);
+          const id = `${file.name}-${index}-${Date.now()}`; // Create a simple unique ID
+          return {
+            id,
+            file,
+            previewUrl,
+            // Initialize specific metadata (can use global state as default if desired)
+            photographer: globalPhotographer,
+            dateTaken: globalDateTaken,
+            location: globalLocation,
+            event: globalEvent,
+          };
+        }
+      );
+
+      setFilesWithMetadata(newFilesWithMetadata);
     }
+    // Reset file input visually if needed (optional)
+    // If you want the input to show "No file chosen" after selection, uncomment:
+    // if (e.target) {
+    //    e.target.value = "";
+    // }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!imageFile || !dateTaken || !location || !photographer || !category) {
-      setError("Please fill in all fields and select an image.");
+    // Check if any files are selected
+    // Use filesWithMetadata instead of imageFiles
+    if (filesWithMetadata.length === 0) {
+      setError("Please select at least one image.");
+      return;
+    }
+    // Category is still required globally
+    if (!globalCategory) {
+      setError("Please select a category.");
       return;
     }
 
-    // --- Firebase Logic Removed ---
-    console.log("Form submitted, Firebase logic is commented out.");
-    setError("Firebase logic is disabled in this form.");
-    // Set dummy success/progress for UI testing if needed
-    // setProgress(100);
-    // setSuccess(true);
-    // setIsUploading(false);
-
-    /* --- Original Firebase Logic Start ---
     setIsUploading(true);
     setError(null);
     setSuccess(false);
-    setProgress(0);
+    setSuccessMessage("");
 
-    // --- 1. Upload Image to Firebase Storage ---
-    // Create a unique filename (e.g., using timestamp and original name)
-    const fileName = `${Date.now()}-${imageFile.name}`;
-    const storageRef = ref(storage, `images/${fileName}`);
-    const uploadTask = uploadBytesResumable(storageRef, imageFile);
+    // --- IMPORTANT: Modify API call logic here ---
+    // The current API expects one set of metadata.
+    // To send per-file metadata, you'd need to either:
+    // 1. Modify the backend API to accept an array of metadata.
+    // 2. Send each file + its metadata in a separate API call.
+    // For now, we'll proceed sending the *global* metadata as before,
+    // but using the files from filesWithMetadata state.
+    const formData = new FormData();
+    filesWithMetadata.forEach((item) => {
+      formData.append(`file`, item.file); // Append each file
+    });
+    // Append GLOBAL metadata (as current API expects)
+    if (globalPhotographer) formData.append("photographer", globalPhotographer);
+    if (globalDateTaken) formData.append("date", globalDateTaken);
+    if (globalCategory) formData.append("category", globalCategory);
+    if (globalEvent) formData.append("event", globalEvent);
+    // We are NOT sending location or per-file metadata yet
 
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        // Observe state change events such as progress, pause, and resume
-        const progressPercent = Math.round(
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-        );
-        setProgress(progressPercent);
-      },
-      (uploadError) => {
-        // Handle unsuccessful uploads
-        console.error("Upload Error:", uploadError);
-        setError(`Upload failed: ${uploadError.message}`);
-        setIsUploading(false);
-      },
-      () => {
-        // Handle successful uploads on complete
-        // --- 2. Get Image Download URL ---
-        getDownloadURL(uploadTask.snapshot.ref)
-          .then(async (downloadURL) => {
-            console.log("File available at", downloadURL);
+    try {
+      const response = await fetch("/api/uploadimages", {
+        method: "POST",
+        body: formData,
+      });
 
-            // --- 3. Save Metadata (including URL) to Firestore ---
-            try {
-              const photosCollectionRef = collection(db, "photos"); // "photos" is the collection name
-              await addDoc(photosCollectionRef, {
-                imageUrl: downloadURL,
-                dateTaken: dateTaken,
-                location: location,
-                photographerName: photographer,
-                category: category,
-                storagePath: storageRef.fullPath, // Good practice to store path too
-                createdAt: serverTimestamp(), // Firestore timestamp
-              });
+      const result = await response.json();
 
-              setSuccess(true);
-              // Reset form (optional)
-              setImageFile(null);
-              setDateTaken("");
-              setLocation("");
-              setPhotographer("");
-              setCategory("");
-              e.currentTarget.reset(); // Reset file input visually
-            } catch (firestoreError: unknown) {
-              console.error("Error adding document: ", firestoreError);
-              const errorMessage =
-                firestoreError instanceof Error
-                  ? firestoreError.message
-                  : "Unknown error occurred";
-              setError(`Failed to save metadata: ${errorMessage}`);
-            } finally {
-              setIsUploading(false);
-            }
-          })
-          .catch((urlError: unknown) => {
-            console.error("Error getting download URL:", urlError);
-            const errorMessage =
-              urlError instanceof Error
-                ? urlError.message
-                : "Unknown error occurred";
-            setError(`Failed to get image URL: ${errorMessage}`);
-            setIsUploading(false);
-          });
+      if (!response.ok) {
+        // Handle potential array of errors from backend if modified later
+        let errorMessage =
+          result.error || `Upload failed with status: ${response.status}`;
+        if (result.details) {
+          errorMessage += `: ${result.details}`;
+        }
+        if (Array.isArray(result.errors) && result.errors.length > 0) {
+          errorMessage = `Multiple errors occurred. First: ${result.errors[0]}`;
+        }
+        throw new Error(errorMessage);
       }
-    );
-    --- Original Firebase Logic End --- */
+
+      setSuccess(true);
+      // Update success message for multiple files
+      setSuccessMessage(
+        result.message ||
+          `${
+            result.count || filesWithMetadata.length
+          } file(s) uploaded successfully!`
+      );
+
+      // Reset state
+      setFilesWithMetadata([]); // Clear files
+      setGlobalDateTaken("");
+      setGlobalLocation("");
+      setGlobalPhotographer("");
+      setGlobalCategory("");
+      setGlobalEvent("");
+      // Reset file input visually (important if not resetting e.target.value in handleFileChange)
+      const fileInput = document.getElementById(
+        "fileInput"
+      ) as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = "";
+      }
+    } catch (err: any) {
+      console.error("Upload failed:", err);
+      setError(`Upload failed: ${err.message}`);
+      setSuccess(false);
+      setSuccessMessage("");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -140,9 +204,9 @@ function UploadForm() {
         </div>
       )}
 
-      {success && (
+      {success && successMessage && (
         <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-          Photo uploaded successfully!
+          {successMessage}
         </div>
       )}
 
@@ -180,21 +244,70 @@ function UploadForm() {
                     id="fileInput"
                     type="file"
                     className="sr-only"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     onChange={handleFileChange}
                     required
+                    multiple
                   />
                 </label>
                 <p className="pl-1">or drag and drop</p>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+              <p className="text-xs text-gray-500">Images or Videos</p>
             </div>
           </div>
-          {imageFile && (
-            <p className="mt-1 text-sm text-gray-500">
-              Selected: {imageFile.name}
-            </p>
+          {/* Display names of selected files - REMOVED */}
+          {/* {filesWithMetadata.length > 0 && ( 
+            <div className="mt-2 text-sm text-gray-600">
+              <p>Selected files:</p>
+              <ul className="list-disc list-inside pl-4 max-h-20 overflow-y-auto">
+                {filesWithMetadata.map((item, index) => (
+                  <li key={index} className="truncate">
+                    {item.file.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )} */}
+
+          {/* --- Image Preview Section --- */}
+          {filesWithMetadata.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {filesWithMetadata.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative group cursor-pointer"
+                  onClick={() => {
+                    setSelectedFileId(item.id);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <img
+                    src={item.previewUrl}
+                    alt={`Preview of ${item.file.name}`}
+                    className="h-24 w-full object-cover rounded-md border border-gray-300"
+                  />
+                  {/* Optional: Add an overlay or icon indicating clickability */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-opacity duration-200">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-white opacity-0 group-hover:opacity-100"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
+          {/* --- End Image Preview Section --- */}
         </div>
 
         <div>
@@ -202,14 +315,13 @@ function UploadForm() {
             htmlFor="dateTaken"
             className="block text-sm font-medium text-gray-700"
           >
-            Date Taken:
+            Date Taken: (Optional)
           </label>
           <input
             type="date"
             id="dateTaken"
-            value={dateTaken}
-            onChange={(e) => setDateTaken(e.target.value)}
-            required
+            value={globalDateTaken}
+            onChange={(e) => setGlobalDateTaken(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
@@ -219,14 +331,13 @@ function UploadForm() {
             htmlFor="location"
             className="block text-sm font-medium text-gray-700"
           >
-            Location:
+            Location: (Optional)
           </label>
           <input
             type="text"
             id="location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            required
+            value={globalLocation}
+            onChange={(e) => setGlobalLocation(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             placeholder="Where was the photo taken?"
           />
@@ -237,16 +348,32 @@ function UploadForm() {
             htmlFor="photographer"
             className="block text-sm font-medium text-gray-700"
           >
-            Photographer:
+            Photographer: (Optional)
           </label>
           <input
             type="text"
             id="photographer"
-            value={photographer}
-            onChange={(e) => setPhotographer(e.target.value)}
-            required
+            value={globalPhotographer}
+            onChange={(e) => setGlobalPhotographer(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             placeholder="Who took the photo?"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="event"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Event: (Optional)
+          </label>
+          <input
+            type="text"
+            id="event"
+            value={globalEvent}
+            onChange={(e) => setGlobalEvent(e.target.value)}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            placeholder="What event was this for?"
           />
         </div>
 
@@ -259,10 +386,10 @@ function UploadForm() {
           </label>
           <select
             id="category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
+            value={globalCategory}
+            onChange={(e) => setGlobalCategory(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            required
           >
             <option value="">Select a category</option>
             {categories.map((cat) => (
@@ -273,23 +400,13 @@ function UploadForm() {
           </select>
         </div>
 
-        {isUploading && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-indigo-600 h-2.5 rounded-full"
-              style={{ width: `${progress}%` }}
-            ></div>
-            <p className="text-sm text-gray-500 mt-1">Uploading: {progress}%</p>
-          </div>
-        )}
-
         <div className="pt-4">
           <button
             type="submit"
-            disabled={isUploading}
+            disabled={isUploading || filesWithMetadata.length === 0}
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              isUploading
-                ? "bg-indigo-400 cursor-not-allowed font-serif"
+              isUploading || filesWithMetadata.length === 0
+                ? "bg-indigo-400 cursor-not-allowed"
                 : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             }`}
           >
@@ -318,7 +435,9 @@ function UploadForm() {
                 Uploading...
               </span>
             ) : (
-              "Upload Photo"
+              `Upload ${
+                filesWithMetadata.length > 0 ? filesWithMetadata.length : ""
+              } Photo(s)`
             )}
           </button>
         </div>

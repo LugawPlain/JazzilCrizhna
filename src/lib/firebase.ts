@@ -1,8 +1,7 @@
-/*
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-// import { getAuth } from "firebase/auth"; // Commented out
+import { getAuth } from "firebase/auth"; // Commented out
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -22,14 +21,6 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const storage = getStorage(app);
-// const auth = getAuth(app); // Commented out
+const auth = getAuth(app); // Commented out
 
-export { app, db, storage }; // Removed auth from export
-// export { app, db, storage, auth }; // Original line
-*/
-
-// Dummy exports to prevent import errors, these should be removed when Firebase is re-enabled
-const app = {};
-const db = {};
-const storage = {};
-export { app, db, storage };
+export { app, db, storage, auth }; // Original line
