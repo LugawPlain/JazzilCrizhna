@@ -5,9 +5,12 @@ import { useState, useEffect } from "react";
 import { categories } from "../portfolio/CategoryData";
 import Marquee from "react-fast-marquee";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession, signIn, signOut } from "next-auth/react";
+import Image from "next/image";
 
 export default function Header() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
@@ -144,6 +147,37 @@ export default function Header() {
               >
                 Contact
               </Link>
+
+              {/* Auth Buttons - Desktop */}
+              {status === "loading" ? (
+                <div className="text-white">Loading...</div>
+              ) : session ? (
+                <div className="flex items-center space-x-4">
+                  {session.user?.image && (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || "User avatar"}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <button
+                    onClick={() => signOut()}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => signIn("google")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                >
+                  Login with Google
+                </button>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -289,6 +323,48 @@ export default function Header() {
             >
               Contact
             </Link>
+
+            {/* Auth Buttons - Mobile */}
+            <div className="mt-6 pt-6 border-t border-gray-700">
+              {status === "loading" ? (
+                <div className="text-white text-center">Loading...</div>
+              ) : session ? (
+                <div className="flex flex-col items-center space-y-4">
+                  {session.user?.image && (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || "User avatar"}
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <span className="text-white text-lg">
+                    {session.user?.name}
+                  </span>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-lg transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    signIn("google");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-lg transition-colors"
+                >
+                  Login with Google
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

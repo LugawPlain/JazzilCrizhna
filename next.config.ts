@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         hostname: "raw.githubusercontent.com",
         pathname: "**",
       },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        port: "",
+        pathname: "/**",
+      },
     ],
     // Useful for images stored in GitHub LFS
     minimumCacheTTL: 60 * 60 * 24 * 7, // 1 week
