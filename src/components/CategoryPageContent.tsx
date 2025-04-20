@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 import SettingsPanel from "@/app/components/SettingsPanel";
 import FullscreenViewer from "@/components/FullscreenViewer";
 import ImageCard from "@/components/ImageCard";
@@ -56,6 +57,13 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const [userColumnCount, setUserColumnCount] = useState<number | null>(null);
   const [activeLayout, setActiveLayout] = useState<ImageData[][]>([]);
   const [activeColumnCount, setActiveColumnCount] = useState(1);
+  const [pinnedImageKeys, setPinnedImageKeys] = useState<Set<string>>(
+    new Set()
+  );
+
+  // Get session data
+  const { data: session, status: sessionStatus } = useSession();
+  const isAdmin = session?.user?.role === "admin";
 
   // Decode category name from URL
   const category = decodeURIComponent(rawCategory);
@@ -157,6 +165,43 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     }
   }, [category, r2PublicUrl]);
 
+  // Fetch pinned images on mount (if admin)
+  useEffect(() => {
+    const fetchPinnedStatus = async () => {
+      if (isAdmin && category) {
+        try {
+          // TODO: Implement this API endpoint
+          const response = await fetch(
+            `/api/pinned-images?category=${encodeURIComponent(category)}`
+          );
+          if (response.ok) {
+            const pinnedKeys: string[] = await response.json();
+            setPinnedImageKeys(new Set(pinnedKeys));
+            console.log("Fetched pinned image keys:", pinnedKeys);
+          } else {
+            console.error(
+              "Failed to fetch pinned images:",
+              response.statusText
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching pinned images:", error);
+        }
+      } else {
+        // Clear pinned status if not admin or no category
+        setPinnedImageKeys(new Set());
+      }
+    };
+
+    // Fetch only when session is loaded and category is known
+    if (
+      sessionStatus === "authenticated" ||
+      sessionStatus === "unauthenticated"
+    ) {
+      fetchPinnedStatus();
+    }
+  }, [isAdmin, category, sessionStatus]);
+
   // Event handlers
   const handleClose = useCallback(() => {
     setSelectedImageIndex(null);
@@ -256,6 +301,75 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     },
     [images]
   );
+
+  // Pin/Unpin handler
+  const handlePinClick = useCallback(
+    async (imageToToggle: ImageData) => {
+      if (!isAdmin || !imageToToggle.r2FileKey) {
+        console.warn("Pin action aborted: Not admin or image missing key.");
+        return;
+      }
+
+      const key = imageToToggle.r2FileKey;
+      const isCurrentlyPinned = pinnedImageKeys.has(key);
+
+      // Optimistic UI update
+      setPinnedImageKeys((prevKeys) => {
+        const newKeys = new Set(prevKeys);
+        if (isCurrentlyPinned) {
+          newKeys.delete(key);
+        } else {
+          newKeys.add(key);
+        }
+        return newKeys;
+      });
+
+      // API call to update backend
+      try {
+        // TODO: Implement this API endpoint
+        const response = await fetch("/api/toggle-pin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            r2FileKey: key,
+            category: imageToToggle.category, // Pass category for potential backend logic
+            pin: !isCurrentlyPinned, // Send the desired state
+          }),
+        });
+
+        if (!response.ok) {
+          // Revert optimistic update on failure
+          console.error("Failed to update pin status:", response.statusText);
+          setPinnedImageKeys((prevKeys) => {
+            const revertedKeys = new Set(prevKeys);
+            if (isCurrentlyPinned) {
+              revertedKeys.add(key); // Add back if delete failed
+            } else {
+              revertedKeys.delete(key); // Remove if add failed
+            }
+            return revertedKeys;
+          });
+          // Optionally show an error message to the user
+        } else {
+          console.log(`Image ${key} pin status toggled successfully.`);
+        }
+      } catch (error) {
+        console.error("Error toggling pin status:", error);
+        // Revert optimistic update on error
+        setPinnedImageKeys((prevKeys) => {
+          const revertedKeys = new Set(prevKeys);
+          if (isCurrentlyPinned) {
+            revertedKeys.add(key);
+          } else {
+            revertedKeys.delete(key);
+          }
+          return revertedKeys;
+        });
+        // Optionally show an error message to the user
+      }
+    },
+    [isAdmin, pinnedImageKeys, category]
+  ); // <-- Include dependencies
 
   // Update active layout and column count based on window size
   useEffect(() => {
@@ -357,6 +471,11 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
                     index={originalIndex}
                     onImageClick={() => handleImageClick(originalIndex)}
                     totalColumns={activeColumnCount}
+                    isAdmin={isAdmin}
+                    pinned={
+                      !!image.r2FileKey && pinnedImageKeys.has(image.r2FileKey)
+                    }
+                    onPinClick={handlePinClick}
                   />
                 );
               })}

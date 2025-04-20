@@ -19,10 +19,21 @@ interface ImageCardProps {
   index: number;
   totalColumns: number;
   onImageClick: (image: ImageData, index: number) => void;
+  isAdmin?: boolean;
+  pinned?: boolean;
+  onPinClick?: (image: ImageData) => void;
 }
 
 const ImageCard = React.memo(
-  ({ image, index, totalColumns, onImageClick }: ImageCardProps) => {
+  ({
+    image,
+    index,
+    totalColumns,
+    onImageClick,
+    isAdmin = false,
+    pinned = false,
+    onPinClick,
+  }: ImageCardProps) => {
     const ref = useRef<HTMLDivElement>(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
     const [isLoaded, setIsLoaded] = useState(false);
@@ -99,6 +110,51 @@ const ImageCard = React.memo(
             decoding="async"
             fetchPriority={index < 4 ? "high" : "low"}
           />
+
+          {/* Admin Pin Star Overlay (Placeholder) */}
+          {isAdmin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering onImageClick
+                onPinClick?.(image);
+              }}
+              className="absolute top-2 right-2 z-10 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/75 focus:outline-none"
+              aria-label={pinned ? "Unpin image" : "Pin image"}
+            >
+              {/* Star SVG will go here */}
+              {pinned ? (
+                // Filled Star SVG Placeholder
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-6 h-6 text-yellow-400"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              ) : (
+                // Outline Star SVG Placeholder
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.31h5.518a.562.562 0 0 1 .329.958l-4.48 3.261a.564.564 0 0 0-.186.618l1.708 5.332a.562.562 0 0 1-.827.623l-4.54-2.738a.563.563 0 0 0-.626 0l-4.54 2.738a.562.562 0 0 1-.827-.623l1.708-5.332a.564.564 0 0 0-.186-.618L2.43 9.88a.562.562 0 0 1 .329-.958h5.518a.563.563 0 0 0 .475-.31L11.48 3.5Z"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
 
           {/* Image Info Overlay */}
           <div
