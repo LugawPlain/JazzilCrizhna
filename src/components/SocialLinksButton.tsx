@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
 import FacebookPageIcon from "./icons/FacebookPageIcon";
+import SocialMediaIcon from "./icons/SocialMediaIcon";
 import socialLinks from "../data/socialLinks.json";
 
 const SocialLinksButton = () => {
@@ -119,28 +121,31 @@ const SocialLinksButton = () => {
         ))}
       </div>
 
-      {/* Main Toggle Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group relative z-10 cursor-pointer"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className={`h-6 w-6 text-white transition-transform duration-500 group-hover:motion-preset-shake ${
-            isOpen ? "rotate-45" : ""
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      {/* Container for Button and Text */}
+      <div className="relative">
+        {/* Main Toggle Button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex text-white items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group relative z-10 cursor-pointer"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          />
-        </svg>
-      </button>
+          <SocialMediaIcon width={40} height={40} />
+        </button>
+        {/* Animated Text element */}
+        <motion.div
+          className="absolute top-1/2 right-full transform -translate-y-1/2 mr-2 text-white whitespace-nowrap"
+          initial={{ x: 0 }}
+          animate={{ x: [0, -5, 0] }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            repeatType: "loop",
+            ease: "easeInOut",
+            repeatDelay: 2,
+          }}
+        >
+          Social Media Links!!!
+        </motion.div>
+      </div>
     </div>
   );
 };
