@@ -12,16 +12,6 @@ export default function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
 
-  // --- Debugging Logs ---
-  console.log("Header Session Status:", status);
-  console.log("Header Session Data:", session);
-  // Check specific properties if session exists
-  if (session) {
-    console.log("Session User Role:", session.user?.role);
-    console.log("Session User Image:", session.user?.image);
-  }
-  // --- End Debugging Logs ---
-
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(true);
@@ -37,6 +27,13 @@ export default function Header() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Add the useEffect hook to log only when session/status change
+  useEffect(() => {
+    // This will only run when the session or status changes
+    // console.log("Session status changed:", status);
+    // console.log("Session data:", session);
+  }, [session, status]);
 
   // Don't render the header on the home page
   if (pathname === "/") {

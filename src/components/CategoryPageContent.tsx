@@ -60,6 +60,9 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const [pinnedImageKeys, setPinnedImageKeys] = useState<Set<string>>(
     new Set()
   );
+  const [rawFetchedImages, setRawFetchedImages] = useState<ImageData[] | null>(
+    null
+  );
 
   // Get session data
   const { data: session, status: sessionStatus } = useSession();
@@ -149,7 +152,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           return timeB - timeA;
         });
 
-        setImages(sortedImages);
+        setRawFetchedImages(sortedImages);
       } catch (error: unknown) {
         console.error("Error fetching images:", error);
         setError(
@@ -165,19 +168,19 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     }
   }, [category, r2PublicUrl]);
 
-  // Fetch pinned images on mount (if admin)
+  // Fetch pinned images on mount (for sorting)
   useEffect(() => {
     const fetchPinnedStatus = async () => {
-      if (isAdmin && category) {
+      // Fetch pinned status for all users to ensure correct sorting
+      if (category) {
         try {
-          // TODO: Implement this API endpoint
+          // TODO: Ensure this API endpoint allows reads for all users (or adjust if needed)
           const response = await fetch(
             `/api/pinned-images?category=${encodeURIComponent(category)}`
           );
           if (response.ok) {
             const pinnedKeys: string[] = await response.json();
             setPinnedImageKeys(new Set(pinnedKeys));
-            console.log("Fetched pinned image keys:", pinnedKeys);
           } else {
             console.error(
               "Failed to fetch pinned images:",
@@ -188,19 +191,54 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           console.error("Error fetching pinned images:", error);
         }
       } else {
-        // Clear pinned status if not admin or no category
+        // Clear pinned status if no category
         setPinnedImageKeys(new Set());
       }
     };
 
-    // Fetch only when session is loaded and category is known
-    if (
-      sessionStatus === "authenticated" ||
-      sessionStatus === "unauthenticated"
-    ) {
+    // Fetch only when session status is determined and category is known
+    // Session status check ensures we don't fetch before knowing if user *could* be admin
+    // (even though fetching is now for all, the dependency makes sense)
+    if (sessionStatus !== "loading" && category) {
       fetchPinnedStatus();
     }
-  }, [isAdmin, category, sessionStatus]);
+  }, [category, sessionStatus]); // Removed isAdmin dependency
+
+  // Effect to sort images once raw data and pinned keys are available
+  useEffect(() => {
+    if (rawFetchedImages === null) {
+      // Don't sort until images are fetched
+      return;
+    }
+
+    const sorted = [...rawFetchedImages].sort((a, b) => {
+      const aIsPinned = !!a.r2FileKey && pinnedImageKeys.has(a.r2FileKey);
+      const bIsPinned = !!b.r2FileKey && pinnedImageKeys.has(b.r2FileKey);
+
+      // 1. Pinned images first
+      if (aIsPinned !== bIsPinned) {
+        return aIsPinned ? -1 : 1;
+      }
+
+      // 2. Within pinned/unpinned, sort by date (newest first)
+      const dateA = a.eventDate
+        ? new Date(a.eventDate).getTime()
+        : a.uploadedAt
+        ? new Date(a.uploadedAt).getTime()
+        : 0;
+      const dateB = b.eventDate
+        ? new Date(b.eventDate).getTime()
+        : b.uploadedAt
+        ? new Date(b.uploadedAt).getTime()
+        : 0;
+      const timeA = isNaN(dateA) ? 0 : dateA;
+      const timeB = isNaN(dateB) ? 0 : dateB;
+      return timeB - timeA;
+    });
+
+    setImages(sorted);
+    setLoading(false); // Stop loading indicator now that images are sorted and ready
+  }, [rawFetchedImages, pinnedImageKeys]); // Trigger sorting when either data changes
 
   // Event handlers
   const handleClose = useCallback(() => {
@@ -351,7 +389,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           });
           // Optionally show an error message to the user
         } else {
-          console.log(`Image ${key} pin status toggled successfully.`);
         }
       } catch (error) {
         console.error("Error toggling pin status:", error);
@@ -388,13 +425,20 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       }
 
       setActiveColumnCount(columnsToUse);
-      setActiveLayout(distributeImages(columnsToUse));
+      // Distribute the *final sorted* images
+      if (images.length > 0) {
+        // Ensure images are loaded before distributing
+        setActiveLayout(distributeImages(columnsToUse));
+      }
     };
 
-    updateLayout();
-    window.addEventListener("resize", updateLayout);
-    return () => window.removeEventListener("resize", updateLayout);
-  }, [userColumnCount, distributeImages]);
+    // Don't run if images haven't been sorted yet
+    if (!loading) {
+      updateLayout();
+      window.addEventListener("resize", updateLayout);
+      return () => window.removeEventListener("resize", updateLayout);
+    }
+  }, [userColumnCount, distributeImages, images, loading]); // Depend on final 'images' and loading state
 
   // Render logic
   if (!r2PublicUrl) {

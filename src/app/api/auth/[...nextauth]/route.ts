@@ -1,4 +1,4 @@
-import NextAuth, { type DefaultSession } from "next-auth";
+import NextAuth, { type DefaultSession, type AuthOptions } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 
@@ -20,7 +20,8 @@ declare module "next-auth/jwt" {
   }
 }
 
-const handler = NextAuth({
+// Define the configuration object
+export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -30,61 +31,41 @@ const handler = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
-      console.log("--- [SignIn Callback] --- Triggered ---");
-      console.log("[SignIn Callback] User:", JSON.stringify(user, null, 2));
-      console.log(
-        "[SignIn Callback] Account:",
-        JSON.stringify(account, null, 2)
-      );
-      console.log(
-        "[SignIn Callback] Profile:",
-        JSON.stringify(profile, null, 2)
-      );
-      // We don't need to modify anything here, just log.
-      // Returning true allows the sign-in to proceed.
+      // Only log on actual sign-ins, not token refreshes
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Auth] User sign-in: ${user.email}`);
+      }
       return true;
     },
     async jwt({ token, user, account, profile }) {
-      console.log("[JWT Callback] Triggered");
+      // Only log detailed information during initial sign-in
       if (user && account) {
-        console.log("[JWT Callback] Initial sign in or update");
         token.id = user.id;
         const userEmail = user.email;
-        console.log("[JWT Callback] User Email:", userEmail);
 
         if (userEmail) {
-          // --- Restoring Original Env Var Check ---
           const adminEmailsString = process.env.ADMIN_EMAILS || "";
-          console.log(
-            "[JWT Callback] ADMIN_EMAILS env var:",
-            adminEmailsString
-          );
-
           const adminEmails = adminEmailsString
             .split(",")
             .map((email) => email.trim())
             .filter((email) => email);
-          console.log("[JWT Callback] Parsed Admin Emails Array:", adminEmails);
 
           const isAdmin = adminEmails.includes(userEmail);
-          console.log(`[JWT Callback] Is ${userEmail} in admin list?`, isAdmin);
-          // --- End Original Env Var Check ---
 
           if (isAdmin) {
             token.role = "admin";
           } else {
             token.role = "user";
           }
-          console.log("[JWT Callback] Assigned token.role:", token.role);
-        } else {
-          console.log("[JWT Callback] No user email found.");
+
+          // Only log role assignment during initial sign-in
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `[Auth] User ${userEmail} assigned role: ${token.role}`
+            );
+          }
         }
-      } else {
-        console.log(
-          "[JWT Callback] Not initial sign in, returning existing token."
-        );
       }
-      console.log("[JWT Callback] Returning token:", token);
       return token;
     },
     async session({ session, token }) {
@@ -93,6 +74,10 @@ const handler = NextAuth({
       return session;
     },
   },
-});
+};
 
+// Create the handler using the exported options
+const handler = NextAuth(authOptions);
+
+// Export the handler for GET and POST requests
 export { handler as GET, handler as POST };

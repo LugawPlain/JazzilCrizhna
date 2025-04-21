@@ -47,17 +47,25 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             </h3>
             <p className="text-white/80 font-serif text-xs md:text-sm md:translate-y-4 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 md:delay-200">
               {project.photographerlink ? (
-                <Link
-                  href={project.photographerlink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="pointer-events-auto underline md:pl-5 md:pt-5"
-                  onClick={(e) => e.stopPropagation()}
+                <span
+                  className="pointer-events-auto md:pl-5 md:pt-5 inline-block"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Stop the parent card click event
+                    window.open(
+                      project.photographerlink,
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                  }}
                 >
-                  {project.photographer}
-                </Link>
+                  <span className="underline cursor-pointer">
+                    {project.photographer}
+                  </span>
+                </span>
               ) : (
-                project.photographer
+                <span className="md:pl-5 md:pt-5 inline-block">
+                  {project.photographer}
+                </span>
               )}
             </p>
           </div>
