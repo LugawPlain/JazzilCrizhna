@@ -18,7 +18,7 @@ interface FileMetadata {
 
 function UploadForm() {
   // Keep global states for now, might be used as defaults or if no specific metadata is set
-  const [globalDateTaken, setGlobalDateTaken] = useState("");
+  const [globalDateTaken, setGlobalDateTaken] = useState("1/1/2000");
   const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
   const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
   const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
@@ -84,9 +84,9 @@ function UploadForm() {
             id,
             file,
             previewUrl,
-            // Initialize specific metadata to empty strings
+            // Initialize specific metadata with default date
             photographer: "",
-            dateTaken: "",
+            dateTaken: "1/1/2000", // Set default date
             location: "",
             event: "",
           };
@@ -227,7 +227,7 @@ function UploadForm() {
 
       // Reset state
       setFilesWithMetadata([]); // Clear files
-      setGlobalDateTaken("");
+      setGlobalDateTaken("1/1/2000");
       setGlobalLocation("");
       setGlobalPhotographer("");
       setGlobalCategory("");

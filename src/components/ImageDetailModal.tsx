@@ -25,6 +25,7 @@ interface ImageDetailModalProps {
   onNext: () => void;
   onPrev: () => void;
   onDetailsUpdated: (updatedImage: Partial<ImageData>) => void; // Add callback prop
+  onImageDeleted: (deletedImageId: string) => void; // Add this line
 }
 
 // Define the shape of editable data (excluding src, alt, id, r2FileKey)
@@ -33,6 +34,29 @@ type EditableImageData = Pick<
   "event" | "location" | "date" | "photographer" | "photographerLink"
 >;
 
+// Add helper functions near the top of the file, before the component
+
+// Function to get the end date from a possible date range string
+const getEndDate = (dateString: string): Date | null => {
+  if (!dateString) return null;
+
+  // Check if it's a range (contains a hyphen)
+  if (dateString.includes("-")) {
+    // Extract the end date (after the hyphen)
+    const endDateStr = dateString.split("-")[1].trim();
+    return new Date(endDateStr);
+  }
+
+  // Not a range, just a single date
+  return new Date(dateString);
+};
+
+// Function to format a date for display (handle ranges)
+const formatDateDisplay = (dateString: string): string => {
+  if (!dateString) return "N/A";
+  return dateString.trim();
+};
+
 const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   image,
   isAdmin,
@@ -40,6 +64,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   onNext,
   onPrev,
   onDetailsUpdated,
+  onImageDeleted,
 }) => {
   // --- State for Editing ---
   const [isEditing, setIsEditing] = useState(false);
@@ -52,6 +77,8 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Reset form data if the image prop changes (e.g., navigating with next/prev)
   useEffect(() => {
@@ -124,6 +151,26 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     }
 
     try {
+      // Basic date range validation
+      if (formData.date && formData.date.includes("-")) {
+        const dateParts = formData.date.split("-").map((part) => part.trim());
+        if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
+          setError("Date range format should be 'start - end'");
+          setIsSaving(false);
+          return;
+        }
+
+        // Optional: Add more validation for date formats here if needed
+        // For example, check if both parts are valid dates
+        const startDate = new Date(dateParts[0]);
+        const endDate = new Date(dateParts[1]);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          setError("Invalid date format in range");
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // TODO: Implement this API endpoint
       const response = await fetch("/api/admin/updateimagedetails", {
         method: "POST", // Or PUT
@@ -159,6 +206,60 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    setError(null);
+    const imageId = image.id || image.r2FileKey;
+
+    if (!imageId) {
+      setError("Cannot delete: Image identifier is missing.");
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/deleteimage", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier: imageId,
+          category: image.category,
+          r2FileKey: image.r2FileKey,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || `Failed to delete image (${response.status})`
+        );
+      }
+
+      // Call onImageDeleted with the deleted image's identifier
+      onImageDeleted(imageId);
+
+      // No need to call onClose here as onImageDeleted will handle that
+
+      // Notify user of successful deletion (this could be via a toast notification)
+      console.log("Image deleted successfully");
+    } catch (err: any) {
+      console.error("Error deleting image:", err);
+      setError(err.message || "An unknown error occurred during deletion.");
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -291,11 +392,10 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     value={formData.date}
                     onChange={handleInputChange}
                     className="input-field"
-                    placeholder="Date (e.g., YYYY-MM-DD)"
+                    placeholder="Single date or range (e.g., 4/10/2025 - 4/13/2025)"
                   />
                 ) : (
-                  /* Consider type="date" */
-                  <span>{formData.date}</span>
+                  <span>{formatDateDisplay(formData.date)}</span>
                 )}
               </p>
               {/* Photographer */}
@@ -312,24 +412,6 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     className="input-field"
                     placeholder="Photographer Name"
                   />
-                ) : (
-                  <span>{formData.photographer}</span>
-                )}
-              </p>
-              {/* Photographer Link */}
-              <p className="flex items-center">
-                <strong className="font-medium text-neutral-300 mr-2 w-24 flex-shrink-0">
-                  Photog Link:
-                </strong>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="photographerLink"
-                    value={formData.photographerLink}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="https://..."
-                  />
                 ) : formData.photographerLink &&
                   formData.photographerLink !== "#" ? (
                   <Link
@@ -339,12 +421,28 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     className="underline hover:text-neutral-100 transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {formData.photographerLink}
+                    {formData.photographer || "Unknown"}
                   </Link>
                 ) : (
-                  <span className="text-neutral-500 italic">N/A</span>
+                  <span>{formData.photographer || "Unknown"}</span>
                 )}
               </p>
+              {/* Photographer Link - Only visible in edit mode */}
+              {isEditing && (
+                <p className="flex items-center">
+                  <strong className="font-medium text-neutral-300 mr-2 w-24 flex-shrink-0">
+                    Photog URL:
+                  </strong>
+                  <input
+                    type="text"
+                    name="photographerLink"
+                    value={formData.photographerLink}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="https://..."
+                  />
+                </p>
+              )}
             </div>
 
             {/* Edit/Save/Cancel Buttons & Error Message */}
@@ -358,17 +456,24 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   <>
                     <button
                       onClick={handleSaveClick}
-                      disabled={isSaving}
+                      disabled={isSaving || isDeleting}
                       className="save-btn"
                     >
                       {isSaving ? "Saving..." : "Save Changes"}
                     </button>
                     <button
                       onClick={handleCancelClick}
-                      disabled={isSaving}
+                      disabled={isSaving || isDeleting}
                       className="cancel-btn"
                     >
                       Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteClick}
+                      disabled={isSaving || isDeleting}
+                      className="delete-btn"
+                    >
+                      Delete Image
                     </button>
                   </>
                 )}
@@ -401,6 +506,36 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
             />
           </svg>
         </button>
+
+        {showDeleteConfirm && (
+          <div className="absolute inset-0 bg-black/90 z-30 flex items-center justify-center p-4">
+            <div className="bg-neutral-800 p-6 rounded-lg max-w-md w-full">
+              <h3 className="text-xl font-bold text-white mb-4">
+                Confirm Deletion
+              </h3>
+              <p className="text-neutral-300 mb-6">
+                Are you sure you want to delete this image? This action cannot
+                be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded-md text-white"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -415,6 +550,8 @@ const SaveButtonStyles =
   "px-3 py-1 text-xs rounded bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50";
 const CancelButtonStyles =
   "px-3 py-1 text-xs rounded bg-neutral-600 hover:bg-neutral-700 transition-colors disabled:opacity-50";
+const DeleteButtonStyles =
+  "px-3 py-1 text-xs rounded bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50";
 
 // Helper component or apply styles directly
 // You might want to extract styles to a CSS module
@@ -427,6 +564,7 @@ const applyStyles = () => {
           .edit-btn { @apply ${EditButtonStyles}; }
           .save-btn { @apply ${SaveButtonStyles}; }
           .cancel-btn { @apply ${CancelButtonStyles}; }
+          .delete-btn { @apply ${DeleteButtonStyles}; }
       `;
     document.head.appendChild(styleSheet);
   }

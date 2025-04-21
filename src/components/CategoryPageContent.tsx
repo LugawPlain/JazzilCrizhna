@@ -44,6 +44,25 @@ const isFullscreenSupported = (): boolean => {
   );
 };
 
+// Add a helper function to extract the end date from a date range string
+const getEndDateFromRange = (
+  dateString: string | null | undefined
+): Date | null => {
+  if (!dateString) return null;
+
+  // Check if it's a range (contains a hyphen)
+  if (dateString.includes("-")) {
+    // Extract the end date (after the hyphen)
+    const endDateStr = dateString.split("-")[1].trim();
+    const endDate = new Date(endDateStr);
+    return isNaN(endDate.getTime()) ? null : endDate;
+  }
+
+  // Not a range, just a single date
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   category: rawCategory,
 }) => {
@@ -213,16 +232,26 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       }
 
       // 2. Within pinned/unpinned, sort by date (newest first)
-      const dateA = a.eventDate
-        ? new Date(a.eventDate).getTime()
-        : a.uploadedAt
-        ? new Date(a.uploadedAt).getTime()
-        : 0;
-      const dateB = b.eventDate
-        ? new Date(b.eventDate).getTime()
-        : b.uploadedAt
-        ? new Date(b.uploadedAt).getTime()
-        : 0;
+      // Handle date ranges by extracting end date
+      let dateA: number = 0;
+      let dateB: number = 0;
+
+      // First try eventDate or date field (might be a range)
+      if (a.eventDate || a.date) {
+        const extractedDate = getEndDateFromRange(a.eventDate || a.date);
+        dateA = extractedDate ? extractedDate.getTime() : 0;
+      } else if (a.uploadedAt) {
+        // Fallback to uploadedAt if eventDate/date is not available
+        dateA = new Date(a.uploadedAt).getTime();
+      }
+
+      if (b.eventDate || b.date) {
+        const extractedDate = getEndDateFromRange(b.eventDate || b.date);
+        dateB = extractedDate ? extractedDate.getTime() : 0;
+      } else if (b.uploadedAt) {
+        dateB = new Date(b.uploadedAt).getTime();
+      }
+
       const timeA = isNaN(dateA) ? 0 : dateA;
       const timeB = isNaN(dateB) ? 0 : dateB;
       return timeB - timeA;
@@ -473,6 +502,40 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     }
   }, [userColumnCount, distributeImages, images, loading]); // Depend on final 'images' and loading state
 
+  // Add an onImageDeleted callback
+  const handleImageDeleted = useCallback(
+    (deletedImageId: string) => {
+      // Close the modal if it's still open
+      setSelectedImageIndex(null);
+
+      // Remove the deleted image from state
+      setImages((prevImages) =>
+        prevImages.filter(
+          (img) => img.id !== deletedImageId && img.r2FileKey !== deletedImageId
+        )
+      );
+
+      // Also update rawFetchedImages to keep them in sync
+      setRawFetchedImages((prevRawImages) =>
+        prevRawImages
+          ? prevRawImages.filter(
+              (img) =>
+                img.id !== deletedImageId && img.r2FileKey !== deletedImageId
+            )
+          : null
+      );
+
+      // Optionally: Remove image URL query parameter
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("imageId");
+      const queryString = params.toString();
+      router.push(`${pathname}${queryString ? `?${queryString}` : ""}`, {
+        scroll: false,
+      });
+    },
+    [router, pathname, searchParams]
+  );
+
   // Render logic
   if (!r2PublicUrl) {
     return (
@@ -586,6 +649,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             onNext={handleModalNext}
             onPrev={handleModalPrev}
             onDetailsUpdated={handleDetailsUpdated}
+            onImageDeleted={handleImageDeleted}
           />
         )}
       </AnimatePresence>

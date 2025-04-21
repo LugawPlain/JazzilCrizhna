@@ -16,6 +16,40 @@ interface UpdateDetailsRequestBody {
   };
 }
 
+// Add validation helper for date ranges after the interface definition
+const validateDateRange = (dateString: string): boolean => {
+  // No validation needed for empty values
+  if (!dateString) return true;
+
+  // Check if it's a range format (contains a hyphen)
+  if (dateString.includes("-")) {
+    const dateParts = dateString.split("-").map((part) => part.trim());
+
+    // Must have exactly two parts with content
+    if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
+      return false;
+    }
+
+    // Try to parse both dates
+    const startDate = new Date(dateParts[0]);
+    const endDate = new Date(dateParts[1]);
+
+    // Both must be valid dates
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return false;
+    }
+
+    // Optionally check that end date is after start date
+    // return endDate >= startDate;
+
+    return true;
+  }
+
+  // If not a range, just check if it's a valid date
+  const date = new Date(dateString);
+  return !isNaN(date.getTime());
+};
+
 export async function POST(request: NextRequest) {
   // 1. Check Admin Authentication
   const session = await getServerSession(authOptions);
@@ -117,12 +151,26 @@ export async function POST(request: NextRequest) {
     if (updates.event !== undefined) dataToUpdate.event = updates.event;
     if (updates.location !== undefined)
       dataToUpdate.location = updates.location;
-    if (updates.date !== undefined) dataToUpdate.date = updates.date; // Store as string for now
+
+    // Validate date field (could be a range)
+    if (updates.date !== undefined) {
+      // Check for valid date format/range
+      if (!validateDateRange(updates.date)) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges.",
+          },
+          { status: 400 }
+        );
+      }
+      dataToUpdate.date = updates.date; // Store as string
+    }
+
     if (updates.photographer !== undefined)
       dataToUpdate.photographer = updates.photographer;
     if (updates.photographerLink !== undefined)
       dataToUpdate.photographerLink = updates.photographerLink;
-    // Add validation for date format, link format etc. here if needed
 
     if (Object.keys(dataToUpdate).length === 0) {
       return NextResponse.json(
