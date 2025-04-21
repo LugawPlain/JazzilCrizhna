@@ -11,7 +11,8 @@ interface ImageData {
   src: string;
   alt: string;
   date?: string; // For backwards compatibility - will be phased out
-  eventDate: string; // Primary date field to use going forward
+  eventDate: string; // FOR DISPLAY: Formatted string (e.g., "MM/DD/YYYY" or "MM/DD/YYYY - MM/DD/YYYY")
+  rawEventDate: string | null; // Original string from API (ISO, M/D/Y, M/D/Y - M/D/Y, or null)
   photographer: string;
   photographerLink: string;
   location: string;
@@ -43,6 +44,33 @@ const isFullscreenSupported = (): boolean => {
       .msFullscreenEnabled
   );
 };
+
+// Helper function to format the display date string
+function formatDisplayDate(rawDate: string | null | undefined): string {
+  if (!rawDate) return "N/A";
+
+  const trimmedDate = rawDate.trim();
+
+  // If it's already in the desired range format M/D/Y - M/D/Y or single M/D/Y, return as is
+  // (We assume the upload API now stores these formats directly)
+  const simpleDateRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+  const simpleRangeRegex =
+    /^\d{1,2}\/\d{1,2}\/\d{4}\s*-\s*\d{1,2}\/\d{1,2}\/\d{4}$/;
+  if (simpleDateRegex.test(trimmedDate) || simpleRangeRegex.test(trimmedDate)) {
+    return trimmedDate;
+  }
+
+  // If it's not the simple format, try parsing it as a date (could be ISO)
+  const dateObj = new Date(trimmedDate);
+  if (!isNaN(dateObj.getTime())) {
+    // Return in a consistent local date format
+    return dateObj.toLocaleDateString();
+  }
+
+  // Fallback: If it's not a recognized format, return the original string or N/A
+  console.warn(`[formatDisplayDate] Unrecognized date format: ${trimmedDate}`);
+  return trimmedDate || "N/A";
+}
 
 // Add a helper function to extract the end date from a date range string
 const getEndDateFromRange = (
@@ -154,27 +182,24 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
 
         const formattedImages: ImageData[] = fetchedData.map((item) => {
           const imageUrl = `${r2PublicUrl}/${item.r2FileKey}`;
-          // Format the date for display
-          const displayDate = item.eventDate
-            ? new Date(item.eventDate).toLocaleDateString()
-            : item.uploadedAt
-            ? new Date(item.uploadedAt).toLocaleDateString()
-            : "N/A";
+          const rawEventDate = item.eventDate || null; // Get original value
+          // Use the helper to format for display
+          const displayDate = formatDisplayDate(rawEventDate);
 
           return {
             src: imageUrl,
             alt: item.originalFilename || `Image for ${category}`,
-            eventDate: displayDate, // Primary date field
-            date: displayDate, // Keep for backwards compatibility
+            eventDate: displayDate, // Use the formatted display date
+            date: displayDate, // Backwards compatibility
+            rawEventDate: rawEventDate, // Store the original string
             photographer: item.photographer || "Unknown",
-            photographerLink: "#",
+            photographerLink: "#", // Default or use item.photographerLink if available
             location: item.location || "Unknown",
             event: item.event || "Unknown",
             id: item.id,
             r2FileKey: item.r2FileKey,
             originalFilename: item.originalFilename,
-            // Include the raw eventDate for sorting
-            uploadedAt: item.uploadedAt,
+            uploadedAt: item.uploadedAt, // Keep original uploadedAt for fallback sorting
             contentType: item.contentType,
             category: item.category,
           };
@@ -249,29 +274,30 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       }
 
       // 2. Within pinned/unpinned, sort by date (newest first)
-      // Handle date ranges by extracting end date
+      // Use rawEventDate for sorting logic
       let dateA: number = 0;
       let dateB: number = 0;
 
-      // First try eventDate or date field (might be a range)
-      if (a.eventDate || a.date) {
-        const extractedDate = getEndDateFromRange(a.eventDate || a.date);
+      // Use rawEventDate with getEndDateFromRange
+      if (a.rawEventDate) {
+        const extractedDate = getEndDateFromRange(a.rawEventDate); // Use raw date
         dateA = extractedDate ? extractedDate.getTime() : 0;
       } else if (a.uploadedAt) {
-        // Fallback to uploadedAt if eventDate/date is not available
+        // Fallback to uploadedAt
         dateA = new Date(a.uploadedAt).getTime();
       }
 
-      if (b.eventDate || b.date) {
-        const extractedDate = getEndDateFromRange(b.eventDate || b.date);
+      if (b.rawEventDate) {
+        const extractedDate = getEndDateFromRange(b.rawEventDate); // Use raw date
         dateB = extractedDate ? extractedDate.getTime() : 0;
       } else if (b.uploadedAt) {
+        // Fallback to uploadedAt
         dateB = new Date(b.uploadedAt).getTime();
       }
 
       const timeA = isNaN(dateA) ? 0 : dateA;
       const timeB = isNaN(dateB) ? 0 : dateB;
-      return timeB - timeA;
+      return timeB - timeA; // Newest first
     });
 
     setImages(sorted);
@@ -333,25 +359,24 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
 
                 const formattedImages: ImageData[] = fetchedData.map((item) => {
                   const imageUrl = `${r2PublicUrl}/${item.r2FileKey}`;
-                  const displayDate = item.eventDate
-                    ? new Date(item.eventDate).toLocaleDateString()
-                    : item.uploadedAt
-                    ? new Date(item.uploadedAt).toLocaleDateString()
-                    : "N/A";
+                  const rawEventDate = item.eventDate || null; // Get original value
+                  // Use the helper to format for display
+                  const displayDate = formatDisplayDate(rawEventDate);
 
                   return {
                     src: imageUrl,
                     alt: item.originalFilename || `Image for ${category}`,
-                    eventDate: displayDate,
-                    date: displayDate,
+                    eventDate: displayDate, // Use the formatted display date
+                    date: displayDate, // Backwards compatibility
+                    rawEventDate: rawEventDate, // Store the original string
                     photographer: item.photographer || "Unknown",
-                    photographerLink: "#",
+                    photographerLink: "#", // Default or use item.photographerLink
                     location: item.location || "Unknown",
                     event: item.event || "Unknown",
                     id: item.id,
                     r2FileKey: item.r2FileKey,
                     originalFilename: item.originalFilename,
-                    uploadedAt: item.uploadedAt,
+                    uploadedAt: item.uploadedAt, // Keep original uploadedAt for fallback sorting
                     contentType: item.contentType,
                     category: item.category,
                   };
@@ -757,7 +782,10 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
                     pinned={
                       !!image.r2FileKey && pinnedImageKeys.has(image.r2FileKey)
                     }
-                    onPinClick={handlePinClick}
+                    onPinClick={() => {
+                      // No need to await here, let it run in the background
+                      handlePinClick(image);
+                    }}
                   />
                 );
               })}
