@@ -501,8 +501,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     className="input-field"
                     placeholder="Photographer Name"
                   />
-                ) : formData.photographerLink &&
-                  formData.photographerLink !== "#" ? (
+                ) : formData.photographerLink ? (
                   <Link
                     href={formData.photographerLink}
                     target="_blank"
@@ -510,10 +509,10 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     className="underline hover:text-neutral-100 transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {formData.photographer || "Unknown"}
+                    {formData.photographer}
                   </Link>
                 ) : (
-                  <span>{formData.photographer || "Unknown"}</span>
+                  <span>{formData.photographer}</span>
                 )}
               </p>
               {/* Photographer Link - Only visible in edit mode */}

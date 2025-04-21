@@ -4,6 +4,7 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { dbAdmin } from "@/lib/firebase/adminApp";
+import { revalidateTag } from "next/cache";
 
 // Type for the expected request body
 interface DeleteImageRequestBody {
@@ -134,6 +135,19 @@ export async function DELETE(request: NextRequest) {
     console.log(
       `[API DeleteImage] Successfully deleted document ${docRef.id} from Firestore`
     );
+
+    // Add revalidateTag call here
+    try {
+      const tag = `images-${category.toLowerCase()}`;
+      revalidateTag(tag);
+      console.log(`[API DeleteImage] Revalidated tag: ${tag}`);
+    } catch (revalidateError) {
+      // Log the error but don't fail the request
+      console.error(
+        `[API DeleteImage] Failed to revalidate tag 'images-${category.toLowerCase()}':`,
+        revalidateError
+      );
+    }
 
     return NextResponse.json({
       success: true,

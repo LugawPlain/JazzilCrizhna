@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path if needed
 import { dbAdmin } from "@/lib/firebase/adminApp"; // Use shared Firestore instance
+import { revalidateTag } from "next/cache"; // <-- Import revalidateTag
 
 // Type for the expected request body
 interface UpdateDetailsRequestBody {
@@ -209,6 +210,20 @@ export async function POST(request: NextRequest) {
     console.log(`[API UpdateDetails] Fields changed:`, detailedChanges);
     console.log(`[API UpdateDetails] Admin user: ${session.user?.email}`);
     console.log(`[API UpdateDetails] Timestamp: ${new Date().toISOString()}`);
+
+    // <-- Add revalidateTag call here -->
+    try {
+      const tag = `images-${category.toLowerCase()}`;
+      revalidateTag(tag);
+      console.log(`[API UpdateDetails] Revalidated tag: ${tag}`);
+    } catch (revalidateError) {
+      // Log the error but don't fail the request
+      console.error(
+        `[API UpdateDetails] Failed to revalidate tag 'images-${category.toLowerCase()}':`,
+        revalidateError
+      );
+    }
+    // <-- End revalidateTag call -->
 
     // Add a timestamp to the response and prevent caching
     return NextResponse.json(
