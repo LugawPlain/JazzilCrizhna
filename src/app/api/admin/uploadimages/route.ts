@@ -4,34 +4,8 @@ import formidable, { errors as FormidableErrors } from "formidable";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
-import admin from "firebase-admin"; // Import firebase-admin
-import { FieldValue, Firestore } from "firebase-admin/firestore"; // Import Firestore type
-
-// --- Firebase Admin Initialization ---
-let db: Firestore; // Declare db outside with type
-
-if (!admin.apps.length) {
-  try {
-    const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (!serviceAccountPath) {
-      throw new Error(
-        "GOOGLE_APPLICATION_CREDENTIALS environment variable not set."
-      );
-    }
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
-    });
-    console.log("Firebase Admin initialized successfully.");
-    db = admin.firestore(); // Assign db ONLY on success
-  } catch (error: any) {
-    console.error(
-      "CRITICAL: Firebase Admin initialization failed:",
-      error.message
-    );
-    // Explicitly leave db unassigned or handle error more gracefully
-    // We will rely on the check within the POST handler
-  }
-}
+import { dbAdmin } from "@/lib/firebase/adminApp"; // <--- Import CORRECT export 'dbAdmin'
+import { FieldValue } from "firebase-admin/firestore"; // Keep FieldValue if used
 
 interface FileSpecificMetadata {
   photographer: string | null;
@@ -42,19 +16,18 @@ interface FileSpecificMetadata {
 }
 
 export async function POST(request: NextRequest) {
-  // --- Updated check for Firebase Initialization ---
-  if (!admin.apps.length || !db) {
-    // Check if admin app exists AND db is initialized
+  // --- Use the imported dbAdmin instance ---
+  if (!dbAdmin) {
     console.error(
-      "Firebase Admin SDK is not initialized properly. Cannot process upload."
+      "[Upload API] Firestore instance (dbAdmin) is not available. Check lib/firebase/adminApp logs."
     );
     return NextResponse.json(
-      { error: "Server configuration error (Firebase not ready)." }, // More specific error
+      { error: "Server configuration error (Database not ready)." },
       { status: 500 }
     );
   }
   console.log(
-    "[/api/uploadimages] POST request received. Firebase check passed."
+    "[/api/uploadimages] POST request received. Firestore check passed."
   );
 
   try {
@@ -239,7 +212,9 @@ export async function POST(request: NextRequest) {
           console.log(
             `[/api/uploadimages] Saving Firestore data for ${currentFileName} to collection ${collectionName}...`
           );
-          const docRef = await db.collection(collectionName).add(uploadData);
+          const docRef = await dbAdmin
+            .collection(collectionName)
+            .add(uploadData);
           firestoreDocId = docRef.id;
           console.log(
             `[/api/uploadimages] Firestore save successful for ${currentFileName}. Doc ID: ${firestoreDocId}`

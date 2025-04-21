@@ -1,40 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import admin from "firebase-admin";
-import { App, getApps, initializeApp, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { dbAdmin } from "@/lib/firebase/adminApp";
 
-// --- Firebase Admin Initialization ---
-// Ensure you have your service account key JSON file
-// and the GOOGLE_APPLICATION_CREDENTIALS env variable set
-// OR initialize manually:
-/*
-const serviceAccount = require('/path/to/your/serviceAccountKey.json'); // Adjust path
-
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
-} else {
-  admin.app(); // If already initialized, use that app
-}
-*/
-
-// Safer initialization checking if apps exist
-let app: App;
-if (getApps().length === 0) {
-  // If using GOOGLE_APPLICATION_CREDENTIALS env var:
-  app = initializeApp();
-  // If using manual credentials (uncomment the import/path above):
-  // app = initializeApp({ credential: cert(serviceAccount) });
-} else {
-  app = admin.app();
-}
-
-const db = getFirestore(app);
-// const imagesCollection = db.collection("images"); // Remove hardcoded collection
-// ------------------------------------
+// Removed admin, App, getFirestore imports and the initialization block
 
 export async function GET(request: NextRequest) {
+  // --- Check if dbAdmin is available ---
+  if (!dbAdmin) {
+    console.error(
+      "[API/pinned-images] Firestore instance (dbAdmin) is not available. Check lib/firebase/adminApp logs."
+    );
+    return NextResponse.json(
+      { error: "Server configuration error (Database not ready)." },
+      { status: 500 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
 
@@ -45,12 +25,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Construct dynamic collection name, ensuring lowercase
+  // Construct dynamic collection name
   const collectionName = `${category.toLowerCase()}_uploads`;
-  console.log(
-    `[API/pinned-images] Using dynamic collection (forced lowercase): '${collectionName}'`
-  );
-  const dynamicCollection = db.collection(collectionName);
+  const dynamicCollection = dbAdmin.collection(collectionName);
 
   console.log(`[API/pinned-images] Fetching for category: ${category}`);
 
@@ -98,5 +75,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-  // No finally block needed for Firestore client connection management typically
 }

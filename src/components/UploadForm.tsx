@@ -196,7 +196,7 @@ function UploadForm() {
       //    console.log(pair[0]+ ': '+ pair[1]);
       // }
 
-      const response = await fetch("/api/uploadimages", {
+      const response = await fetch("/api/admin/uploadimages", {
         method: "POST",
         body: formData,
       });

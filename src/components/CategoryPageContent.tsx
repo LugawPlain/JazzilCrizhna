@@ -2,9 +2,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import SettingsPanel from "@/app/components/SettingsPanel";
-import FullscreenViewer from "@/components/FullscreenViewer";
 import ImageCard from "@/components/ImageCard";
+import ImageDetailModal from "@/components/ImageDetailModal";
 
 interface ImageData {
   src: string;
@@ -53,7 +54,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [userColumnCount, setUserColumnCount] = useState<number | null>(null);
   const [activeLayout, setActiveLayout] = useState<ImageData[][]>([]);
   const [activeColumnCount, setActiveColumnCount] = useState(1);
@@ -63,6 +63,11 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const [rawFetchedImages, setRawFetchedImages] = useState<ImageData[] | null>(
     null
   );
+
+  // Hooks for routing and params
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // Get session data
   const { data: session, status: sessionStatus } = useSession();
@@ -91,6 +96,9 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     const fetchImages = async () => {
       setLoading(true);
       setError(null);
+      setRawFetchedImages(null);
+      setImages([]);
+
       try {
         const response = await fetch(
           `/api/fetchimages?category=${encodeURIComponent(category)}`
@@ -136,23 +144,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           };
         });
 
-        const sortedImages = [...formattedImages].sort((a, b) => {
-          const dateA = a.eventDate
-            ? new Date(a.eventDate).getTime()
-            : a.uploadedAt
-            ? new Date(a.uploadedAt).getTime()
-            : 0;
-          const dateB = b.eventDate
-            ? new Date(b.eventDate).getTime()
-            : b.uploadedAt
-            ? new Date(b.uploadedAt).getTime()
-            : 0;
-          const timeA = isNaN(dateA) ? 0 : dateA;
-          const timeB = isNaN(dateB) ? 0 : dateB;
-          return timeB - timeA;
-        });
-
-        setRawFetchedImages(sortedImages);
+        setRawFetchedImages(formattedImages);
       } catch (error: unknown) {
         console.error("Error fetching images:", error);
         setError(
@@ -240,89 +232,104 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     setLoading(false); // Stop loading indicator now that images are sorted and ready
   }, [rawFetchedImages, pinnedImageKeys]); // Trigger sorting when either data changes
 
-  // Event handlers
-  const handleClose = useCallback(() => {
-    setSelectedImageIndex(null);
-
+  // Effect to handle opening modal based on URL query parameter
+  useEffect(() => {
+    const imageIdFromUrl = searchParams.get("imageId");
+    // Only run if images are loaded and the modal isn't already open via click
     if (
-      isFullscreen &&
-      (document.fullscreenElement || (document as any).webkitFullscreenElement)
+      imageIdFromUrl &&
+      !loading &&
+      images.length > 0 &&
+      selectedImageIndex === null
     ) {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch((err: Error) => {
-          console.error("Error exiting fullscreen:", err);
-        });
+      const index = images.findIndex(
+        (img) => img.id === imageIdFromUrl || img.r2FileKey === imageIdFromUrl
+      );
+      if (index !== -1) {
+        setSelectedImageIndex(index);
+        // Don't push history state here, just reflect the existing URL state
       } else {
-        const webkitExitFullscreen = (
-          document as Document & { webkitExitFullscreen?: () => Promise<void> }
-        ).webkitExitFullscreen;
-        const mozCancelFullScreen = (
-          document as Document & { mozCancelFullScreen?: () => Promise<void> }
-        ).mozCancelFullScreen;
-        const msExitFullscreen = (
-          document as Document & { msExitFullscreen?: () => Promise<void> }
-        ).msExitFullscreen;
-
-        if (webkitExitFullscreen) {
-          webkitExitFullscreen();
-        } else if (mozCancelFullScreen) {
-          mozCancelFullScreen();
-        } else if (msExitFullscreen) {
-          msExitFullscreen();
-        }
+        console.warn(
+          `Image ID ${imageIdFromUrl} from URL not found in loaded images.`
+        );
+        // Optional: Remove invalid query param if image not found
+        // router.push(pathname, { scroll: false });
       }
-      setIsFullscreen(false);
     }
-  }, [isFullscreen]);
+    // If no imageId in URL, ensure modal is closed (unless just opened by click)
+    // This handles browser back button correctly
+    if (!imageIdFromUrl && selectedImageIndex !== null) {
+      // Check if the modal was likely closed by user interaction rather than back button
+      // This check is imperfect but avoids closing immediately after clicking open
+      setTimeout(() => {
+        const currentQueryId = new URLSearchParams(window.location.search).get(
+          "imageId"
+        );
+        if (!currentQueryId) {
+          setSelectedImageIndex(null);
+        }
+      }, 50); // Small delay to allow click handler to update state
+    }
+  }, [searchParams, images, loading, selectedImageIndex, pathname]); // Add dependencies
 
-  const handleNext = useCallback(() => {
+  // Modal open handler
+  const handleImageClick = useCallback(
+    (index: number) => {
+      setSelectedImageIndex(index);
+      const imageId = images[index]?.id || images[index]?.r2FileKey; // Use id or r2FileKey as identifier
+      if (imageId) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("imageId", imageId);
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    },
+    [images, router, pathname, searchParams]
+  );
+
+  // Modal close handler
+  const handleCloseModal = useCallback(() => {
+    setSelectedImageIndex(null);
+    // Remove the imageId query parameter
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("imageId");
+    const queryString = params.toString();
+    router.push(`${pathname}${queryString ? `?${queryString}` : ""}`, {
+      scroll: false,
+    });
+  }, [router, pathname, searchParams]);
+
+  // Navigation handlers for Modal (if needed)
+  const handleModalNext = useCallback(() => {
     if (selectedImageIndex === null) return;
-    const newIndex =
-      selectedImageIndex < images.length - 1 ? selectedImageIndex + 1 : 0;
-    setSelectedImageIndex(newIndex);
-  }, [selectedImageIndex, images.length]);
+    const newIndex = (selectedImageIndex + 1) % images.length; // Wrap around
+    handleImageClick(newIndex); // Reuse click logic to update URL and state
+  }, [selectedImageIndex, images.length, handleImageClick]);
 
-  const handlePrev = useCallback(() => {
+  const handleModalPrev = useCallback(() => {
     if (selectedImageIndex === null) return;
-    const newIndex =
-      selectedImageIndex > 0 ? selectedImageIndex - 1 : images.length - 1;
-    setSelectedImageIndex(newIndex);
-  }, [selectedImageIndex, images.length]);
+    const newIndex = (selectedImageIndex - 1 + images.length) % images.length; // Wrap around
+    handleImageClick(newIndex); // Reuse click logic to update URL and state
+  }, [selectedImageIndex, images.length, handleImageClick]);
 
-  // Keyboard navigation
+  // Keyboard navigation for Modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Only act if modal is effectively open (selectedImageIndex is not null)
       if (selectedImageIndex !== null) {
         if (e.key === "Escape") {
-          handleClose();
+          handleCloseModal();
         } else if (e.key === "ArrowRight") {
-          handleNext();
+          handleModalNext();
         } else if (e.key === "ArrowLeft") {
-          handlePrev();
+          handleModalPrev();
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleClose, handleNext, handlePrev, selectedImageIndex]);
-
-  // Image click handler
-  const handleImageClick = useCallback(
-    async (index: number) => {
-      setSelectedImageIndex(index);
-      try {
-        if (!isFullscreen && isFullscreenSupported()) {
-          await document.documentElement.requestFullscreen();
-          setIsFullscreen(true);
-        }
-      } catch (err: unknown) {
-        console.error("Error entering fullscreen:", err);
-        setIsFullscreen(false);
-      }
-    },
-    [isFullscreen]
-  );
+    // Include modal handlers in dependencies
+  }, [handleCloseModal, handleModalNext, handleModalPrev, selectedImageIndex]);
 
   // Memoized distributeImages function
   const distributeImages = useCallback(
@@ -389,6 +396,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           });
           // Optionally show an error message to the user
         } else {
+          console.log(`Image ${key} pin status toggled successfully.`);
         }
       } catch (error) {
         console.error("Error toggling pin status:", error);
@@ -506,13 +514,23 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             >
               {column.map((image) => {
                 const originalIndex = images.findIndex(
-                  (img) => img.id === image.id
+                  (img) =>
+                    (img.id || img.r2FileKey) === (image.id || image.r2FileKey) // Find by id or key
                 );
+                // Ensure originalIndex is valid before rendering
+                if (originalIndex === -1) {
+                  console.warn(
+                    "Could not find original index for image:",
+                    image
+                  );
+                  return null;
+                }
                 return (
                   <ImageCard
-                    key={image.id || image.src}
+                    key={image.id || image.src} // Use id or src as key
                     image={image}
                     index={originalIndex}
+                    // Pass the modified click handler
                     onImageClick={() => handleImageClick(originalIndex)}
                     totalColumns={activeColumnCount}
                     isAdmin={isAdmin}
@@ -536,11 +554,11 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
 
       <AnimatePresence>
         {selectedImageData && (
-          <FullscreenViewer
-            selectedImage={selectedImageData}
-            onClose={handleClose}
-            onNext={handleNext}
-            onPrev={handlePrev}
+          <ImageDetailModal
+            image={selectedImageData}
+            onClose={handleCloseModal}
+            onNext={handleModalNext} // Pass navigation handlers
+            onPrev={handleModalPrev}
           />
         )}
       </AnimatePresence>

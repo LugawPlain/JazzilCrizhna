@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import admin from "firebase-admin";
-import { App, getApps, initializeApp, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // <-- Double-check this path and export name
-
-// --- Firebase Admin Initialization (reuse or copy from pinned-images route) ---
-let app: App;
-if (getApps().length === 0) {
-  app = initializeApp(); // Assumes GOOGLE_APPLICATION_CREDENTIALS is set
-  // OR: app = initializeApp({ credential: cert(require('/path/to/serviceAccountKey.json')) });
-} else {
-  app = admin.app();
-}
-const db = getFirestore(app);
-// const imagesCollection = db.collection("images"); // Remove hardcoded collection
-// ------------------------------------
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { dbAdmin } from "@/lib/firebase/adminApp"; // <--- Import CORRECT export 'dbAdmin'
 
 export async function POST(request: NextRequest) {
   // 1. Check authentication and authorization
@@ -23,6 +9,18 @@ export async function POST(request: NextRequest) {
   if (!session || session.user?.role !== "admin") {
     console.warn("[API/toggle-pin] Unauthorized attempt.");
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  // --- Use the imported dbAdmin instance ---
+  if (!dbAdmin) {
+    // <-- Check dbAdmin
+    console.error(
+      "[API/toggle-pin] Firestore instance (dbAdmin) is not available. Check lib/firebase/adminApp logs."
+    );
+    return NextResponse.json(
+      { error: "Server configuration error (Database not ready)." },
+      { status: 500 }
+    );
   }
 
   // 2. Parse request body
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
   console.log(
     `[API/toggle-pin] Using dynamic collection (forced lowercase): '${collectionName}'`
   );
-  const dynamicCollection = db.collection(collectionName);
+  const dynamicCollection = dbAdmin.collection(collectionName); // <-- Use dbAdmin
 
   console.log(
     `[API/toggle-pin] Admin ${session.user.email} attempting action.`
