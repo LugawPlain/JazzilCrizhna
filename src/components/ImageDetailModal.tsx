@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -80,6 +80,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(true);
 
   // Reset form data if the image prop changes (e.g., navigating with next/prev)
   useEffect(() => {
@@ -296,13 +297,19 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     setShowDeleteConfirm(false);
   };
 
+  // --- Toggle Details Handler ---
+  const toggleDetails = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent modal close when clicking the button
+    setDetailsVisible(!detailsVisible);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       // Backdrop covers entire viewport
-      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4"
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 "
       onClick={onClose} // Close modal on backdrop click
     >
       {/* Remove max-w-4xl and max-h-[90vh] from content, let it fill the space */}
@@ -317,16 +324,50 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       >
         {/* Image Section - takes full space */}
         <div className="relative w-full h-full flex items-center justify-center">
-          {/* Use layout="fill" and objectFit="contain" on NextImage */}
-          <Image
-            src={image.src}
-            alt={image.alt}
-            layout="fill"
-            objectFit="contain" // Ensures the whole image is visible
-            className="object-contain" // Redundant but safe
-            priority
-            quality={90}
-          />
+          {/* AnimatePresence isn't needed here if the key on motion.div changes */}
+          <motion.div
+            key={image.id || image.r2FileKey || image.src} // Unique key per image
+            className="absolute inset-0 flex items-center justify-center" // Container for the image
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={{
+              initial: {
+                opacity: 0,
+                scale: 0.95,
+                filter: "blur(8px)",
+              },
+              animate: {
+                opacity: 1,
+                scale: 1,
+                filter: "blur(0px)",
+                transition: {
+                  duration: 0.3,
+                  ease: "easeOut",
+                },
+              },
+              exit: {
+                opacity: 0,
+                scale: 0.98, // Optional slight scale down on exit
+                // filter: "blur(4px)", // Optional blur on exit
+                transition: {
+                  duration: 0.2,
+                  ease: "easeIn",
+                },
+              },
+            }}
+          >
+            {/* Use layout="fill" and objectFit="contain" on NextImage */}
+            <Image
+              src={image.src}
+              alt={image.alt}
+              layout="fill"
+              objectFit="contain" // Ensures the whole image is visible
+              className="object-contain" // Redundant but safe
+              priority
+              quality={90}
+            />
+          </motion.div>
           {/* Prev/Next Buttons remain absolutely positioned */}
           <button
             onClick={(e) => {
@@ -374,155 +415,217 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
               />
             </svg>
           </button>
+
+          {/* --- Toggle Details Button (Bottom Center) --- */}
+          <button
+            onClick={toggleDetails} // Use the handler created earlier
+            className="absolute bottom-4 right-12 z-20 bg-black/40 text-white p-3 rounded-full hover:bg-black/60 transition-colors"
+            aria-label={detailsVisible ? "Hide details" : "Show details"}
+          >
+            {detailsVisible ? (
+              // Icon for hiding details (e.g., info circle with slash or similar)
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                />
+              </svg>
+            ) : (
+              // Icon for showing details (e.g., info circle)
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                />
+              </svg>
+            )}
+          </button>
+          {/* --- End Toggle Details Button --- */}
         </div>
 
         {/* Details Section - Modified for Editing */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 md:p-8 text-white pointer-events-none">
-          <div className="pointer-events-auto max-w-2xl">
-            {/* Event Title - Added subtle shadow */}
-            {isEditing ? (
-              <input
-                type="text"
-                name="event"
-                value={formData.event}
-                onChange={handleInputChange}
-                className="bg-neutral-800/80 border border-neutral-600 rounded px-3 py-2 text-xl md:text-2xl font-semibold mb-4 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-neutral-500"
-                placeholder="Event Name"
-              />
-            ) : (
-              <h2 className="text-xl md:text-3xl font-semibold mb-4 drop-shadow-lg">
-                {formData.event}
-              </h2>
-            )}
+        <AnimatePresence>
+          {detailsVisible && (
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 md:p-8 text-white pointer-events-none"
+              initial={{ opacity: 0, y: 20 }} // Start slightly lower and faded out
+              animate={{ opacity: 1, y: 0 }} // Animate to full opacity and original position
+              exit={{ opacity: 0, y: 20 }} // Animate out downwards and fade
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              <div className="pointer-events-auto max-w-2xl">
+                {/* Event Title - Added subtle shadow */}
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="event"
+                    value={formData.event}
+                    onChange={handleInputChange}
+                    className="bg-neutral-800/80 border border-neutral-600 rounded px-3 py-2 text-xl md:text-2xl font-semibold mb-4 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-neutral-500"
+                    placeholder="Event Name"
+                  />
+                ) : (
+                  <h2 className="text-xl md:text-3xl font-semibold mb-4 drop-shadow-lg">
+                    {formData.event}
+                  </h2>
+                )}
 
-            {/* Increased spacing between detail rows */}
-            <div className="space-y-3 text-sm md:text-base">
-              {/* Location - Changed label color */}
-              <p className="flex items-center">
-                <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
-                  Location:
-                </strong>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="Location"
-                  />
-                ) : (
-                  <span className="text-neutral-100">{formData.location}</span>
-                )}
-              </p>
-              {/* Date - Changed label color */}
-              <p className="flex items-center">
-                <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
-                  Date:
-                </strong>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="eventDate"
-                    value={formData.eventDate}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="M/D/YYYY or M/D/YYYY - M/D/YYYY"
-                  />
-                ) : (
-                  <span className="text-neutral-100">
-                    {formatDateDisplay(formData.eventDate)}
-                  </span>
-                )}
-              </p>
-              {/* Photographer - Changed label color and link color */}
-              <p className="flex items-center">
-                <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
-                  Photographer:
-                </strong>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="photographer"
-                    value={formData.photographer}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="Photographer Name"
-                  />
-                ) : formData.photographerLink &&
-                  formData.photographerLink !== "#" ? (
-                  <Link
-                    href={formData.photographerLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {formData.photographer || "Unknown"}
-                  </Link>
-                ) : (
-                  <span className="text-neutral-100">
-                    {formData.photographer || "Unknown"}
-                  </span>
-                )}
-              </p>
-              {/* Photographer Link - Only visible in edit mode */}
-              {isEditing && (
-                <p className="flex items-center">
-                  <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
-                    Photog URL:
-                  </strong>
-                  <input
-                    type="text"
-                    name="photographerLink"
-                    value={formData.photographerLink}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="https://..."
-                  />
-                </p>
-              )}
-            </div>
+                {/* Increased spacing between detail rows */}
+                <div className="space-y-3 text-sm md:text-base">
+                  {/* Location - Changed label color */}
+                  <div className="">
+                    <p className="flex items-center">
+                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        Location:
+                      </strong>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="location"
+                          value={formData.location}
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="Location"
+                        />
+                      ) : (
+                        <span className="text-neutral-100">
+                          {formData.location}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {/* Date - Changed label color */}
+                  <div className="">
+                    <p className="flex items-center">
+                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        Date:
+                      </strong>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="eventDate"
+                          value={formData.eventDate}
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="M/D/YYYY or M/D/YYYY - M/D/YYYY"
+                        />
+                      ) : (
+                        <span className="text-neutral-100">
+                          {formatDateDisplay(formData.eventDate)}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {/* Photographer - Changed label color and link color */}
+                  <div className="">
+                    <p className="flex items-center">
+                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        Photographer: 📸
+                      </strong>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="photographer"
+                          value={formData.photographer}
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="Photographer Name"
+                        />
+                      ) : formData.photographerLink &&
+                        formData.photographerLink !== "#" ? (
+                        <Link
+                          href={formData.photographerLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {formData.photographer || "Unknown"}
+                        </Link>
+                      ) : (
+                        <span className="text-neutral-100">
+                          {formData.photographer || "Unknown"}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {/* Photographer Link - Only visible in edit mode */}
+                  {isEditing && (
+                    <div className="">
+                      <p className="flex items-center">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-38 flex-shrink-0">
+                          Photograhper URL:
+                        </strong>
+                        <input
+                          type="text"
+                          name="photographerLink"
+                          value={formData.photographerLink}
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="https://..."
+                        />
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-            {/* Edit/Save/Cancel Buttons & Error Message */}
-            {isAdmin && (
-              <div className="mt-6 flex items-center gap-3">
-                {!isEditing ? (
-                  <button onClick={handleEditClick} className="edit-btn">
-                    Edit Details
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleSaveClick}
-                      disabled={isSaving || isDeleting}
-                      className="save-btn"
-                    >
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </button>
-                    <button
-                      onClick={handleCancelClick}
-                      disabled={isSaving || isDeleting}
-                      className="cancel-btn"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleDeleteClick}
-                      disabled={isSaving || isDeleting}
-                      className="delete-btn"
-                    >
-                      Delete Image
-                    </button>
-                  </>
+                {/* Edit/Save/Cancel Buttons & Error Message */}
+                {isAdmin && (
+                  <div className="mt-6 flex items-center gap-3">
+                    {!isEditing ? (
+                      <button onClick={handleEditClick} className="edit-btn">
+                        Edit Details
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleSaveClick}
+                          disabled={isSaving || isDeleting}
+                          className="save-btn"
+                        >
+                          {isSaving ? "Saving..." : "Save Changes"}
+                        </button>
+                        <button
+                          onClick={handleCancelClick}
+                          disabled={isSaving || isDeleting}
+                          className="cancel-btn"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleDeleteClick}
+                          disabled={isSaving || isDeleting}
+                          className="delete-btn"
+                        >
+                          Delete Image
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+                {error && (
+                  <p className="text-red-500 text-sm mt-3">Error: {error}</p>
                 )}
               </div>
-            )}
-            {error && (
-              <p className="text-red-500 text-sm mt-3">Error: {error}</p>
-            )}
-          </div>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Close Button - Increase padding for larger click area */}
         <button

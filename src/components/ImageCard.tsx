@@ -96,13 +96,12 @@ const ImageCard = React.memo(
             ref={imgRef}
             src={optimizedSrc}
             alt={image.alt}
-            className={`w-full h-auto object-cover transition-all duration-500 group-hover:scale-110 group-hover:blur-xs ${
-              isLoaded ? "opacity-100" : "opacity-0"
-            }`}
-            style={{
-              filter: isLoaded ? "none" : "blur(20px)",
-              transition: "filter 0.5s ease-out",
-            }}
+            className={`
+              w-full h-auto object-cover
+              transition-all duration-500 ease-out 
+              group-hover:scale-110 group-hover:blur-xs 
+              ${isLoaded ? "opacity-100 blur-none" : "opacity-0 blur-xl"} 
+            `}
             initial={{ scale: 1 }}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.3 }}
@@ -190,6 +189,8 @@ const ImageCard = React.memo(
                 </p>
                 {image.photographerLink && image.photographerLink !== "#" ? (
                   <Link
+                    target="_blank"
+                    rel="noopener noreferrer"
                     href={image.photographerLink}
                     className="text-sm opacity-70 hover:opacity-100 transition-opacity inline-flex items-center gap-1"
                     onClick={(e) => e.stopPropagation()}
