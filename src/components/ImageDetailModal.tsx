@@ -7,7 +7,8 @@ import Link from "next/link";
 interface ImageData {
   src: string;
   alt: string;
-  date: string;
+  date?: string; // Keep for backward compatibility
+  eventDate: string; // Add the eventDate field
   photographer: string;
   photographerLink: string;
   location: string;
@@ -31,7 +32,7 @@ interface ImageDetailModalProps {
 // Define the shape of editable data (excluding src, alt, id, r2FileKey)
 type EditableImageData = Pick<
   ImageData,
-  "event" | "location" | "date" | "photographer" | "photographerLink"
+  "event" | "location" | "eventDate" | "photographer" | "photographerLink"
 >;
 
 // Add helper functions near the top of the file, before the component
@@ -71,7 +72,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const [formData, setFormData] = useState<EditableImageData>({
     event: image.event,
     location: image.location,
-    date: image.date, // Consider using a date input type later
+    eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
     photographer: image.photographer,
     photographerLink: image.photographerLink,
   });
@@ -85,7 +86,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     setFormData({
       event: image.event,
       location: image.location,
-      date: image.date,
+      eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
       photographer: image.photographer,
       photographerLink: image.photographerLink,
     });
@@ -134,7 +135,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     setFormData({
       event: image.event,
       location: image.location,
-      date: image.date,
+      eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
       photographer: image.photographer,
       photographerLink: image.photographerLink,
     });
@@ -152,8 +153,10 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
     try {
       // Basic date range validation
-      if (formData.date && formData.date.includes("-")) {
-        const dateParts = formData.date.split("-").map((part) => part.trim());
+      if (formData.eventDate && formData.eventDate.includes("-")) {
+        const dateParts = formData.eventDate
+          .split("-")
+          .map((part: string) => part.trim());
         if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
           setError("Date range format should be 'start - end'");
           setIsSaving(false);
@@ -171,7 +174,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         }
       }
 
-      // TODO: Implement this API endpoint
+      // API call to update image details
       const response = await fetch("/api/admin/updateimagedetails", {
         method: "POST", // Or PUT
         headers: { "Content-Type": "application/json" },
@@ -200,6 +203,92 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
       setIsEditing(false); // Exit edit mode on success
       console.log("Details updated successfully:", result);
+      // Log the specific fields that were updated
+      console.log("Updated image data:", {
+        id: imageId,
+        category: image.category,
+        changes: {
+          event:
+            formData.event !== image.event
+              ? { from: image.event, to: formData.event }
+              : "unchanged",
+          location:
+            formData.location !== image.location
+              ? { from: image.location, to: formData.location }
+              : "unchanged",
+          eventDate:
+            formData.eventDate !== (image.eventDate || image.date)
+              ? { from: image.eventDate || image.date, to: formData.eventDate }
+              : "unchanged",
+          photographer:
+            formData.photographer !== image.photographer
+              ? { from: image.photographer, to: formData.photographer }
+              : "unchanged",
+          photographerLink:
+            formData.photographerLink !== image.photographerLink
+              ? { from: image.photographerLink, to: formData.photographerLink }
+              : "unchanged",
+        },
+      });
+
+      // Create a timestamp to track when updates occur
+      localStorage.setItem("lastImageUpdate", new Date().toISOString());
+
+      // Force revalidation of API data to ensure fresh data on next load
+      try {
+        // Log detailed changes for debugging
+        const changes = {
+          event:
+            formData.event !== image.event
+              ? { from: image.event, to: formData.event }
+              : null,
+          location:
+            formData.location !== image.location
+              ? { from: image.location, to: formData.location }
+              : null,
+          eventDate:
+            formData.eventDate !== (image.eventDate || image.date)
+              ? { from: image.eventDate || image.date, to: formData.eventDate }
+              : null,
+          photographer:
+            formData.photographer !== image.photographer
+              ? { from: image.photographer, to: formData.photographer }
+              : null,
+          photographerLink:
+            formData.photographerLink !== image.photographerLink
+              ? { from: image.photographerLink, to: formData.photographerLink }
+              : null,
+        };
+
+        // Filter out unchanged fields
+        const actualChanges = Object.fromEntries(
+          Object.entries(changes).filter(([_, value]) => value !== null)
+        );
+
+        console.log(
+          `REVALIDATION: Image ${imageId} (${image.category}) updated with:`,
+          actualChanges
+        );
+        console.log(
+          `REVALIDATION: Database timestamp: ${new Date().toISOString()}`
+        );
+
+        // Invalidate any cached data for this category
+        if (image.category) {
+          const invalidateResponse = await fetch(
+            `/api/fetchimages?category=${encodeURIComponent(
+              image.category || ""
+            )}&revalidate=1&t=${Date.now()}`
+          );
+          console.log(
+            "Cache revalidation response:",
+            await invalidateResponse.text()
+          );
+        }
+      } catch (revalidateErr) {
+        console.warn("Failed to revalidate cache:", revalidateErr);
+        // Non-critical error, don't prevent update success
+      }
     } catch (err: any) {
       console.error("Error saving image details:", err);
       setError(err.message || "An unknown error occurred during save.");
@@ -388,14 +477,14 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                 {isEditing ? (
                   <input
                     type="text"
-                    name="date"
-                    value={formData.date}
+                    name="eventDate"
+                    value={formData.eventDate}
                     onChange={handleInputChange}
                     className="input-field"
                     placeholder="Single date or range (e.g., 4/10/2025 - 4/13/2025)"
                   />
                 ) : (
-                  <span>{formatDateDisplay(formData.date)}</span>
+                  <span>{formatDateDisplay(formData.eventDate)}</span>
                 )}
               </p>
               {/* Photographer */}

@@ -16,7 +16,7 @@ interface FileMetadata {
   id: string; // Use a unique ID, maybe based on file name + index
   photographer: string;
   photographerLink: string; // Added field for photographer's link
-  dateTaken: string;
+  eventDate: string;
   location: string; // Added location state
   event: string;
   previewUrl: string;
@@ -25,7 +25,7 @@ interface FileMetadata {
 
 function UploadForm() {
   // Keep global states for now, might be used as defaults or if no specific metadata is set
-  const [globalDateTaken, setGlobalDateTaken] = useState("");
+  const [globalEventDate, setGlobalEventDate] = useState("");
   const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
   const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
   const [globalPhotographerLink, setGlobalPhotographerLink] = useState(""); // Added state for photographer link
@@ -36,13 +36,6 @@ function UploadForm() {
   const [filesWithMetadata, setFilesWithMetadata] = useState<FileMetadata[]>(
     []
   );
-
-  // const [imageFiles, setImageFiles] = useState<File[]>([]); // Remove old state
-  // const [dateTaken, setDateTaken] = useState(""); // Remove old state
-  // const [location, setLocation] = useState(""); // Remove old state
-  // const [photographer, setPhotographer] = useState(""); // Remove old state
-  // const [category, setCategory] = useState(""); // Remove old state
-  // const [event, setEvent] = useState(""); // Remove old state
 
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,10 +94,9 @@ function UploadForm() {
             id,
             file,
             previewUrl,
-            // Initialize specific metadata with default date
             photographer: "",
-            photographerLink: "", // Initialize photographer link
-            dateTaken: "1/1/2000", // Set default date
+            photographerLink: "",
+            eventDate: "", // Set default date
             location: "",
             event: "",
           };
@@ -122,33 +114,39 @@ function UploadForm() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     // Check if any files are selected
     if (filesWithMetadata.length === 0) {
       setError("Please select at least one image.");
       return;
     }
+
     // Category is still required globally
     if (!globalCategory) {
       setError("Please select a category.");
       return;
     }
 
-    // Validate date format
-    if (globalDateTaken && !isValidDateFormat(globalDateTaken)) {
-      setError(
-        "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges."
-      );
-      return;
+    // Validate date formats
+    if (globalEventDate) {
+      if (!isValidDateFormat(globalEventDate)) {
+        setError(
+          "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges. For ranges, end date must be after start date."
+        );
+        return;
+      }
+
+      console.log("Global date validated successfully:", globalEventDate);
     }
 
     // Check individual file date formats
     const invalidDates = filesWithMetadata.filter(
-      (item) => item.dateTaken && !isValidDateFormat(item.dateTaken)
+      (item) => item.eventDate && !isValidDateFormat(item.eventDate)
     );
 
     if (invalidDates.length > 0) {
       setError(
-        `Invalid date format in ${invalidDates.length} file(s). Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges.`
+        `Invalid date format in ${invalidDates.length} file(s). Check that your dates use MM/DD/YYYY format and end dates are after start dates.`
       );
       return;
     }
@@ -160,42 +158,61 @@ function UploadForm() {
 
     // --- Prepare per-file metadata, applying global defaults ---
     const finalMetadata = filesWithMetadata.map((item) => {
+      // Log the original metadata before any processing
+      console.log(`Processing file: ${item.file.name} (ID: ${item.id})`);
+      console.log("Original metadata:", {
+        photographer: item.photographer,
+        photographerLink: item.photographerLink,
+        eventDate: item.eventDate,
+        location: item.location,
+        event: item.event,
+      });
+
       // Start with the specific metadata from the item
       const specificMetadata = {
         photographer: item.photographer,
-        photographerLink: item.photographerLink, // Include photographer link
-        dateTaken: item.dateTaken,
+        photographerLink: item.photographerLink,
+        eventDate: item.eventDate,
         location: item.location,
         event: item.event,
         // Include original filename, might be useful for backend matching
         originalFilename: item.file.name,
       };
 
-      // Apply global defaults only if the specific field is empty
+      // Only apply global defaults if the specific metadata is still at default values
+      // For photographer, photographerLink, location, and event - empty string is the default
+      // For eventDate, "1/1/2000" is the default value set during file selection
+
+      // Only use global photographer if the specific one wasn't set or modified
       if (specificMetadata.photographer === "") {
         specificMetadata.photographer = globalPhotographer;
       }
+
+      // Only use global photographer link if the specific one wasn't set or modified
       if (specificMetadata.photographerLink === "") {
         specificMetadata.photographerLink = globalPhotographerLink;
       }
-      if (specificMetadata.dateTaken === "") {
-        specificMetadata.dateTaken = globalDateTaken;
+
+      // Only use global date if the specific one is still at default or empty
+      if (
+        specificMetadata.eventDate === "1/1/2000" ||
+        specificMetadata.eventDate === ""
+      ) {
+        specificMetadata.eventDate = globalEventDate;
       }
-      // Add location if it exists in specific or global
+
+      // Only use global location if the specific one wasn't set or modified
       if (specificMetadata.location === "") {
         specificMetadata.location = globalLocation;
       }
+
+      // Only use global event if the specific one wasn't set or modified
       if (specificMetadata.event === "") {
         specificMetadata.event = globalEvent;
       }
 
-      // Clean up empty strings if they weren't replaced by global defaults
-      // (Optional, depends on how backend handles null/empty)
-      // Object.keys(specificMetadata).forEach(key => {
-      //    if (specificMetadata[key as keyof typeof specificMetadata] === "") {
-      //        specificMetadata[key as keyof typeof specificMetadata] = null; // or delete specificMetadata[key]
-      //    }
-      // });
+      // Log the final metadata after processing
+      console.log("Final metadata after applying defaults:", specificMetadata);
 
       return specificMetadata;
     });
@@ -222,40 +239,46 @@ function UploadForm() {
     // IMPORTANT: Backend MUST be updated to parse this field!
     formData.append("metadataArray", JSON.stringify(finalMetadata));
 
-    // Remove old global appends (except category)
-    // if (globalPhotographer) formData.append("photographer", globalPhotographer);
-    // if (globalDateTaken) formData.append("date", globalDateTaken);
-    // if (globalEvent) formData.append("event", globalEvent);
-
     // --- Send Request ---
     try {
       console.log("Submitting FormData:");
       // Log the metadata being sent for debugging
       console.log("Metadata Array:", finalMetadata);
-      // You can also iterate formData entries, but files make it tricky
-      // for(var pair of formData.entries()) {
-      //    console.log(pair[0]+ ': '+ pair[1]);
-      // }
 
       const response = await fetch("/api/admin/uploadimages", {
         method: "POST",
         body: formData,
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        // Handle potential array of errors from backend if modified later
-        let errorMessage =
-          result.error || `Upload failed with status: ${response.status}`;
-        if (result.details) {
-          errorMessage += `: ${result.details}`;
-        }
-        if (Array.isArray(result.errors) && result.errors.length > 0) {
-          errorMessage = `Multiple errors occurred. First: ${result.errors[0]}`;
-        }
-        throw new Error(errorMessage);
+        throw new Error(`Upload failed with status: ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log("Upload API response:", result);
+
+      // Log successful uploads
+      if (result.results && result.results.length > 0) {
+        result.results.forEach((uploadedFile: any) => {
+          console.log(`Uploaded file: ${uploadedFile.originalFilename}`);
+          console.log(`File key: ${uploadedFile.fileKey}`);
+          console.log(`Firestore doc ID: ${uploadedFile.firestoreDocId}`);
+        });
+      }
+
+      // Add more metadata update logging here
+      const metadataLog = finalMetadata.map((metadata) => ({
+        file: metadata.originalFilename,
+        eventDate: metadata.eventDate, // Log as eventDate
+        photographer: metadata.photographer,
+        photographerLink: metadata.photographerLink,
+        location: metadata.location,
+        event: metadata.event,
+      }));
+
+      // Detailed summary of uploads
+      console.log("Files uploaded with the following metadata:");
+      console.table(metadataLog);
 
       setSuccess(true);
       // Update success message for multiple files
@@ -268,10 +291,10 @@ function UploadForm() {
 
       // Reset state
       setFilesWithMetadata([]); // Clear files
-      setGlobalDateTaken("1/1/2000");
+      setGlobalEventDate(""); // Reset to empty instead of default date
       setGlobalLocation("");
       setGlobalPhotographer("");
-      setGlobalPhotographerLink(""); // Reset photographer link
+      setGlobalPhotographerLink("");
       setGlobalCategory("");
       setGlobalEvent("");
       // Reset file input visually (important if not resetting e.target.value in handleFileChange)
@@ -296,14 +319,20 @@ function UploadForm() {
     id: string,
     updatedMetadata: Omit<FileMetadata, "id" | "file" | "previewUrl">
   ) => {
-    setFilesWithMetadata((prevFiles) =>
-      prevFiles.map((file) =>
+    console.log("Saving metadata for file:", id);
+    console.log("Updated metadata from modal:", updatedMetadata);
+
+    setFilesWithMetadata((prevFiles) => {
+      const updatedFiles = prevFiles.map((file) =>
         file.id === id ? { ...file, ...updatedMetadata } : file
-      )
-    );
-    // Optionally close modal here, although the modal closes itself too
-    // setIsModalOpen(false);
-    // setSelectedFileId(null);
+      );
+
+      // Log the updated file for verification
+      const updatedFile = updatedFiles.find((file) => file.id === id);
+      console.log("File after metadata update:", updatedFile);
+
+      return updatedFiles;
+    });
   };
 
   // --- Find the selected file for the modal ---
@@ -320,48 +349,156 @@ function UploadForm() {
           // Extract current metadata part
           photographer: selectedFileForModal.photographer,
           photographerLink: selectedFileForModal.photographerLink,
-          dateTaken: selectedFileForModal.dateTaken,
+          eventDate: selectedFileForModal.eventDate,
           location: selectedFileForModal.location,
           event: selectedFileForModal.event,
         },
       }
     : null;
 
-  // Utility to validate date range format
+  // Function to update the combined date based on start and end dates
+  const updateCombinedDate = (start: string, end: string) => {
+    // Validate start date
+    if (!start) {
+      setGlobalEventDate("");
+      return;
+    }
+
+    // Parse dates for validation
+    const startDate = new Date(start);
+    let endDate = null;
+
+    if (end && showEndDate) {
+      endDate = new Date(end);
+
+      // Validate both dates
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.warn("Invalid date input detected");
+        return;
+      }
+
+      // Check if end date is after start date
+      if (endDate < startDate) {
+        console.warn("End date is before start date");
+        // Option 1: Switch the dates
+        // const temp = start;
+        // start = end;
+        // end = temp;
+
+        // Option 2: Set end date equal to start date
+        end = start;
+      }
+
+      // Format dates for display in MM/DD/YYYY format
+      const formattedStart = formatDateForDisplay(start);
+      const formattedEnd = formatDateForDisplay(end);
+
+      // Store as a range string: "MM/DD/YYYY - MM/DD/YYYY"
+      setGlobalEventDate(`${formattedStart} - ${formattedEnd}`);
+      console.log("Date range set:", `${formattedStart} - ${formattedEnd}`);
+    } else {
+      // Just single date
+      if (isNaN(startDate.getTime())) {
+        console.warn("Invalid start date");
+        return;
+      }
+
+      setGlobalEventDate(formatDateForDisplay(start));
+      console.log("Single date set:", formatDateForDisplay(start));
+    }
+  };
+
+  // Helper to format date from YYYY-MM-DD to MM/DD/YYYY for display
+  const formatDateForDisplay = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+
+      // Format as MM/DD/YYYY with proper padding
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const day = date.getDate().toString().padStart(2, "0");
+      const year = date.getFullYear();
+
+      return `${month}/${day}/${year}`;
+    } catch (e) {
+      console.error("Date formatting error:", e);
+      return dateStr;
+    }
+  };
+
+  // Helper to format date from MM/DD/YYYY to YYYY-MM-DD for input
+  const formatDateForInput = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      // If already in YYYY-MM-DD format, return as is
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+
+      // Parse MM/DD/YYYY format
+      const parts = dateStr.split("/");
+      if (parts.length !== 3) return dateStr;
+
+      const month = parseInt(parts[0], 10);
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+
+      if (isNaN(month) || isNaN(day) || isNaN(year)) return dateStr;
+
+      // Format as YYYY-MM-DD with padding
+      return `${year}-${month.toString().padStart(2, "0")}-${day
+        .toString()
+        .padStart(2, "0")}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  // Utility to validate date format
   const isValidDateFormat = (dateStr: string): boolean => {
     // Empty is valid (optional field)
     if (!dateStr.trim()) return true;
 
     // Check if it's a range (contains a hyphen)
-    if (dateStr.includes("-")) {
-      const dateParts = dateStr.split("-").map((part) => part.trim());
+    if (dateStr.includes(" - ")) {
+      const dateParts = dateStr.split(" - ").map((part) => part.trim());
 
       // Must have exactly two parts with content
       if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
+        console.warn("Invalid date range format:", dateStr);
         return false;
       }
 
-      // Try to parse both dates
-      const startDate = new Date(dateParts[0]);
-      const endDate = new Date(dateParts[1]);
+      // Try to parse both dates - for MM/DD/YYYY format
+      try {
+        const startDate = new Date(dateParts[0]);
+        const endDate = new Date(dateParts[1]);
 
-      // Both must be valid dates
-      return !isNaN(startDate.getTime()) && !isNaN(endDate.getTime());
+        // Both must be valid dates
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.warn("Invalid date(s) in range:", dateStr);
+          return false;
+        }
+
+        // End date should be after or equal to start date
+        if (endDate < startDate) {
+          console.warn("End date before start date in range:", dateStr);
+          return false;
+        }
+
+        return true;
+      } catch (e) {
+        console.error("Error validating date range:", e);
+        return false;
+      }
     }
 
     // If not a range, just check if it's a valid date
-    const date = new Date(dateStr);
-    return !isNaN(date.getTime());
-  };
-
-  // Function to update the combined date based on start and end dates
-  const updateCombinedDate = (start: string, end: string) => {
-    if (start && end && showEndDate) {
-      setGlobalDateTaken(`${start} - ${end}`);
-    } else if (start) {
-      setGlobalDateTaken(start);
-    } else {
-      setGlobalDateTaken("");
+    try {
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime());
+    } catch (e) {
+      console.error("Error validating single date:", e);
+      return false;
     }
   };
 
@@ -403,32 +540,32 @@ function UploadForm() {
     updateCombinedDate(startDate, endDate || startDate);
   };
 
-  // Effect to sync the individual date fields when globalDateTaken changes from outside
+  // Effect to sync the individual date fields when globalEventDate changes from outside
   // (e.g. when the form is reset)
   useEffect(() => {
-    if (globalDateTaken === "1/1/2000") {
-      // Default state - just first date
-      setStartDate("1/1/2000");
-      setEndDate("");
-      setShowEndDate(false);
-    } else if (globalDateTaken.includes(" - ")) {
-      // Has range format
-      const [start, end] = globalDateTaken.split(" - ");
-      setStartDate(start);
-      setEndDate(end);
-      setShowEndDate(true);
-    } else if (globalDateTaken) {
-      // Just a single date
-      setStartDate(globalDateTaken);
-      setEndDate("");
-      setShowEndDate(false);
-    } else {
-      // Empty
+    if (!globalEventDate) {
+      // Empty - reset all
       setStartDate("");
       setEndDate("");
       setShowEndDate(false);
+    } else if (globalEventDate === "1/1/2000") {
+      // Default state - just first date
+      setStartDate(formatDateForInput("1/1/2000"));
+      setEndDate("");
+      setShowEndDate(false);
+    } else if (globalEventDate.includes(" - ")) {
+      // Has range format
+      const [start, end] = globalEventDate.split(" - ");
+      setStartDate(formatDateForInput(start));
+      setEndDate(formatDateForInput(end));
+      setShowEndDate(true);
+    } else {
+      // Just a single date
+      setStartDate(formatDateForInput(globalEventDate));
+      setEndDate("");
+      setShowEndDate(false);
     }
-  }, [globalDateTaken]);
+  }, [globalEventDate]);
 
   return (
     // --- Main Flex Container ---
@@ -514,7 +651,7 @@ function UploadForm() {
 
           <div>
             <label
-              htmlFor="dateTaken"
+              htmlFor="eventDate"
               className="block text-sm font-medium text-gray-700"
             >
               Date Taken: (Optional)
@@ -522,25 +659,23 @@ function UploadForm() {
             <div className="mt-1 flex flex-wrap items-center space-y-2 md:space-y-0">
               <div className="flex-1 min-w-[180px] mr-2">
                 <input
-                  type="text"
+                  type="date"
                   id="startDate"
                   value={startDate}
                   onChange={handleStartDateChange}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Start date (e.g., 4/10/2025)"
                 />
               </div>
 
               {showEndDate ? (
                 <div className="flex-1 min-w-[180px] mr-2">
                   <input
-                    type="text"
+                    type="date"
                     id="endDate"
                     ref={endDateInputRef}
                     value={endDate}
                     onChange={handleEndDateChange}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="End date (e.g., 4/13/2025)"
                   />
                 </div>
               ) : (
@@ -584,9 +719,9 @@ function UploadForm() {
             {/* Hidden field to preserve the actual combined date value */}
             <input
               type="hidden"
-              id="dateTaken"
-              name="dateTaken"
-              value={globalDateTaken}
+              id="eventDate"
+              name="eventDate"
+              value={globalEventDate}
             />
           </div>
 

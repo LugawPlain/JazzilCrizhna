@@ -9,7 +9,8 @@ interface ImageData {
   alt: string;
   event: string;
   location: string;
-  date: string;
+  eventDate: string;
+  date?: string;
   photographer: string;
   photographerLink: string;
 }
@@ -182,7 +183,10 @@ const ImageCard = React.memo(
                   📍: <span className="text-sm">{image.location}</span>
                 </p>
                 <p className="text-xs opacity-80">
-                  Date: <span className="text-sm">{image.date}</span>
+                  Date:{" "}
+                  <span className="text-sm">
+                    {image.eventDate || image.date}
+                  </span>
                 </p>
                 {image.photographerLink && image.photographerLink !== "#" ? (
                   <Link

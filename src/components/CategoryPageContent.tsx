@@ -10,7 +10,8 @@ import ImageDetailModal from "@/components/ImageDetailModal";
 interface ImageData {
   src: string;
   alt: string;
-  date: string;
+  date?: string; // For backwards compatibility - will be phased out
+  eventDate: string; // Primary date field to use going forward
   photographer: string;
   photographerLink: string;
   location: string;
@@ -18,7 +19,6 @@ interface ImageData {
   id?: string;
   r2FileKey?: string;
   originalFilename?: string;
-  eventDate?: string | null;
   uploadedAt?: string | null;
   contentType?: string;
   category?: string;
@@ -119,8 +119,12 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       setImages([]);
 
       try {
+        // Add timestamp param to prevent caching
+        const timestamp = Date.now();
         const response = await fetch(
-          `/api/fetchimages?category=${encodeURIComponent(category)}`
+          `/api/fetchimages?category=${encodeURIComponent(
+            category
+          )}&t=${timestamp}`
         );
 
         if (!response.ok) {
@@ -134,11 +138,23 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           throw new Error(errorMsg);
         }
 
-        const fetchedData: any[] = await response.json();
+        const responseData = await response.json();
+        // Handle both formats: direct array or {images: array} format
+        const fetchedData: any[] = Array.isArray(responseData)
+          ? responseData
+          : responseData.images || [];
+
         console.log("Fetched raw data:", fetchedData);
+        if (responseData.revalidated) {
+          console.log(
+            "Data was successfully revalidated at:",
+            responseData.timestamp
+          );
+        }
 
         const formattedImages: ImageData[] = fetchedData.map((item) => {
           const imageUrl = `${r2PublicUrl}/${item.r2FileKey}`;
+          // Format the date for display
           const displayDate = item.eventDate
             ? new Date(item.eventDate).toLocaleDateString()
             : item.uploadedAt
@@ -148,7 +164,8 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           return {
             src: imageUrl,
             alt: item.originalFilename || `Image for ${category}`,
-            date: displayDate,
+            eventDate: displayDate, // Primary date field
+            date: displayDate, // Keep for backwards compatibility
             photographer: item.photographer || "Unknown",
             photographerLink: "#",
             location: item.location || "Unknown",
@@ -156,7 +173,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             id: item.id,
             r2FileKey: item.r2FileKey,
             originalFilename: item.originalFilename,
-            eventDate: item.eventDate,
+            // Include the raw eventDate for sorting
             uploadedAt: item.uploadedAt,
             contentType: item.contentType,
             category: item.category,
@@ -260,6 +277,114 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     setImages(sorted);
     setLoading(false); // Stop loading indicator now that images are sorted and ready
   }, [rawFetchedImages, pinnedImageKeys]); // Trigger sorting when either data changes
+
+  // Check for update flags from localStorage to trigger refetching
+  useEffect(() => {
+    // Function to check if there was a recent update that requires refetching
+    const checkForUpdates = () => {
+      const lastUpdateStr = localStorage.getItem("lastImageUpdate");
+      if (!lastUpdateStr) return;
+
+      try {
+        const lastUpdate = new Date(lastUpdateStr);
+        const currentTime = new Date();
+        const timeDiff = currentTime.getTime() - lastUpdate.getTime();
+
+        // If update happened in the last 5 seconds, and we're not already loading
+        if (timeDiff < 5000 && !loading && category) {
+          console.log("Detected recent image update, refetching data...");
+          // Clear the update flag
+          localStorage.removeItem("lastImageUpdate");
+
+          // Refetch images with the current category
+          setLoading(true);
+          setError(null);
+          setRawFetchedImages(null);
+
+          // Trigger a fetch in the next tick to ensure state updates first
+          setTimeout(() => {
+            const fetchImages = async () => {
+              try {
+                // Add timestamp param to prevent caching
+                const timestamp = Date.now();
+                const response = await fetch(
+                  `/api/fetchimages?category=${encodeURIComponent(
+                    category
+                  )}&t=${timestamp}&force=1`
+                );
+
+                if (!response.ok) {
+                  throw new Error(`Error refreshing: ${response.statusText}`);
+                }
+
+                const responseData = await response.json();
+                // Handle both formats: direct array or {images: array} format
+                const fetchedData: any[] = Array.isArray(responseData)
+                  ? responseData
+                  : responseData.images || [];
+
+                console.log("Refreshed data after update:", fetchedData);
+                if (responseData.revalidated) {
+                  console.log(
+                    "Data was successfully revalidated at:",
+                    responseData.timestamp
+                  );
+                }
+
+                const formattedImages: ImageData[] = fetchedData.map((item) => {
+                  const imageUrl = `${r2PublicUrl}/${item.r2FileKey}`;
+                  const displayDate = item.eventDate
+                    ? new Date(item.eventDate).toLocaleDateString()
+                    : item.uploadedAt
+                    ? new Date(item.uploadedAt).toLocaleDateString()
+                    : "N/A";
+
+                  return {
+                    src: imageUrl,
+                    alt: item.originalFilename || `Image for ${category}`,
+                    eventDate: displayDate,
+                    date: displayDate,
+                    photographer: item.photographer || "Unknown",
+                    photographerLink: "#",
+                    location: item.location || "Unknown",
+                    event: item.event || "Unknown",
+                    id: item.id,
+                    r2FileKey: item.r2FileKey,
+                    originalFilename: item.originalFilename,
+                    uploadedAt: item.uploadedAt,
+                    contentType: item.contentType,
+                    category: item.category,
+                  };
+                });
+
+                setRawFetchedImages(formattedImages);
+              } catch (error: any) {
+                console.error("Error refreshing images after update:", error);
+                // Don't set error state to avoid disrupting the UI
+              } finally {
+                setLoading(false);
+              }
+            };
+
+            fetchImages();
+          }, 0);
+        }
+      } catch (e) {
+        console.error("Error parsing lastImageUpdate:", e);
+        localStorage.removeItem("lastImageUpdate");
+      }
+    };
+
+    // Check on component mount and whenever visible tab changes
+    checkForUpdates();
+
+    // Set up periodic checking while the component is mounted
+    const intervalId = setInterval(checkForUpdates, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [category, loading, r2PublicUrl]);
 
   // Effect to handle opening modal based on URL query parameter
   useEffect(() => {
@@ -365,16 +490,23 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     handleImageClick(newIndex); // Reuse click logic to update URL and state
   }, [selectedImageIndex, images.length, handleImageClick]);
 
-  // Keyboard navigation for Modal
+  // Keyboard navigation for Modal with editing support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only act if modal is effectively open (selectedImageIndex is not null)
       if (selectedImageIndex !== null) {
+        // Check if the event target is an input field
+        const isInputField =
+          e.target instanceof HTMLInputElement ||
+          e.target instanceof HTMLTextAreaElement;
+
         if (e.key === "Escape") {
           handleCloseModal();
-        } else if (e.key === "ArrowRight") {
+        } else if (e.key === "ArrowRight" && !isInputField) {
+          // Only navigate right if not editing an input field
           handleModalNext();
-        } else if (e.key === "ArrowLeft") {
+        } else if (e.key === "ArrowLeft" && !isInputField) {
+          // Only navigate left if not editing an input field
           handleModalPrev();
         }
       }

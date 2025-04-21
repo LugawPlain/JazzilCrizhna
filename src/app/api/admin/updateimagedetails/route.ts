@@ -10,7 +10,7 @@ interface UpdateDetailsRequestBody {
   updates: {
     event?: string;
     location?: string;
-    date?: string;
+    eventDate?: string; // Changed from date to eventDate
     photographer?: string;
     photographerLink?: string;
   };
@@ -152,10 +152,10 @@ export async function POST(request: NextRequest) {
     if (updates.location !== undefined)
       dataToUpdate.location = updates.location;
 
-    // Validate date field (could be a range)
-    if (updates.date !== undefined) {
+    // Validate eventDate field (could be a range)
+    if (updates.eventDate !== undefined) {
       // Check for valid date format/range
-      if (!validateDateRange(updates.date)) {
+      if (!validateDateRange(updates.eventDate)) {
         return NextResponse.json(
           {
             error:
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      dataToUpdate.date = updates.date; // Store as string
+      dataToUpdate.eventDate = updates.eventDate; // Store as string
     }
 
     if (updates.photographer !== undefined)
@@ -180,16 +180,52 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Update Firestore Document
+    // Get the document data before update for comparison
+    const docBeforeUpdate = await docRef.get();
+    const beforeData = docBeforeUpdate.data();
+
+    // Perform the update
     await docRef.update(dataToUpdate);
 
-    console.log(
-      `[API UpdateDetails] Successfully updated document ${docRef.id}`
+    // Get updated document for verification
+    const docAfterUpdate = await docRef.get();
+    const afterData = docAfterUpdate.data();
+
+    // Create detailed log of changes
+    const detailedChanges = Object.keys(dataToUpdate).reduce(
+      (changes, field) => {
+        changes[field] = {
+          from: beforeData?.[field] || null,
+          to: afterData?.[field] || null,
+        };
+        return changes;
+      },
+      {} as Record<string, { from: any; to: any }>
     );
-    return NextResponse.json({
-      success: true,
-      message: "Details updated successfully.",
-      updatedFields: Object.keys(dataToUpdate),
-    });
+
+    console.log(
+      `[API UpdateDetails] Successfully updated document ${docRef.id} in ${collectionName}`
+    );
+    console.log(`[API UpdateDetails] Fields changed:`, detailedChanges);
+    console.log(`[API UpdateDetails] Admin user: ${session.user?.email}`);
+    console.log(`[API UpdateDetails] Timestamp: ${new Date().toISOString()}`);
+
+    // Add a timestamp to the response and prevent caching
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Details updated successfully.",
+        updatedFields: Object.keys(dataToUpdate),
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: any) {
     console.error(
       `[API UpdateDetails] Error updating Firestore for ${identifier}:`,

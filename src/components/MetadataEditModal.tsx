@@ -12,7 +12,7 @@ interface FileMetadata {
   id: string;
   photographer: string;
   photographerLink: string;
-  dateTaken: string;
+  eventDate: string;
   location: string;
   event: string;
   previewUrl: string; // This is for the list preview, not used directly by modal anymore
@@ -44,7 +44,7 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
   // Local state for form inputs
   const [photographer, setPhotographer] = useState("");
   const [photographerLink, setPhotographerLink] = useState("");
-  const [dateTaken, setDateTaken] = useState("");
+  const [eventDate, setEventDate] = useState("");
   const [location, setLocation] = useState("");
   const [event, setEvent] = useState("");
   // State for the modal's own preview URL
@@ -111,17 +111,6 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
     updateCombinedDate(startDate, endDate || startDate);
   };
 
-  // Helper function to update the combined date
-  const updateCombinedDate = (start: string, end: string) => {
-    if (start && end && showEndDate) {
-      setDateTaken(`${start} - ${end}`);
-    } else if (start) {
-      setDateTaken(start);
-    } else {
-      setDateTaken("");
-    }
-  };
-
   // Handle start date change
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartDate = e.target.value;
@@ -129,6 +118,58 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
 
     // Update combined date
     updateCombinedDate(newStartDate, showEndDate ? endDate : "");
+  };
+
+  // Helper to format date from YYYY-MM-DD to MM/DD/YYYY for display
+  const formatDateForDisplay = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  // Helper to format date from MM/DD/YYYY to YYYY-MM-DD for input
+  const formatDateForInput = (dateStr: string): string => {
+    if (!dateStr) return "";
+    try {
+      // If already in YYYY-MM-DD format, return as is
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+
+      // Parse MM/DD/YYYY format
+      const parts = dateStr.split("/");
+      if (parts.length !== 3) return dateStr;
+
+      const month = parseInt(parts[0], 10);
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+
+      if (isNaN(month) || isNaN(day) || isNaN(year)) return dateStr;
+
+      // Format as YYYY-MM-DD with padding
+      return `${year}-${month.toString().padStart(2, "0")}-${day
+        .toString()
+        .padStart(2, "0")}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  // Helper function to update the combined date
+  const updateCombinedDate = (start: string, end: string) => {
+    if (start && end && showEndDate) {
+      // Format dates for display in MM/DD/YYYY format
+      const formattedStart = formatDateForDisplay(start);
+      const formattedEnd = formatDateForDisplay(end);
+      setEventDate(`${formattedStart} - ${formattedEnd}`);
+    } else if (start) {
+      setEventDate(formatDateForDisplay(start));
+    } else {
+      setEventDate("");
+    }
   };
 
   // Handle end date change
@@ -149,18 +190,18 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
         selectedFileData.currentMetadata.photographerLink || ""
       );
 
-      // Get the dateTaken value
-      const fileDate = selectedFileData.currentMetadata.dateTaken || "";
-      setDateTaken(fileDate);
+      // Get the eventDate value
+      const fileDate = selectedFileData.currentMetadata.eventDate || "";
+      setEventDate(fileDate);
 
       // Parse the date for our dual input fields
       if (fileDate.includes(" - ")) {
         const [start, end] = fileDate.split(" - ");
-        setStartDate(start);
-        setEndDate(end);
+        setStartDate(formatDateForInput(start));
+        setEndDate(formatDateForInput(end));
         setShowEndDate(true);
       } else if (fileDate) {
-        setStartDate(fileDate);
+        setStartDate(formatDateForInput(fileDate));
         setEndDate("");
         setShowEndDate(false);
       } else {
@@ -200,7 +241,7 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
     setValidationError(null);
 
     // Validate date format
-    if (dateTaken && !isValidDateFormat(dateTaken)) {
+    if (eventDate && !isValidDateFormat(eventDate)) {
       setValidationError(
         "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges."
       );
@@ -212,7 +253,7 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
       onSave(selectedFileData.id, {
         photographer,
         photographerLink,
-        dateTaken,
+        eventDate,
         location,
         event,
       });
@@ -309,26 +350,24 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                 <div className="mt-1 flex flex-wrap items-center space-y-2 md:space-y-0">
                   <div className="flex-1 min-w-[180px] mr-2">
                     <input
-                      type="text"
+                      type="date"
                       id="modalStartDate"
                       ref={startDateInputRef}
                       value={startDate}
                       onChange={handleStartDateChange}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      placeholder="Start date (e.g., 4/10/2025)"
                     />
                   </div>
 
                   {showEndDate ? (
                     <div className="flex-1 min-w-[180px] mr-2">
                       <input
-                        type="text"
+                        type="date"
                         id="modalEndDate"
                         ref={endDateInputRef}
                         value={endDate}
                         onChange={handleEndDateChange}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        placeholder="End date (e.g., 4/13/2025)"
                       />
                     </div>
                   ) : (
@@ -372,9 +411,9 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                 {/* Hidden field to preserve the actual combined date value */}
                 <input
                   type="hidden"
-                  id="modalDateTaken"
-                  name="dateTaken"
-                  value={dateTaken}
+                  id="modalEventDate"
+                  name="eventDate"
+                  value={eventDate}
                 />
               </div>
               <div>

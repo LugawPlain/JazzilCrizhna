@@ -9,7 +9,8 @@ import { FieldValue } from "firebase-admin/firestore"; // Keep FieldValue if use
 
 interface FileSpecificMetadata {
   photographer: string | null;
-  dateTaken: string | null;
+  photographerLink: string | null;
+  eventDate: string | null;
   location: string | null;
   event: string | null;
   originalFilename: string;
@@ -190,14 +191,46 @@ export async function POST(request: NextRequest) {
           console.log(
             `[/api/uploadimages] Constructing Firestore data for ${currentFileName}...`
           );
+
+          // Handle eventDate as string for date ranges or as Date object for single dates
+          let eventDateValue = null;
+          if (specificMetadata?.eventDate) {
+            const dateStr = specificMetadata.eventDate.trim();
+
+            // Check if it contains a range (has a hyphen)
+            if (dateStr.includes(" - ")) {
+              // For ranges, keep as string
+              eventDateValue = dateStr;
+              console.log(
+                `[/api/uploadimages] Using date range for ${currentFileName}: "${dateStr}"`
+              );
+            } else {
+              // For single dates, try to convert to Date object
+              try {
+                const dateObj = new Date(dateStr);
+                if (!isNaN(dateObj.getTime())) {
+                  eventDateValue = dateObj;
+                } else {
+                  console.warn(
+                    `[/api/uploadimages] Invalid single date format for ${currentFileName}: "${dateStr}"`
+                  );
+                }
+              } catch (dateError) {
+                console.error(
+                  `[/api/uploadimages] Error parsing date for ${currentFileName}:`,
+                  dateError
+                );
+              }
+            }
+          }
+
           const uploadData = {
             r2FileKey: fileKey,
             originalFilename: currentFileName,
             contentType: file.type || "application/octet-stream", // Use file.type
             photographer: specificMetadata?.photographer || null,
-            eventDate: specificMetadata?.dateTaken
-              ? new Date(specificMetadata.dateTaken)
-              : null,
+            photographerLink: specificMetadata?.photographerLink || null,
+            eventDate: eventDateValue, // Now can be string or Date or null
             location: specificMetadata?.location || null,
             event: specificMetadata?.event || null,
             category: category,
