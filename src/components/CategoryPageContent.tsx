@@ -110,6 +110,11 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const [rawFetchedImages, setRawFetchedImages] = useState<ImageData[] | null>(
     null
   );
+  // State for bulk selection
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedImageKeys, setSelectedImageKeys] = useState<Set<string>>(
+    new Set()
+  );
 
   // Hooks for routing and params
   const router = useRouter();
@@ -586,6 +591,96 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     [router, pathname, searchParams]
   );
 
+  // --- Bulk Selection Handlers ---
+  const toggleSelectMode = () => {
+    setIsSelecting(!isSelecting);
+    setSelectedImageKeys(new Set()); // Clear selection when toggling mode
+  };
+
+  const handleImageSelectToggle = useCallback(
+    (imageKey: string) => {
+      setSelectedImageKeys((prevKeys) => {
+        const newKeys = new Set(prevKeys);
+        if (newKeys.has(imageKey)) {
+          newKeys.delete(imageKey);
+        } else {
+          newKeys.add(imageKey);
+        }
+        return newKeys;
+      });
+    },
+    [] // No dependencies needed
+  );
+
+  const handleBulkDelete = async () => {
+    if (selectedImageKeys.size === 0) return;
+
+    // Confirmation dialog
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selectedImageKeys.size} selected image(s)? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    console.log(
+      `Attempting to bulk delete ${selectedImageKeys.size} images for category ${category}...`
+    );
+
+    try {
+      const imageKeysArray = Array.from(selectedImageKeys);
+      const response = await fetch("/api/admin/bulkdeleteimages", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: category, imageKeys: imageKeysArray }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Bulk delete API Error:", result);
+        throw new Error(
+          result.error || `Failed to delete images (${response.status})`
+        );
+      }
+
+      console.log("Bulk delete successful:", result.message);
+      alert(
+        result.message ||
+          `${imageKeysArray.length} image(s) deleted successfully.`
+      ); // Basic feedback
+
+      // Clear selection and exit select mode
+      setSelectedImageKeys(new Set());
+      setIsSelecting(false);
+
+      // Remove deleted items from local state immediately for better UX
+      // (Alternatively, rely solely on the revalidateTag refresh,
+      // but this provides instant feedback)
+      setImages((prev) =>
+        prev.filter(
+          (img) => !img.r2FileKey || !imageKeysArray.includes(img.r2FileKey)
+        )
+      );
+      setRawFetchedImages((prev) =>
+        prev
+          ? prev.filter(
+              (img) => !img.r2FileKey || !imageKeysArray.includes(img.r2FileKey)
+            )
+          : null
+      );
+    } catch (error: any) {
+      console.error("Error during bulk delete:", error);
+      alert(`Error deleting images: ${error.message}`); // Show error message to user
+      // Optionally set an error state: setError(error.message);
+    } finally {
+      // Stop loading state if used
+      // setLoading(false);
+    }
+  };
+  // --- End Bulk Selection Handlers ---
+
   // Render logic
   if (!r2PublicUrl) {
     return (
@@ -643,6 +738,40 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           <p className="text-gray-400">{images.length} image(s)</p>
         </motion.div>
 
+        {/* --- Bulk Action Controls (Admin Only) --- */}
+        {isAdmin && (
+          <div className="mb-6 flex justify-end gap-4 items-center">
+            {!isSelecting ? (
+              <button
+                onClick={toggleSelectMode}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-neutral-900 transition"
+              >
+                Select Images
+              </button>
+            ) : (
+              <>
+                <span className="text-sm text-neutral-400">
+                  {selectedImageKeys.size} selected
+                </span>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedImageKeys.size === 0}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Delete Selected
+                </button>
+                <button
+                  onClick={toggleSelectMode}
+                  className="px-4 py-2 text-sm font-medium text-neutral-300 bg-neutral-700 rounded-md hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-neutral-900 transition"
+                >
+                  Cancel Selection
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        {/* --- End Bulk Action Controls --- */}
+
         <div className="flex flex-row justify-between gap-4">
           {activeLayout.map((column, columnIndex) => (
             <div
@@ -672,6 +801,12 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
                     onImageClick={() => handleImageClick(originalIndex)}
                     totalColumns={activeColumnCount}
                     isAdmin={isAdmin}
+                    isSelecting={isSelecting}
+                    isSelected={
+                      !!image.r2FileKey &&
+                      selectedImageKeys.has(image.r2FileKey)
+                    }
+                    onImageSelectToggle={handleImageSelectToggle}
                     pinned={
                       !!image.r2FileKey && pinnedImageKeys.has(image.r2FileKey)
                     }

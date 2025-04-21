@@ -13,6 +13,8 @@ interface ImageData {
   date?: string;
   photographer: string;
   photographerLink: string;
+  id?: string;
+  r2FileKey?: string;
 }
 
 interface ImageCardProps {
@@ -23,6 +25,9 @@ interface ImageCardProps {
   isAdmin?: boolean;
   pinned?: boolean;
   onPinClick?: (image: ImageData) => void;
+  isSelecting?: boolean;
+  isSelected?: boolean;
+  onImageSelectToggle?: (imageKey: string) => void;
 }
 
 const ImageCard = React.memo(
@@ -34,6 +39,9 @@ const ImageCard = React.memo(
     isAdmin = false,
     pinned = false,
     onPinClick,
+    isSelecting = false,
+    isSelected = false,
+    onImageSelectToggle,
   }: ImageCardProps) => {
     const ref = useRef<HTMLDivElement>(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -77,8 +85,14 @@ const ImageCard = React.memo(
             0.1,
           ease: [0.25, 0.1, 0.25, 1],
         }}
-        className="rounded-lg overflow-hidden group relative cursor-pointer"
-        onClick={() => onImageClick(image, index)}
+        className="rounded-lg overflow-hidden group relative cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300"
+        onClick={() => {
+          if (isSelecting && image.r2FileKey) {
+            onImageSelectToggle?.(image.r2FileKey);
+          } else if (!isSelecting) {
+            onImageClick(image, index);
+          }
+        }}
       >
         <div className="relative">
           {/* Blur placeholder */}
@@ -99,7 +113,7 @@ const ImageCard = React.memo(
             className={`
               w-full h-auto object-cover
               transition-all duration-500 ease-out 
-              group-hover:scale-110 group-hover:blur-xs 
+              group-hover:scale-110 
               ${isLoaded ? "opacity-100 blur-none" : "opacity-0 blur-xl"} 
             `}
             initial={{ scale: 1 }}
@@ -110,6 +124,34 @@ const ImageCard = React.memo(
             decoding="async"
             fetchPriority={index < 4 ? "high" : "low"}
           />
+
+          {/* Selection Overlay */}
+          {isSelecting && (
+            <div
+              className={`absolute inset-0 z-20 transition-colors duration-200 ${
+                isSelected
+                  ? "bg-black/50 border-4 border-blue-500"
+                  : "bg-black/20 group-hover:bg-black/40"
+              }`}
+            >
+              {isSelected && (
+                <div className="absolute top-2 left-2 bg-blue-500 text-white rounded-full p-1">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Admin Pin Star Overlay (Placeholder) */}
           {isAdmin && (
