@@ -272,6 +272,31 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     }
   }, [searchParams, images, loading, selectedImageIndex, pathname]); // Add dependencies
 
+  // Callback to update image data in the parent state after modal edit
+  const handleDetailsUpdated = useCallback(
+    (updatedImage: Partial<ImageData>) => {
+      setImages((prevImages) =>
+        prevImages.map((img) =>
+          img.id === updatedImage.id || img.r2FileKey === updatedImage.r2FileKey
+            ? { ...img, ...updatedImage } // Merge updates
+            : img
+        )
+      );
+      // Also update rawFetchedImages if it exists to keep them in sync
+      setRawFetchedImages(
+        (prevRawImages) =>
+          prevRawImages?.map((img) =>
+            img.id === updatedImage.id ||
+            img.r2FileKey === updatedImage.r2FileKey
+              ? { ...img, ...updatedImage }
+              : img
+          ) || null
+      );
+      // No need to close modal here, modal controls its state
+    },
+    []
+  ); // No dependencies needed if only using setters
+
   // Modal open handler
   const handleImageClick = useCallback(
     (index: number) => {
@@ -556,9 +581,11 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         {selectedImageData && (
           <ImageDetailModal
             image={selectedImageData}
+            isAdmin={isAdmin}
             onClose={handleCloseModal}
-            onNext={handleModalNext} // Pass navigation handlers
+            onNext={handleModalNext}
             onPrev={handleModalPrev}
+            onDetailsUpdated={handleDetailsUpdated}
           />
         )}
       </AnimatePresence>

@@ -1,0 +1,155 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path if needed
+import { dbAdmin } from "@/lib/firebase/adminApp"; // Use shared Firestore instance
+
+// Type for the expected request body
+interface UpdateDetailsRequestBody {
+  identifier: string; // Expecting id or r2FileKey
+  category?: string; // Expecting category to find collection
+  updates: {
+    event?: string;
+    location?: string;
+    date?: string;
+    photographer?: string;
+    photographerLink?: string;
+  };
+}
+
+export async function POST(request: NextRequest) {
+  // 1. Check Admin Authentication
+  const session = await getServerSession(authOptions);
+  if (!session || session.user?.role !== "admin") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  // 2. Check if Firestore is available
+  if (!dbAdmin) {
+    console.error(
+      "[API UpdateDetails] Firestore instance (dbAdmin) is not available."
+    );
+    return NextResponse.json(
+      { error: "Server configuration error (Database not ready)." },
+      { status: 500 }
+    );
+  }
+
+  // 3. Parse and Validate Request Body
+  let body: UpdateDetailsRequestBody;
+  try {
+    body = await request.json();
+    if (!body || typeof body !== "object")
+      throw new Error("Invalid request body format.");
+    if (!body.identifier || typeof body.identifier !== "string")
+      throw new Error("Missing or invalid image identifier.");
+    if (!body.category || typeof body.category !== "string")
+      throw new Error("Missing or invalid category.");
+    if (!body.updates || typeof body.updates !== "object")
+      throw new Error("Missing or invalid updates object.");
+  } catch (error: any) {
+    console.error("[API UpdateDetails] Invalid request body:", error);
+    return NextResponse.json(
+      { error: "Invalid request body.", details: error.message },
+      { status: 400 }
+    );
+  }
+
+  const { identifier, category, updates } = body;
+
+  // Construct dynamic collection name (lowercase)
+  const collectionName = `${category.toLowerCase()}_uploads`;
+
+  console.log(
+    `[API UpdateDetails] Admin ${session.user.email} updating doc ${identifier} in ${collectionName} with:`,
+    updates
+  );
+
+  try {
+    // 4. Find Firestore Document (by id or r2FileKey)
+    // Firestore doesn't directly support OR queries like this easily.
+    // We might need two queries or know which identifier is being sent.
+    // Assuming identifier is r2FileKey for now as it's more likely unique across categories.
+    // If you use Firestore document IDs, adjust the query.
+
+    const querySnapshot = await dbAdmin
+      .collection(collectionName)
+      .where("r2FileKey", "==", identifier) // Query by r2FileKey
+      .limit(1)
+      .get();
+
+    let docRef;
+    if (!querySnapshot.empty) {
+      docRef = querySnapshot.docs[0].ref;
+      console.log(
+        `[API UpdateDetails] Found document by r2FileKey: ${docRef.id}`
+      );
+    } else {
+      // Optional: Try finding by Firestore ID if r2FileKey fails
+      try {
+        const potentialDoc = await dbAdmin
+          .collection(collectionName)
+          .doc(identifier)
+          .get();
+        if (potentialDoc.exists) {
+          docRef = potentialDoc.ref;
+          console.log(`[API UpdateDetails] Found document by ID: ${docRef.id}`);
+        }
+      } catch (idError) {
+        console.warn(
+          `[API UpdateDetails] Could not check for document by ID ${identifier}:`,
+          idError
+        );
+      }
+    }
+
+    if (!docRef) {
+      console.error(
+        `[API UpdateDetails] Document not found with identifier: ${identifier} in collection ${collectionName}`
+      );
+      return NextResponse.json(
+        { error: "Image record not found." },
+        { status: 404 }
+      );
+    }
+
+    // 5. Prepare Update Data (sanitize/validate updates if necessary)
+    const dataToUpdate: { [key: string]: any } = {};
+    if (updates.event !== undefined) dataToUpdate.event = updates.event;
+    if (updates.location !== undefined)
+      dataToUpdate.location = updates.location;
+    if (updates.date !== undefined) dataToUpdate.date = updates.date; // Store as string for now
+    if (updates.photographer !== undefined)
+      dataToUpdate.photographer = updates.photographer;
+    if (updates.photographerLink !== undefined)
+      dataToUpdate.photographerLink = updates.photographerLink;
+    // Add validation for date format, link format etc. here if needed
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return NextResponse.json(
+        { message: "No valid fields provided for update." },
+        { status: 400 }
+      );
+    }
+
+    // 6. Update Firestore Document
+    await docRef.update(dataToUpdate);
+
+    console.log(
+      `[API UpdateDetails] Successfully updated document ${docRef.id}`
+    );
+    return NextResponse.json({
+      success: true,
+      message: "Details updated successfully.",
+      updatedFields: Object.keys(dataToUpdate),
+    });
+  } catch (error: any) {
+    console.error(
+      `[API UpdateDetails] Error updating Firestore for ${identifier}:`,
+      error
+    );
+    return NextResponse.json(
+      { error: "Failed to update image details.", details: error.message },
+      { status: 500 }
+    );
+  }
+}
