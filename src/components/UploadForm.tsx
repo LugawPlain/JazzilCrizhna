@@ -15,6 +15,7 @@ import MetadataEditModal from "./MetadataEditModal"; // Import the modal
 interface FileMetadata {
   id: string; // Use a unique ID, maybe based on file name + index
   photographer: string;
+  photographerLink: string; // Added field for photographer's link
   dateTaken: string;
   location: string; // Added location state
   event: string;
@@ -27,6 +28,7 @@ function UploadForm() {
   const [globalDateTaken, setGlobalDateTaken] = useState("");
   const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
   const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
+  const [globalPhotographerLink, setGlobalPhotographerLink] = useState(""); // Added state for photographer link
   const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
   const [globalEvent, setGlobalEvent] = useState(""); // Changed from event
 
@@ -101,6 +103,7 @@ function UploadForm() {
             previewUrl,
             // Initialize specific metadata with default date
             photographer: "",
+            photographerLink: "", // Initialize photographer link
             dateTaken: "1/1/2000", // Set default date
             location: "",
             event: "",
@@ -160,6 +163,7 @@ function UploadForm() {
       // Start with the specific metadata from the item
       const specificMetadata = {
         photographer: item.photographer,
+        photographerLink: item.photographerLink, // Include photographer link
         dateTaken: item.dateTaken,
         location: item.location,
         event: item.event,
@@ -170,6 +174,9 @@ function UploadForm() {
       // Apply global defaults only if the specific field is empty
       if (specificMetadata.photographer === "") {
         specificMetadata.photographer = globalPhotographer;
+      }
+      if (specificMetadata.photographerLink === "") {
+        specificMetadata.photographerLink = globalPhotographerLink;
       }
       if (specificMetadata.dateTaken === "") {
         specificMetadata.dateTaken = globalDateTaken;
@@ -264,6 +271,7 @@ function UploadForm() {
       setGlobalDateTaken("1/1/2000");
       setGlobalLocation("");
       setGlobalPhotographer("");
+      setGlobalPhotographerLink(""); // Reset photographer link
       setGlobalCategory("");
       setGlobalEvent("");
       // Reset file input visually (important if not resetting e.target.value in handleFileChange)
@@ -311,6 +319,7 @@ function UploadForm() {
         currentMetadata: {
           // Extract current metadata part
           photographer: selectedFileForModal.photographer,
+          photographerLink: selectedFileForModal.photographerLink,
           dateTaken: selectedFileForModal.dateTaken,
           location: selectedFileForModal.location,
           event: selectedFileForModal.event,
@@ -612,6 +621,23 @@ function UploadForm() {
               onChange={(e) => setGlobalPhotographer(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               placeholder="Who took the photo?"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="photographerLink"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Photographer Link: (Optional)
+            </label>
+            <input
+              type="url"
+              id="photographerLink"
+              value={globalPhotographerLink}
+              onChange={(e) => setGlobalPhotographerLink(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Photographer's website or social media"
             />
           </div>
 

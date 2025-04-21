@@ -11,6 +11,7 @@ import React, {
 interface FileMetadata {
   id: string;
   photographer: string;
+  photographerLink: string;
   dateTaken: string;
   location: string;
   event: string;
@@ -42,6 +43,7 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
 }) => {
   // Local state for form inputs
   const [photographer, setPhotographer] = useState("");
+  const [photographerLink, setPhotographerLink] = useState("");
   const [dateTaken, setDateTaken] = useState("");
   const [location, setLocation] = useState("");
   const [event, setEvent] = useState("");
@@ -143,6 +145,9 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
     if (isOpen && selectedFileData) {
       // Set metadata fields from the passed currentMetadata
       setPhotographer(selectedFileData.currentMetadata.photographer || "");
+      setPhotographerLink(
+        selectedFileData.currentMetadata.photographerLink || ""
+      );
 
       // Get the dateTaken value
       const fileDate = selectedFileData.currentMetadata.dateTaken || "";
@@ -206,6 +211,7 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
       // Pass only the updatable metadata fields
       onSave(selectedFileData.id, {
         photographer,
+        photographerLink,
         dateTaken,
         location,
         event,
@@ -275,6 +281,22 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                   onChange={(e) => setPhotographer(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder="Who took the photo?"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="modalPhotographerLink"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Photographer Link: (Optional)
+                </label>
+                <input
+                  type="url"
+                  id="modalPhotographerLink"
+                  value={photographerLink}
+                  onChange={(e) => setPhotographerLink(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Photographer's website or social media"
                 />
               </div>
               <div>
