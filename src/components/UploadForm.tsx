@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import React, {
+  useState,
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useRef,
+} from "react";
 import MetadataEditModal from "./MetadataEditModal"; // Import the modal
 // import { db, storage } from "../lib/firebase"; // Commented out
 // import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
@@ -18,7 +24,7 @@ interface FileMetadata {
 
 function UploadForm() {
   // Keep global states for now, might be used as defaults or if no specific metadata is set
-  const [globalDateTaken, setGlobalDateTaken] = useState("1/1/2000");
+  const [globalDateTaken, setGlobalDateTaken] = useState("");
   const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
   const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
   const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
@@ -56,6 +62,15 @@ function UploadForm() {
     "COSPLAY",
     "OTHERS",
   ];
+
+  // Add state variables for start and end dates and to track if showing end date
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showEndDate, setShowEndDate] = useState(false);
+
+  // Add references for date inputs
+  const startDateInputRef = React.useRef<HTMLInputElement>(null);
+  const endDateInputRef = React.useRef<HTMLInputElement>(null);
 
   // --- Cleanup Object URLs ---
   useEffect(() => {
@@ -105,7 +120,6 @@ function UploadForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Check if any files are selected
-    // Use filesWithMetadata instead of imageFiles
     if (filesWithMetadata.length === 0) {
       setError("Please select at least one image.");
       return;
@@ -113,6 +127,26 @@ function UploadForm() {
     // Category is still required globally
     if (!globalCategory) {
       setError("Please select a category.");
+      return;
+    }
+
+    // Validate date format
+    if (globalDateTaken && !isValidDateFormat(globalDateTaken)) {
+      setError(
+        "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges."
+      );
+      return;
+    }
+
+    // Check individual file date formats
+    const invalidDates = filesWithMetadata.filter(
+      (item) => item.dateTaken && !isValidDateFormat(item.dateTaken)
+    );
+
+    if (invalidDates.length > 0) {
+      setError(
+        `Invalid date format in ${invalidDates.length} file(s). Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges.`
+      );
       return;
     }
 
@@ -284,6 +318,109 @@ function UploadForm() {
       }
     : null;
 
+  // Utility to validate date range format
+  const isValidDateFormat = (dateStr: string): boolean => {
+    // Empty is valid (optional field)
+    if (!dateStr.trim()) return true;
+
+    // Check if it's a range (contains a hyphen)
+    if (dateStr.includes("-")) {
+      const dateParts = dateStr.split("-").map((part) => part.trim());
+
+      // Must have exactly two parts with content
+      if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
+        return false;
+      }
+
+      // Try to parse both dates
+      const startDate = new Date(dateParts[0]);
+      const endDate = new Date(dateParts[1]);
+
+      // Both must be valid dates
+      return !isNaN(startDate.getTime()) && !isNaN(endDate.getTime());
+    }
+
+    // If not a range, just check if it's a valid date
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime());
+  };
+
+  // Function to update the combined date based on start and end dates
+  const updateCombinedDate = (start: string, end: string) => {
+    if (start && end && showEndDate) {
+      setGlobalDateTaken(`${start} - ${end}`);
+    } else if (start) {
+      setGlobalDateTaken(start);
+    } else {
+      setGlobalDateTaken("");
+    }
+  };
+
+  // Handle start date change
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+
+    // Update combined date
+    updateCombinedDate(newStartDate, showEndDate ? endDate : "");
+  };
+
+  // Handle end date change
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndDate = e.target.value;
+    setEndDate(newEndDate);
+
+    // Update combined date
+    updateCombinedDate(startDate, newEndDate);
+  };
+
+  // Handle the "Up To" button click
+  const handleUpToClick = () => {
+    setShowEndDate(true);
+
+    // Set endDate to startDate as default if not set yet
+    if (!endDate && startDate) {
+      setEndDate(startDate);
+    }
+
+    // Focus the end date input after state update
+    setTimeout(() => {
+      if (endDateInputRef.current) {
+        endDateInputRef.current.focus();
+      }
+    }, 0);
+
+    // Update the combined date
+    updateCombinedDate(startDate, endDate || startDate);
+  };
+
+  // Effect to sync the individual date fields when globalDateTaken changes from outside
+  // (e.g. when the form is reset)
+  useEffect(() => {
+    if (globalDateTaken === "1/1/2000") {
+      // Default state - just first date
+      setStartDate("1/1/2000");
+      setEndDate("");
+      setShowEndDate(false);
+    } else if (globalDateTaken.includes(" - ")) {
+      // Has range format
+      const [start, end] = globalDateTaken.split(" - ");
+      setStartDate(start);
+      setEndDate(end);
+      setShowEndDate(true);
+    } else if (globalDateTaken) {
+      // Just a single date
+      setStartDate(globalDateTaken);
+      setEndDate("");
+      setShowEndDate(false);
+    } else {
+      // Empty
+      setStartDate("");
+      setEndDate("");
+      setShowEndDate(false);
+    }
+  }, [globalDateTaken]);
+
   return (
     // --- Main Flex Container ---
     <div className="flex flex-col md:flex-row gap-6 p-4 md:p-8 min-h-screen mt-24">
@@ -373,12 +510,74 @@ function UploadForm() {
             >
               Date Taken: (Optional)
             </label>
+            <div className="mt-1 flex flex-wrap items-center space-y-2 md:space-y-0">
+              <div className="flex-1 min-w-[180px] mr-2">
+                <input
+                  type="text"
+                  id="startDate"
+                  value={startDate}
+                  onChange={handleStartDateChange}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Start date (e.g., 4/10/2025)"
+                />
+              </div>
+
+              {showEndDate ? (
+                <div className="flex-1 min-w-[180px] mr-2">
+                  <input
+                    type="text"
+                    id="endDate"
+                    ref={endDateInputRef}
+                    value={endDate}
+                    onChange={handleEndDateChange}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    placeholder="End date (e.g., 4/13/2025)"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleUpToClick}
+                  className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Add End Date
+                </button>
+              )}
+
+              {showEndDate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEndDate(false);
+                    setEndDate("");
+                    updateCombinedDate(startDate, "");
+                  }}
+                  className="inline-flex items-center ml-2 px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Hidden field to preserve the actual combined date value */}
             <input
-              type="date"
+              type="hidden"
               id="dateTaken"
+              name="dateTaken"
               value={globalDateTaken}
-              onChange={(e) => setGlobalDateTaken(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
 

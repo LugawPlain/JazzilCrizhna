@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  FormEvent,
+  useRef,
+} from "react";
 
 // Re-use the FileMetadata type definition (or import if moved to a types file)
 interface FileMetadata {
@@ -42,12 +48,122 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
   // State for the modal's own preview URL
   const [modalPreviewUrl, setModalPreviewUrl] = useState<string | null>(null);
 
+  // Add state variables for start and end dates and to track if showing end date
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showEndDate, setShowEndDate] = useState(false);
+
+  // Add a date validation function at the top of the component
+  const isValidDateFormat = (dateStr: string): boolean => {
+    // Empty is valid (optional field)
+    if (!dateStr.trim()) return true;
+
+    // Check if it's a range (contains a hyphen)
+    if (dateStr.includes("-")) {
+      const dateParts = dateStr.split("-").map((part) => part.trim());
+
+      // Must have exactly two parts with content
+      if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
+        return false;
+      }
+
+      // Try to parse both dates
+      const startDate = new Date(dateParts[0]);
+      const endDate = new Date(dateParts[1]);
+
+      // Both must be valid dates
+      return !isNaN(startDate.getTime()) && !isNaN(endDate.getTime());
+    }
+
+    // If not a range, just check if it's a valid date
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime());
+  };
+
+  // Add state for validation error
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Add references for date inputs
+  const startDateInputRef = React.useRef<HTMLInputElement>(null);
+  const endDateInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Update the handleUpToClick to show the second date field
+  const handleUpToClick = () => {
+    setShowEndDate(true);
+
+    // Set endDate to startDate as default if not set yet
+    if (!endDate && startDate) {
+      setEndDate(startDate);
+    }
+
+    // Focus the end date input after state update
+    setTimeout(() => {
+      if (endDateInputRef.current) {
+        endDateInputRef.current.focus();
+        // Select all text in the input for easy replacement
+        endDateInputRef.current.select();
+      }
+    }, 0);
+
+    // Update the combined date
+    updateCombinedDate(startDate, endDate || startDate);
+  };
+
+  // Helper function to update the combined date
+  const updateCombinedDate = (start: string, end: string) => {
+    if (start && end && showEndDate) {
+      setDateTaken(`${start} - ${end}`);
+    } else if (start) {
+      setDateTaken(start);
+    } else {
+      setDateTaken("");
+    }
+  };
+
+  // Handle start date change
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+
+    // Update combined date
+    updateCombinedDate(newStartDate, showEndDate ? endDate : "");
+  };
+
+  // Handle end date change
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndDate = e.target.value;
+    setEndDate(newEndDate);
+
+    // Update combined date
+    updateCombinedDate(startDate, newEndDate);
+  };
+
   // Effect to update local state and create/revoke modal preview URL
   useEffect(() => {
     if (isOpen && selectedFileData) {
       // Set metadata fields from the passed currentMetadata
       setPhotographer(selectedFileData.currentMetadata.photographer || "");
-      setDateTaken(selectedFileData.currentMetadata.dateTaken || "");
+
+      // Get the dateTaken value
+      const fileDate = selectedFileData.currentMetadata.dateTaken || "";
+      setDateTaken(fileDate);
+
+      // Parse the date for our dual input fields
+      if (fileDate.includes(" - ")) {
+        const [start, end] = fileDate.split(" - ");
+        setStartDate(start);
+        setEndDate(end);
+        setShowEndDate(true);
+      } else if (fileDate) {
+        setStartDate(fileDate);
+        setEndDate("");
+        setShowEndDate(false);
+      } else {
+        setStartDate("");
+        setEndDate("");
+        setShowEndDate(false);
+      }
+
       setLocation(selectedFileData.currentMetadata.location || "");
       setEvent(selectedFileData.currentMetadata.event || "");
 
@@ -65,13 +181,27 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
     } else {
       // Reset fields and URL if modal is closing or no file selected
       setModalPreviewUrl(null);
-      // Optional: reset form fields if desired when modal closes
-      // setPhotographer(''); setDateTaken(''); setLocation(''); setEvent('');
+      // Reset date fields
+      setStartDate("");
+      setEndDate("");
+      setShowEndDate(false);
     }
   }, [isOpen, selectedFileData]); // Depend on isOpen and the selected file data
 
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
+
+    // Reset any previous validation errors
+    setValidationError(null);
+
+    // Validate date format
+    if (dateTaken && !isValidDateFormat(dateTaken)) {
+      setValidationError(
+        "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges."
+      );
+      return;
+    }
+
     if (selectedFileData) {
       // Pass only the updatable metadata fields
       onSave(selectedFileData.id, {
@@ -149,17 +279,80 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
               </div>
               <div>
                 <label
-                  htmlFor="modalDateTaken"
+                  htmlFor="modalStartDate"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Date Taken: (Optional)
+                  Date: (Optional)
                 </label>
+                <div className="mt-1 flex flex-wrap items-center space-y-2 md:space-y-0">
+                  <div className="flex-1 min-w-[180px] mr-2">
+                    <input
+                      type="text"
+                      id="modalStartDate"
+                      ref={startDateInputRef}
+                      value={startDate}
+                      onChange={handleStartDateChange}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      placeholder="Start date (e.g., 4/10/2025)"
+                    />
+                  </div>
+
+                  {showEndDate ? (
+                    <div className="flex-1 min-w-[180px] mr-2">
+                      <input
+                        type="text"
+                        id="modalEndDate"
+                        ref={endDateInputRef}
+                        value={endDate}
+                        onChange={handleEndDateChange}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        placeholder="End date (e.g., 4/13/2025)"
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleUpToClick}
+                      className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Add End Date
+                    </button>
+                  )}
+
+                  {showEndDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEndDate(false);
+                        setEndDate("");
+                        updateCombinedDate(startDate, "");
+                      }}
+                      className="inline-flex items-center ml-2 px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden field to preserve the actual combined date value */}
                 <input
-                  type="date"
+                  type="hidden"
                   id="modalDateTaken"
+                  name="dateTaken"
                   value={dateTaken}
-                  onChange={(e) => setDateTaken(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 />
               </div>
               <div>
@@ -195,6 +388,13 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Add validation error display before the buttons in the form */}
+            {validationError && (
+              <div className="text-red-500 text-sm mt-2 mb-2">
+                {validationError}
+              </div>
+            )}
 
             {/* Buttons */}
             <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-200">
