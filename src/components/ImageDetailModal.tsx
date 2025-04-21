@@ -231,64 +231,9 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         },
       });
 
-      // Create a timestamp to track when updates occur
-      localStorage.setItem("lastImageUpdate", new Date().toISOString());
-
-      // Force revalidation of API data to ensure fresh data on next load
-      try {
-        // Log detailed changes for debugging
-        const changes = {
-          event:
-            formData.event !== image.event
-              ? { from: image.event, to: formData.event }
-              : null,
-          location:
-            formData.location !== image.location
-              ? { from: image.location, to: formData.location }
-              : null,
-          eventDate:
-            formData.eventDate !== (image.eventDate || image.date)
-              ? { from: image.eventDate || image.date, to: formData.eventDate }
-              : null,
-          photographer:
-            formData.photographer !== image.photographer
-              ? { from: image.photographer, to: formData.photographer }
-              : null,
-          photographerLink:
-            formData.photographerLink !== image.photographerLink
-              ? { from: image.photographerLink, to: formData.photographerLink }
-              : null,
-        };
-
-        // Filter out unchanged fields
-        const actualChanges = Object.fromEntries(
-          Object.entries(changes).filter(([_, value]) => value !== null)
-        );
-
-        console.log(
-          `REVALIDATION: Image ${imageId} (${image.category}) updated with:`,
-          actualChanges
-        );
-        console.log(
-          `REVALIDATION: Database timestamp: ${new Date().toISOString()}`
-        );
-
-        // Invalidate any cached data for this category
-        if (image.category) {
-          const invalidateResponse = await fetch(
-            `/api/fetchimages?category=${encodeURIComponent(
-              image.category || ""
-            )}&revalidate=1&t=${Date.now()}`
-          );
-          console.log(
-            "Cache revalidation response:",
-            await invalidateResponse.text()
-          );
-        }
-      } catch (revalidateErr) {
-        console.warn("Failed to revalidate cache:", revalidateErr);
-        // Non-critical error, don't prevent update success
-      }
+      // --- REMOVED manual revalidation fetch ---
+      // The revalidateTag call in the API route handles cache invalidation.
+      // The next navigation/load of the category page will automatically get fresh data.
     } catch (err: any) {
       console.error("Error saving image details:", err);
       setError(err.message || "An unknown error occurred during save.");
@@ -432,28 +377,29 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         </div>
 
         {/* Details Section - Modified for Editing */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4 md:p-6 text-white pointer-events-none">
-          <div className="pointer-events-auto max-w-xl">
-            {/* Event */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 md:p-8 text-white pointer-events-none">
+          <div className="pointer-events-auto max-w-2xl">
+            {/* Event Title - Added subtle shadow */}
             {isEditing ? (
               <input
                 type="text"
                 name="event"
                 value={formData.event}
                 onChange={handleInputChange}
-                className="bg-neutral-800/80 border border-neutral-600 rounded px-2 py-1 text-xl md:text-2xl font-semibold mb-2 w-full focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="bg-neutral-800/80 border border-neutral-600 rounded px-3 py-2 text-xl md:text-2xl font-semibold mb-4 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-neutral-500"
                 placeholder="Event Name"
               />
             ) : (
-              <h2 className="text-xl md:text-2xl font-semibold mb-2 drop-shadow-md">
+              <h2 className="text-xl md:text-3xl font-semibold mb-4 drop-shadow-lg">
                 {formData.event}
               </h2>
             )}
 
-            <div className="space-y-2 text-sm md:text-base opacity-90">
-              {/* Location */}
+            {/* Increased spacing between detail rows */}
+            <div className="space-y-3 text-sm md:text-base">
+              {/* Location - Changed label color */}
               <p className="flex items-center">
-                <strong className="font-medium text-neutral-300 mr-2 w-24 flex-shrink-0">
+                <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
                   Location:
                 </strong>
                 {isEditing ? (
@@ -466,12 +412,12 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     placeholder="Location"
                   />
                 ) : (
-                  <span>{formData.location}</span>
+                  <span className="text-neutral-100">{formData.location}</span>
                 )}
               </p>
-              {/* Date */}
+              {/* Date - Changed label color */}
               <p className="flex items-center">
-                <strong className="font-medium text-neutral-300 mr-2 w-24 flex-shrink-0">
+                <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
                   Date:
                 </strong>
                 {isEditing ? (
@@ -481,15 +427,17 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     value={formData.eventDate}
                     onChange={handleInputChange}
                     className="input-field"
-                    placeholder="Single date or range (e.g., 4/10/2025 - 4/13/2025)"
+                    placeholder="M/D/YYYY or M/D/YYYY - M/D/YYYY"
                   />
                 ) : (
-                  <span>{formatDateDisplay(formData.eventDate)}</span>
+                  <span className="text-neutral-100">
+                    {formatDateDisplay(formData.eventDate)}
+                  </span>
                 )}
               </p>
-              {/* Photographer */}
+              {/* Photographer - Changed label color and link color */}
               <p className="flex items-center">
-                <strong className="font-medium text-neutral-300 mr-2 w-24 flex-shrink-0">
+                <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
                   Photographer:
                 </strong>
                 {isEditing ? (
@@ -501,24 +449,27 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     className="input-field"
                     placeholder="Photographer Name"
                   />
-                ) : formData.photographerLink ? (
+                ) : formData.photographerLink &&
+                  formData.photographerLink !== "#" ? (
                   <Link
                     href={formData.photographerLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-neutral-100 transition-colors"
+                    className="text-blue-400 hover:text-blue-300 underline transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {formData.photographer}
+                    {formData.photographer || "Unknown"}
                   </Link>
                 ) : (
-                  <span>{formData.photographer}</span>
+                  <span className="text-neutral-100">
+                    {formData.photographer || "Unknown"}
+                  </span>
                 )}
               </p>
               {/* Photographer Link - Only visible in edit mode */}
               {isEditing && (
                 <p className="flex items-center">
-                  <strong className="font-medium text-neutral-300 mr-2 w-24 flex-shrink-0">
+                  <strong className="font-medium text-neutral-400 mr-3 w-28 flex-shrink-0">
                     Photog URL:
                   </strong>
                   <input
@@ -535,7 +486,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
             {/* Edit/Save/Cancel Buttons & Error Message */}
             {isAdmin && (
-              <div className="mt-4 flex items-center gap-3">
+              <div className="mt-6 flex items-center gap-3">
                 {!isEditing ? (
                   <button onClick={handleEditClick} className="edit-btn">
                     Edit Details
@@ -568,7 +519,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
               </div>
             )}
             {error && (
-              <p className="text-red-500 text-xs mt-2">Error: {error}</p>
+              <p className="text-red-500 text-sm mt-3">Error: {error}</p>
             )}
           </div>
         </div>
@@ -631,21 +582,24 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
 // Add some basic reusable styles (adjust as needed)
 const InputFieldStyles =
-  "bg-neutral-800/80 border border-neutral-600 rounded px-2 py-1 text-sm md:text-base w-full focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:opacity-50";
-const EditButtonStyles =
-  "px-3 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50";
-const SaveButtonStyles =
-  "px-3 py-1 text-xs rounded bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50";
-const CancelButtonStyles =
-  "px-3 py-1 text-xs rounded bg-neutral-600 hover:bg-neutral-700 transition-colors disabled:opacity-50";
-const DeleteButtonStyles =
-  "px-3 py-1 text-xs rounded bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50";
+  "bg-neutral-700/60 border border-neutral-500 rounded px-3 py-1.5 text-sm md:text-base w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none placeholder-neutral-500 disabled:opacity-60 transition-colors duration-150";
+const BaseButtonStyles =
+  "px-4 py-1.5 text-xs font-medium rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black/50 disabled:opacity-60 transition-all duration-150 ease-in-out";
+const EditButtonStyles = `${BaseButtonStyles} bg-blue-600 hover:bg-blue-500 text-white focus:ring-blue-500`;
+const SaveButtonStyles = `${BaseButtonStyles} bg-green-600 hover:bg-green-500 text-white focus:ring-green-500`;
+const CancelButtonStyles = `${BaseButtonStyles} bg-neutral-600 hover:bg-neutral-500 text-neutral-100 focus:ring-neutral-500`;
+const DeleteButtonStyles = `${BaseButtonStyles} bg-red-700 hover:bg-red-600 text-white focus:ring-red-600`;
 
 // Helper component or apply styles directly
 // You might want to extract styles to a CSS module
 const applyStyles = () => {
   if (typeof window !== "undefined") {
+    const styleId = "image-detail-modal-styles";
+    // Prevent adding styles multiple times if component re-renders
+    if (document.getElementById(styleId)) return;
+
     const styleSheet = document.createElement("style");
+    styleSheet.id = styleId;
     styleSheet.type = "text/css";
     styleSheet.innerText = `
           .input-field { @apply ${InputFieldStyles}; }

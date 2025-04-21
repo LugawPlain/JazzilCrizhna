@@ -193,7 +193,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             date: displayDate, // Backwards compatibility
             rawEventDate: rawEventDate, // Store the original string
             photographer: item.photographer || "Unknown",
-            photographerLink: "#", // Default or use item.photographerLink if available
+            photographerLink: item.photographerLink || "#", // Use fetched link or default to "#"
             location: item.location || "Unknown",
             event: item.event || "Unknown",
             id: item.id,
