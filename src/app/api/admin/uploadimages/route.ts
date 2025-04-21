@@ -7,6 +7,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbAdmin } from "@/lib/firebase/adminApp"; // <--- Import CORRECT export 'dbAdmin'
 import { FieldValue } from "firebase-admin/firestore"; // Keep FieldValue if used
 
+// --- Helper function for date validation ---
+function isValidEventDateFormat(dateStr: string): boolean {
+  const trimmedStr = dateStr.trim();
+  // Regex to match M/D/YYYY or M/D/YYYY - M/D/YYYY (flexible digits)
+  const rangeRegex =
+    /^(\d{1,2}\/\d{1,2}\/\d{4})\s*-\s*(\d{1,2}\/\d{1,2}\/\d{4})$/;
+  const singleRegex = /^(\d{1,2}\/\d{1,2}\/\d{4})$/;
+
+  let datesToValidate: string[] = [];
+
+  const rangeMatch = trimmedStr.match(rangeRegex);
+  if (rangeMatch) {
+    datesToValidate.push(rangeMatch[1], rangeMatch[2]);
+  } else {
+    const singleMatch = trimmedStr.match(singleRegex);
+    if (singleMatch) {
+      datesToValidate.push(singleMatch[1]);
+    } else {
+      // Doesn't match either format
+      return false;
+    }
+  }
+
+  // Validate each extracted date string
+  for (const dStr of datesToValidate) {
+    const dateObj = new Date(dStr);
+    // Check if Date constructor parsed it successfully and it's not an invalid date
+    if (isNaN(dateObj.getTime())) {
+      return false; // Invalid date like 02/30/2025
+    }
+  }
+
+  return true; // Format is correct and all dates are valid
+}
+// --- End Helper function ---
+
 interface FileSpecificMetadata {
   photographer: string | null;
   photographerLink: string | null;
@@ -192,37 +228,29 @@ export async function POST(request: NextRequest) {
             `[/api/uploadimages] Constructing Firestore data for ${currentFileName}...`
           );
 
-          // Handle eventDate as string for date ranges or as Date object for single dates
-          let eventDateValue = null;
+          // --- NEW LOGIC: Validate and store eventDate as string or null ---
+          let eventDateValue: string | null = null; // Always string or null now
           if (specificMetadata?.eventDate) {
             const dateStr = specificMetadata.eventDate.trim();
 
-            // Check if it contains a range (has a hyphen)
-            if (dateStr.includes(" - ")) {
-              // For ranges, keep as string
-              eventDateValue = dateStr;
+            if (isValidEventDateFormat(dateStr)) {
+              eventDateValue = dateStr; // Store the original valid string
               console.log(
-                `[/api/uploadimages] Using date range for ${currentFileName}: "${dateStr}"`
+                `[/api/uploadimages] Using valid event date string for ${currentFileName}: \\"${dateStr}\\"`
               );
             } else {
-              // For single dates, try to convert to Date object
-              try {
-                const dateObj = new Date(dateStr);
-                if (!isNaN(dateObj.getTime())) {
-                  eventDateValue = dateObj;
-                } else {
-                  console.warn(
-                    `[/api/uploadimages] Invalid single date format for ${currentFileName}: "${dateStr}"`
-                  );
-                }
-              } catch (dateError) {
-                console.error(
-                  `[/api/uploadimages] Error parsing date for ${currentFileName}:`,
-                  dateError
-                );
-              }
+              console.warn(
+                `[/api/uploadimages] Invalid or unrecognized event date format for ${currentFileName}: \\"${dateStr}\\". Storing null.`
+              );
+              // Keep eventDateValue as null if validation fails
             }
+          } else {
+            console.log(
+              `[/api/uploadimages] No event date provided for ${currentFileName}.`
+            );
+            // Keep eventDateValue as null
           }
+          // --- END NEW LOGIC ---
 
           const uploadData = {
             r2FileKey: fileKey,
@@ -230,7 +258,7 @@ export async function POST(request: NextRequest) {
             contentType: file.type || "application/octet-stream", // Use file.type
             photographer: specificMetadata?.photographer || null,
             photographerLink: specificMetadata?.photographerLink || null,
-            eventDate: eventDateValue, // Now can be string or Date or null
+            eventDate: eventDateValue, // Store the validated string or null
             location: specificMetadata?.location || null,
             event: specificMetadata?.event || null,
             category: category,
