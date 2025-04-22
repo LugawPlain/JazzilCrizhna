@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/authOptions";
 import { dbAdmin } from "@/lib/firebase/adminApp";
 import { revalidateTag } from "next/cache";
 

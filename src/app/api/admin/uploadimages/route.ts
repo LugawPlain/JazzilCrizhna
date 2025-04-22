@@ -15,7 +15,7 @@ function isValidEventDateFormat(dateStr: string): boolean {
     /^(\d{1,2}\/\d{1,2}\/\d{4})\s*-\s*(\d{1,2}\/\d{1,2}\/\d{4})$/;
   const singleRegex = /^(\d{1,2}\/\d{1,2}\/\d{4})$/;
 
-  let datesToValidate: string[] = [];
+  const datesToValidate: string[] = [];
 
   const rangeMatch = trimmedStr.match(rangeRegex);
   if (rangeMatch) {
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     // --- Process each file ---
     const results = [];
     let successfulUploads = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     const collectionName = `${category
       .toLowerCase()

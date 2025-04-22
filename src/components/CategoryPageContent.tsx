@@ -524,7 +524,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
         // Optionally show an error message to the user
       }
     },
-    [isAdmin, pinnedImageKeys, category]
+    [isAdmin, pinnedImageKeys]
   ); // <-- Include dependencies
 
   // Update active layout and column count based on window size

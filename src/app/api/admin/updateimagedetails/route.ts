@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Adjust path if needed
+import { authOptions } from "@/lib/authOptions";
 import { dbAdmin } from "@/lib/firebase/adminApp"; // Use shared Firestore instance
 import { revalidateTag } from "next/cache"; // <-- Import revalidateTag
 
