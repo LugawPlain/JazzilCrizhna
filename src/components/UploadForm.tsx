@@ -19,6 +19,7 @@ interface FileMetadata {
   eventDate: string;
   location: string; // Added location state
   event: string;
+  advertisingLink: string; // <-- Add advertising link
   previewUrl: string;
   file: File; // Keep the original file object associated
 }
@@ -29,6 +30,7 @@ function UploadForm() {
   const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
   const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
   const [globalPhotographerLink, setGlobalPhotographerLink] = useState(""); // Added state for photographer link
+  const [globalAdvertisingLink, setGlobalAdvertisingLink] = useState(""); // <-- Add global state
   const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
   const [globalEvent, setGlobalEvent] = useState(""); // Changed from event
 
@@ -99,6 +101,7 @@ function UploadForm() {
             eventDate: "", // Set default date
             location: "",
             event: "",
+            advertisingLink: "", // <-- Initialize
           };
         }
       );
@@ -166,6 +169,7 @@ function UploadForm() {
         eventDate: item.eventDate,
         location: item.location,
         event: item.event,
+        advertisingLink: item.advertisingLink,
       });
 
       // Start with the specific metadata from the item
@@ -175,6 +179,7 @@ function UploadForm() {
         eventDate: item.eventDate,
         location: item.location,
         event: item.event,
+        advertisingLink: item.advertisingLink,
         // Include original filename, might be useful for backend matching
         originalFilename: item.file.name,
       };
@@ -209,6 +214,11 @@ function UploadForm() {
       // Only use global event if the specific one wasn't set or modified
       if (specificMetadata.event === "") {
         specificMetadata.event = globalEvent;
+      }
+
+      // Only use global advertising link if the specific one wasn't set or modified
+      if (specificMetadata.advertisingLink === "") {
+        specificMetadata.advertisingLink = globalAdvertisingLink;
       }
 
       // Log the final metadata after processing
@@ -274,6 +284,7 @@ function UploadForm() {
         photographerLink: metadata.photographerLink,
         location: metadata.location,
         event: metadata.event,
+        advertisingLink: metadata.advertisingLink,
       }));
 
       // Detailed summary of uploads
@@ -295,6 +306,7 @@ function UploadForm() {
       setGlobalLocation("");
       setGlobalPhotographer("");
       setGlobalPhotographerLink("");
+      setGlobalAdvertisingLink(""); // <-- Reset global state
       setGlobalCategory("");
       setGlobalEvent("");
       // Reset file input visually (important if not resetting e.target.value in handleFileChange)
@@ -317,19 +329,39 @@ function UploadForm() {
   // --- Add handleSaveMetadata function ---
   const handleSaveMetadata = (
     id: string,
-    updatedMetadata: Omit<FileMetadata, "id" | "file" | "previewUrl">
+    // Explicitly include advertisingLink in the expected type
+    updatedMetadata: Pick<
+      FileMetadata,
+      | "photographer"
+      | "photographerLink"
+      | "eventDate"
+      | "location"
+      | "event"
+      | "advertisingLink"
+    >
   ) => {
     console.log("Saving metadata for file:", id);
     console.log("Updated metadata from modal:", updatedMetadata);
 
     setFilesWithMetadata((prevFiles) => {
       const updatedFiles = prevFiles.map((file) =>
-        file.id === id ? { ...file, ...updatedMetadata } : file
+        file.id === id
+          ? { ...file, ...updatedMetadata } // Spread the updated metadata
+          : file
       );
 
       // Log the updated file for verification
       const updatedFile = updatedFiles.find((file) => file.id === id);
-      console.log("File after metadata update:", updatedFile);
+      console.log("File after metadata update:", {
+        id: updatedFile?.id,
+        photographer: updatedFile?.photographer,
+        photographerLink: updatedFile?.photographerLink,
+        eventDate: updatedFile?.eventDate,
+        location: updatedFile?.location,
+        event: updatedFile?.event,
+        advertisingLink: updatedFile?.advertisingLink, // Log the new field
+        fileName: updatedFile?.file.name,
+      });
 
       return updatedFiles;
     });
@@ -352,6 +384,7 @@ function UploadForm() {
           eventDate: selectedFileForModal.eventDate,
           location: selectedFileForModal.location,
           event: selectedFileForModal.event,
+          advertisingLink: selectedFileForModal.advertisingLink, // <-- Pass to modal
         },
       }
     : null;
@@ -790,6 +823,23 @@ function UploadForm() {
               onChange={(e) => setGlobalEvent(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               placeholder="What event was this for?"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="advertisingLink"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Advertising Link: (Optional)
+            </label>
+            <input
+              type="url"
+              id="advertisingLink"
+              value={globalAdvertisingLink}
+              onChange={(e) => setGlobalAdvertisingLink(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Link for related advertisement (if any)"
             />
           </div>
 

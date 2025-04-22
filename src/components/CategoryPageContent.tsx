@@ -17,6 +17,7 @@ interface ImageData {
   photographerLink: string;
   location: string;
   event: string;
+  advertisingLink?: string | null;
   id?: string;
   r2FileKey?: string;
   originalFilename?: string;
@@ -207,6 +208,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             uploadedAt: item.uploadedAt, // Keep original uploadedAt for fallback sorting
             contentType: item.contentType,
             category: item.category,
+            advertisingLink: item.advertisingLink || null,
           };
         });
 

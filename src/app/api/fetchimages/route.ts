@@ -15,6 +15,7 @@ interface ImageData {
   event?: string | null;
   category?: string;
   uploadedAt?: string | null;
+  advertisingLink?: string | null;
   [key: string]: any; // For any additional fields
 }
 
@@ -167,6 +168,7 @@ export async function GET(request: NextRequest) {
         // Override with properly handled values
         eventDate: eventDateValue,
         uploadedAt: uploadedAtISO,
+        advertisingLink: data.advertisingLink || null,
       };
 
       // Log every 5th image in detail, plus the first and last one
@@ -185,6 +187,7 @@ export async function GET(request: NextRequest) {
             photographerLink: imageData.photographerLink,
             contentType: imageData.contentType,
             uploadedAt: imageData.uploadedAt,
+            advertisingLink: imageData.advertisingLink,
           }
         );
       }

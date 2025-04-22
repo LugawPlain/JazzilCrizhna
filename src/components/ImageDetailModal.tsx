@@ -13,6 +13,7 @@ interface ImageData {
   photographerLink: string;
   location: string;
   event: string;
+  advertisingLink?: string | null;
   id?: string;
   r2FileKey?: string;
   category?: string; // Ensure category is available if needed for API call
@@ -32,7 +33,12 @@ interface ImageDetailModalProps {
 // Define the shape of editable data (excluding src, alt, id, r2FileKey)
 type EditableImageData = Pick<
   ImageData,
-  "event" | "location" | "eventDate" | "photographer" | "photographerLink"
+  | "event"
+  | "location"
+  | "eventDate"
+  | "photographer"
+  | "photographerLink"
+  | "advertisingLink"
 >;
 
 // Add helper functions near the top of the file, before the component
@@ -75,6 +81,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
     photographer: image.photographer,
     photographerLink: image.photographerLink,
+    advertisingLink: image.advertisingLink || "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +97,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
       photographer: image.photographer,
       photographerLink: image.photographerLink,
+      advertisingLink: image.advertisingLink || "",
     });
     setIsEditing(false); // Exit edit mode when image changes
     setError(null); // Clear errors
@@ -139,6 +147,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
       photographer: image.photographer,
       photographerLink: image.photographerLink,
+      advertisingLink: image.advertisingLink || "",
     });
   };
 
@@ -228,6 +237,13 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
           photographerLink:
             formData.photographerLink !== image.photographerLink
               ? { from: image.photographerLink, to: formData.photographerLink }
+              : "unchanged",
+          advertisingLink:
+            formData.advertisingLink !== (image.advertisingLink || "")
+              ? {
+                  from: image.advertisingLink || "",
+                  to: formData.advertisingLink,
+                }
               : "unchanged",
         },
       });
@@ -579,6 +595,41 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           onChange={handleInputChange}
                           className="input-field w-full"
                           placeholder="https://..."
+                        />
+                      </p>
+                    </div>
+                  )}
+                  {/* Advertising Link Display */}
+                  {formData.advertisingLink && !isEditing && (
+                    <p className="flex items-center">
+                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        Ad Link:
+                      </strong>
+                      <Link
+                        href={formData.advertisingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline truncate transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {formData.advertisingLink}
+                      </Link>
+                    </p>
+                  )}
+                  {/* Advertising Link Input (Edit Mode) */}
+                  {isEditing && (
+                    <div className="">
+                      <p className="flex items-center">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                          Ad Link:
+                        </strong>
+                        <input
+                          type="url"
+                          name="advertisingLink"
+                          value={formData.advertisingLink || ""}
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="https://... (Ad link)"
                         />
                       </p>
                     </div>

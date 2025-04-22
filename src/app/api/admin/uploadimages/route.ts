@@ -49,6 +49,7 @@ interface FileSpecificMetadata {
   eventDate: string | null;
   location: string | null;
   event: string | null;
+  advertisingLink: string | null;
   originalFilename: string;
 }
 
@@ -263,6 +264,7 @@ export async function POST(request: NextRequest) {
             event: specificMetadata?.event || null,
             category: category,
             uploadedAt: FieldValue.serverTimestamp(),
+            advertisingLink: specificMetadata?.advertisingLink || null,
           };
           console.log(
             `[/api/uploadimages] Firestore data for ${currentFileName}:`,
