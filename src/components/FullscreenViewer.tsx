@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { generateBlurPlaceholder } from "../lib/utils";
+import { generateBlurPlaceholder } from "../utils/generateBlurPlaceholder";
 
 interface ImageData {
   src: string;
