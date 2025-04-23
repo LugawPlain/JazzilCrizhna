@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { CategoryData } from "../CategoryData";
-import Link from "next/link";
 
 interface ProjectCardProps {
   project: CategoryData;

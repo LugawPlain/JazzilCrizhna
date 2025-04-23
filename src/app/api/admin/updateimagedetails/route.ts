@@ -81,10 +81,12 @@ export async function POST(request: NextRequest) {
       throw new Error("Missing or invalid category.");
     if (!body.updates || typeof body.updates !== "object")
       throw new Error("Missing or invalid updates object.");
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[API UpdateDetails] Invalid request body:", error);
     return NextResponse.json(
-      { error: "Invalid request body.", details: error.message },
+      { error: "Invalid request body.", details: errorMessage },
       { status: 400 }
     );
   }
@@ -129,10 +131,12 @@ export async function POST(request: NextRequest) {
           docRef = potentialDoc.ref;
           console.log(`[API UpdateDetails] Found document by ID: ${docRef.id}`);
         }
-      } catch (idError) {
+      } catch (idError: unknown) {
+        const idErrorMessage =
+          idError instanceof Error ? idError.message : String(idError);
         console.warn(
           `[API UpdateDetails] Could not check for document by ID ${identifier}:`,
-          idError
+          idErrorMessage
         );
       }
     }
@@ -148,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Prepare Update Data (sanitize/validate updates if necessary)
-    const dataToUpdate: { [key: string]: any } = {};
+    const dataToUpdate: { [key: string]: unknown } = {};
     if (updates.event !== undefined) dataToUpdate.event = updates.event;
     if (updates.location !== undefined)
       dataToUpdate.location = updates.location;
@@ -196,12 +200,12 @@ export async function POST(request: NextRequest) {
     const detailedChanges = Object.keys(dataToUpdate).reduce(
       (changes, field) => {
         changes[field] = {
-          from: beforeData?.[field] || null,
-          to: afterData?.[field] || null,
+          from: (beforeData?.[field] as unknown) || null,
+          to: (afterData?.[field] as unknown) || null,
         };
         return changes;
       },
-      {} as Record<string, { from: any; to: any }>
+      {} as Record<string, { from: unknown; to: unknown }>
     );
 
     console.log(
@@ -216,11 +220,15 @@ export async function POST(request: NextRequest) {
       const tag = `images-${category.toLowerCase()}`;
       revalidateTag(tag);
       console.log(`[API UpdateDetails] Revalidated tag: ${tag}`);
-    } catch (revalidateError) {
+    } catch (revalidateError: unknown) {
       // Log the error but don't fail the request
+      const revalidateErrorMessage =
+        revalidateError instanceof Error
+          ? revalidateError.message
+          : String(revalidateError);
       console.error(
         `[API UpdateDetails] Failed to revalidate tag 'images-${category.toLowerCase()}':`,
-        revalidateError
+        revalidateErrorMessage
       );
     }
     // <-- End revalidateTag call -->
@@ -241,13 +249,15 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       `[API UpdateDetails] Error updating Firestore for ${identifier}:`,
       error
     );
     return NextResponse.json(
-      { error: "Failed to update image details.", details: error.message },
+      { error: "Failed to update image details.", details: errorMessage },
       { status: 500 }
     );
   }

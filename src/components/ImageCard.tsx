@@ -34,7 +34,6 @@ const ImageCard = React.memo(
   ({
     image,
     index,
-    totalColumns,
     onImageClick,
     isAdmin = false,
     pinned = false,
@@ -79,10 +78,7 @@ const ImageCard = React.memo(
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
         transition={{
           duration: 0.6,
-          delay:
-            ((index % totalColumns) +
-              Math.floor(index / totalColumns) * totalColumns) *
-            0.1,
+          delay: 0.3,
           ease: [0.25, 0.1, 0.25, 1],
         }}
         className="rounded-lg overflow-hidden group relative cursor-pointer shadow-md hover:shadow-xl transition-shadow duration-300"
@@ -217,11 +213,10 @@ const ImageCard = React.memo(
                 transition={{ delay: 0.3 }}
               >
                 <p className="text-xl font-semibold">
-                  Event:{" "}
                   <span className="text-md font-mono  ">{image.event}</span>
                 </p>
                 <p className="text-xs opacity-90">
-                  📍: <span className="text-sm">{image.location}</span>
+                  📌: <span className="text-sm">{image.location}</span>
                 </p>
                 <p className="text-xs opacity-80">
                   Date:{" "}

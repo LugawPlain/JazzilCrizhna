@@ -88,13 +88,6 @@ const ThreeStateToggle: React.FC<ThreeStateToggleProps> = ({
 };
 
 const ExampleUsage = () => {
-  const [currentState, setCurrentState] = useState<ToggleState>("first");
-
-  const handleChange = (state: ToggleState) => {
-    setCurrentState(state);
-    console.log("Current state:", state);
-  };
-
   return (
     <div className="flex flex-col items-center p-8 space-y-8">
       {/* Custom labels */}

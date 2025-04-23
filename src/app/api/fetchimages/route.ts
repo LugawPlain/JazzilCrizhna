@@ -16,7 +16,7 @@ interface ImageData {
   category?: string;
   uploadedAt?: string | null;
   advertisingLink?: string | null;
-  [key: string]: any; // For any additional fields
+  [key: string]: unknown; // Changed any to unknown
 }
 
 // Assume Firebase Admin SDK is already initialized similarly to uploadimages route
@@ -35,10 +35,12 @@ if (admin.apps.length) {
     });
     db = admin.firestore();
     console.log("[/api/getimages] Secondary Firebase Admin Init successful.");
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       "[/api/getimages] CRITICAL: Firebase Admin initialization failed:",
-      error.message
+      errorMessage // Use safe message
     );
     // db remains uninitialized
   }
@@ -259,13 +261,15 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
-      `[/api/getimages] Error fetching data from Firestore for category ${category}:`,
-      error
+      `[/api/getimages] Error fetching images for ${category}:`,
+      error // Log original error object
     );
     return NextResponse.json(
-      { error: "Failed to fetch images.", details: error.message },
+      { error: "Failed to fetch images.", details: errorMessage }, // Use safe message
       { status: 500 }
     );
   }

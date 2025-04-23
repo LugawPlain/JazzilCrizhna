@@ -48,10 +48,13 @@ export async function DELETE(request: NextRequest) {
     if (!body.imageKeys.every((key) => typeof key === "string")) {
       throw new Error("All imageKeys must be strings.");
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API BulkDelete] Invalid request body:", error);
     return NextResponse.json(
-      { error: "Invalid request body.", details: error.message },
+      {
+        error: "Invalid request body.",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 400 }
     );
   }
@@ -71,7 +74,6 @@ export async function DELETE(request: NextRequest) {
   try {
     // Prepare Firestore batch write
     const batch: WriteBatch = dbAdmin.batch();
-    const docsToDeleteRefs = [];
 
     // Find documents to delete
     // Note: Firestore 'in' query is limited to 30 elements per query.
@@ -114,10 +116,13 @@ export async function DELETE(request: NextRequest) {
         await r2Client.send(command);
         console.log(`[API BulkDelete] Successfully deleted from R2: ${key}`);
         r2SuccessDeletions++;
-      } catch (r2Error: any) {
+      } catch (r2Error: unknown) {
+        // Type guard for error message
+        const errorMessage =
+          r2Error instanceof Error ? r2Error.message : String(r2Error);
         console.error(
           `[API BulkDelete] Error deleting from R2 (${key}):`,
-          r2Error?.message || r2Error
+          errorMessage // Use the safe error message
         );
         r2FailedDeletions++;
         r2FailedKeys.push(key);
@@ -167,15 +172,17 @@ export async function DELETE(request: NextRequest) {
         r2FailedKeys: r2FailedKeys,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       `[API BulkDelete] Error during bulk deletion process:`,
-      error
+      error // Log the original error object for potentially more detail
     );
     return NextResponse.json(
       {
         error: "Failed to complete bulk delete operation.",
-        details: error.message,
+        details: errorMessage, // Return the extracted message
       },
       { status: 500 }
     );

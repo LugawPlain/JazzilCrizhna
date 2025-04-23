@@ -6,29 +6,12 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import SettingsPanel from "@/app/components/SettingsPanel";
 import ImageCard from "@/components/ImageCard";
 import ImageDetailModal from "@/components/ImageDetailModal";
-import { formatDisplayDate, getEndDateFromRange } from "@/utils/dateUtils";
 import { useImages, ImageData } from "@/hooks/useImages";
 import { useResponsiveImageGrid } from "@/hooks/useResponsiveImageGrid";
 
 interface CategoryPageContentProps {
   category: string;
 }
-
-/**
- * Checks if fullscreen API is supported in the current browser
- * @returns boolean indicating if fullscreen is supported
- */
-const isFullscreenSupported = (): boolean => {
-  return !!(
-    document.fullscreenEnabled ||
-    (document as Document & { webkitFullscreenEnabled?: boolean })
-      .webkitFullscreenEnabled ||
-    (document as Document & { mozFullScreenEnabled?: boolean })
-      .mozFullScreenEnabled ||
-    (document as Document & { msFullscreenEnabled?: boolean })
-      .msFullscreenEnabled
-  );
-};
 
 const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   category: rawCategory,
@@ -49,7 +32,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   const searchParams = useSearchParams();
 
   // Get session data
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
 
   // Decode category name from URL
@@ -270,9 +253,12 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       imageKeysArray.forEach((key) => {
         handleImageDeleted(key);
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // Safely get error message
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error("Error during bulk delete:", error);
-      alert(`Error deleting images: ${error.message}`);
+      alert(`Error deleting images: ${errorMessage}`);
     }
   };
   // --- End Bulk Selection Handlers ---
@@ -289,7 +275,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   if (error) {
     return (
       <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-red-500 text-xl p-8">
-        Error loading images: {error}
+        Error loading images: {String(error)}
       </div>
     );
   }

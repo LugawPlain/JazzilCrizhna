@@ -1,7 +1,6 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
-import formidable, { errors as FormidableErrors } from "formidable";
-import fs from "fs";
+
 import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
 import { dbAdmin } from "@/lib/firebase/adminApp"; // <--- Import CORRECT export 'dbAdmin'
@@ -149,13 +148,15 @@ export async function POST(request: NextRequest) {
         // Consider returning an error for stricter validation:
         // throw new Error("Mismatch between number of files and metadata entries.");
       }
-    } catch (parseError: any) {
+    } catch (parseError: unknown) {
+      const errorMessage =
+        parseError instanceof Error ? parseError.message : String(parseError);
       console.error(
         "[/api/uploadimages] Failed to parse metadataArray:",
-        parseError
+        errorMessage
       );
       return NextResponse.json(
-        { error: "Invalid metadata format.", details: parseError.message },
+        { error: "Invalid metadata format.", details: errorMessage },
         { status: 400 }
       );
     }
@@ -289,25 +290,31 @@ export async function POST(request: NextRequest) {
             firestoreDocId: firestoreDocId,
           });
           successfulUploads++;
-        } catch (firestoreError: any) {
+        } catch (firestoreError: unknown) {
+          const errorMessage =
+            firestoreError instanceof Error
+              ? firestoreError.message
+              : String(firestoreError);
           console.error(
             `[/api/uploadimages] Error saving metadata to Firestore for ${currentFileName}:`,
-            firestoreError
+            errorMessage
           );
           errors.push(
-            `Failed to save metadata for ${currentFileName}: ${firestoreError.message}`
+            `Failed to save metadata for ${currentFileName}: ${errorMessage}`
           );
           // Consider R2 cleanup here
         }
         // No temporary file cleanup needed
-      } catch (uploadError: any) {
+      } catch (uploadError: unknown) {
+        const errorMessage =
+          uploadError instanceof Error
+            ? uploadError.message
+            : String(uploadError);
         console.error(
           `[/api/uploadimages] Error processing file ${currentFileName}:`,
-          uploadError
+          errorMessage
         );
-        errors.push(
-          `Failed to upload ${currentFileName}: ${uploadError.message}`
-        );
+        errors.push(`Failed to upload ${currentFileName}: ${errorMessage}`);
         // No temporary file cleanup needed here either
       }
     } // End loop
@@ -339,7 +346,8 @@ export async function POST(request: NextRequest) {
         { status: status }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       "[/api/uploadimages] Unhandled error in POST handler:",
       error
@@ -347,27 +355,33 @@ export async function POST(request: NextRequest) {
     // Check if it's a specific error type that formData() might throw
     if (
       error instanceof TypeError &&
-      error.message.includes("Could not parse content as FormData")
+      errorMessage.includes("Could not parse content as FormData")
     ) {
       return NextResponse.json(
-        { error: "Invalid form data format.", details: error.message },
+        { error: "Invalid form data format.", details: errorMessage },
         { status: 400 }
       );
     }
-    // Check for AWS SDK errors
-    if (error.name === "NoSuchBucket") {
+    // Check for AWS SDK errors (safer check)
+    // Use optional chaining and check if error is object-like before accessing name
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "name" in error &&
+      error.name === "NoSuchBucket"
+    ) {
       return NextResponse.json(
         { error: "R2 bucket not found." },
         { status: 404 }
       );
     }
 
-    // Check if it's a Firebase Admin init error (though ideally caught earlier)
-    if (error.message.includes("GOOGLE_APPLICATION_CREDENTIALS")) {
+    // Check if it's a Firebase Admin init error (using message is okay here)
+    if (errorMessage.includes("GOOGLE_APPLICATION_CREDENTIALS")) {
       return NextResponse.json(
         {
           error: "Server configuration error (Firebase).",
-          details: error.message,
+          details: errorMessage,
         },
         { status: 500 }
       );
@@ -375,7 +389,7 @@ export async function POST(request: NextRequest) {
 
     // Generic error
     return NextResponse.json(
-      { error: "Failed to process upload.", details: error.message }, // Changed error message
+      { error: "Failed to process upload.", details: errorMessage }, // Use safe errorMessage
       { status: 500 }
     );
   }

@@ -1,5 +1,4 @@
 import type { DefaultSession, AuthOptions } from "next-auth";
-import type { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 
 // Define an extended Session type
@@ -30,14 +29,14 @@ export const authOptions: AuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user }) {
       // Only log on actual sign-ins, not token refreshes
       if (process.env.NODE_ENV === "development") {
         console.log(`[Auth] User sign-in: ${user.email}`);
       }
       return true;
     },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account }) {
       // Only log detailed information during initial sign-in
       if (user && account) {
         token.id = user.id;

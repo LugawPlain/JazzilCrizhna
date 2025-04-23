@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -44,19 +44,6 @@ type EditableImageData = Pick<
 // Add helper functions near the top of the file, before the component
 
 // Function to get the end date from a possible date range string
-const getEndDate = (dateString: string): Date | null => {
-  if (!dateString) return null;
-
-  // Check if it's a range (contains a hyphen)
-  if (dateString.includes("-")) {
-    // Extract the end date (after the hyphen)
-    const endDateStr = dateString.split("-")[1].trim();
-    return new Date(endDateStr);
-  }
-
-  // Not a range, just a single date
-  return new Date(dateString);
-};
 
 // Function to format a date for display (handle ranges)
 const formatDateDisplay = (dateString: string): string => {
@@ -251,9 +238,13 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       // --- REMOVED manual revalidation fetch ---
       // The revalidateTag call in the API route handles cache invalidation.
       // The next navigation/load of the category page will automatically get fresh data.
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error saving image details:", err);
-      setError(err.message || "An unknown error occurred during save.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred during save."
+      );
     } finally {
       setIsSaving(false);
     }
@@ -300,9 +291,13 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
       // Notify user of successful deletion (this could be via a toast notification)
       console.log("Image deleted successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error deleting image:", err);
-      setError(err.message || "An unknown error occurred during deletion.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred during deletion."
+      );
       setShowDeleteConfirm(false);
     } finally {
       setIsDeleting(false);

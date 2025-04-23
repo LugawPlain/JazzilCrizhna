@@ -60,18 +60,18 @@ export async function GET(request: NextRequest) {
       `[API/pinned-images] Found pinned keys: ${pinnedKeys.length} for category: ${category}`
     );
     return NextResponse.json(pinnedKeys);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(
       `[API/pinned-images] Error fetching pinned images for category '${category}':`,
       error
     );
-    let errorMessage = "Failed to fetch pinned images";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    // Avoid leaking sensitive error details, log them server-side
+    // Determine the message safely
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+
+    // Return the specific error message (or a sanitized version)
     return NextResponse.json(
-      { error: "Internal server error occurred" },
+      { error: "Failed to fetch pinned images.", details: errorMessage },
       { status: 500 }
     );
   }

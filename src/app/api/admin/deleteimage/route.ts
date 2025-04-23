@@ -46,10 +46,12 @@ export async function DELETE(request: NextRequest) {
 
     if (!body.r2FileKey || typeof body.r2FileKey !== "string")
       throw new Error("Missing or invalid R2 file key.");
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[API DeleteImage] Invalid request body:", error);
     return NextResponse.json(
-      { error: "Invalid request body.", details: error.message },
+      { error: "Invalid request body.", details: errorMessage },
       { status: 400 }
     );
   }
@@ -124,7 +126,7 @@ export async function DELETE(request: NextRequest) {
       console.log(
         `[API DeleteImage] Successfully deleted file from R2: ${r2FileKey}`
       );
-    } catch (r2Error: any) {
+    } catch (r2Error: unknown) {
       console.error(`[API DeleteImage] Error deleting from R2:`, r2Error);
       // Continue with Firestore deletion even if R2 deletion fails
       // This avoids orphaned database records
@@ -154,10 +156,12 @@ export async function DELETE(request: NextRequest) {
       message: "Image and its data deleted successfully.",
       deletedFrom: ["Firestore", "R2 Storage"],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // Type guard for error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`[API DeleteImage] Error during deletion:`, error);
     return NextResponse.json(
-      { error: "Failed to delete image.", details: error.message },
+      { error: "Failed to delete image.", details: errorMessage },
       { status: 500 }
     );
   }

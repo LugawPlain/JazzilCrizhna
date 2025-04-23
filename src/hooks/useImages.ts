@@ -79,14 +79,15 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
           try {
             const errorData = await response.json();
             errorMsg = errorData.error || errorData.message || errorMsg;
-          } catch (e) {
+          } catch (error: unknown) {
+            console.error("Error fetching images:", error);
             /* Ignore */
           }
           throw new Error(errorMsg);
         }
 
         const responseData = await response.json();
-        const fetchedData: any[] = Array.isArray(responseData)
+        const fetchedData: ImageData[] = Array.isArray(responseData)
           ? responseData
           : responseData.images || [];
 

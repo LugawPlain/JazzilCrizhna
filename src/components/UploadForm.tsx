@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  useState,
-  ChangeEvent,
-  FormEvent,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import MetadataEditModal from "./MetadataEditModal"; // Import the modal
 // import { db, storage } from "../lib/firebase"; // Commented out
 // import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
@@ -66,7 +60,6 @@ function UploadForm() {
   const [showEndDate, setShowEndDate] = useState(false);
 
   // Add references for date inputs
-  const startDateInputRef = React.useRef<HTMLInputElement>(null);
   const endDateInputRef = React.useRef<HTMLInputElement>(null);
 
   // --- Cleanup Object URLs ---
@@ -114,6 +107,14 @@ function UploadForm() {
     //    e.target.value = "";
     // }
   };
+
+  // Define a type for the expected structure of an uploaded file from the API response
+  interface UploadedFileResult {
+    originalFilename: string;
+    fileKey: string;
+    firestoreDocId: string;
+    // Add other expected properties if any
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -268,8 +269,13 @@ function UploadForm() {
       console.log("Upload API response:", result);
 
       // Log successful uploads
-      if (result.results && result.results.length > 0) {
-        result.results.forEach((uploadedFile: any) => {
+      if (
+        result.results &&
+        Array.isArray(result.results) &&
+        result.results.length > 0
+      ) {
+        // Use the defined type here
+        result.results.forEach((uploadedFile: UploadedFileResult) => {
           console.log(`Uploaded file: ${uploadedFile.originalFilename}`);
           console.log(`File key: ${uploadedFile.fileKey}`);
           console.log(`Firestore doc ID: ${uploadedFile.firestoreDocId}`);
@@ -316,9 +322,17 @@ function UploadForm() {
       if (fileInput) {
         fileInput.value = "";
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // Change type to unknown
       console.error("Upload failed:", err);
-      setError(`Upload failed: ${err.message}`);
+      // Type check before accessing properties
+      let errorMessage = "An unknown upload error occurred.";
+      if (err instanceof Error) {
+        errorMessage = `Upload failed: ${err.message}`;
+      } else if (typeof err === "string") {
+        errorMessage = `Upload failed: ${err}`;
+      }
+      setError(errorMessage);
       setSuccess(false);
       setSuccessMessage("");
     } finally {
@@ -454,8 +468,8 @@ function UploadForm() {
       const year = date.getFullYear();
 
       return `${month}/${day}/${year}`;
-    } catch (e) {
-      console.error("Date formatting error:", e);
+    } catch /*(e)*/ {
+      // Remove unused 'e'
       return dateStr;
     }
   };
@@ -481,7 +495,8 @@ function UploadForm() {
       return `${year}-${month.toString().padStart(2, "0")}-${day
         .toString()
         .padStart(2, "0")}`;
-    } catch (e) {
+    } catch (error: unknown) {
+      console.error("Date formatting error:", error);
       return dateStr;
     }
   };

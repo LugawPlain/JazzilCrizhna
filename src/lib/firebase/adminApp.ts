@@ -1,4 +1,4 @@
-import { initializeApp, App, Credential } from "firebase-admin/app"; // Import specific functions/objects
+import { initializeApp } from "firebase-admin/app"; // Import specific functions/objects
 import { credential, apps } from "firebase-admin"; // Import credential and apps from the main package
 import { Auth, getAuth } from "firebase-admin/auth"; // Import specific types and functions
 import { Firestore, getFirestore } from "firebase-admin/firestore";
@@ -64,10 +64,10 @@ if (!dbAdmin) {
           } else {
             throw new Error(`Credentials file not found at: ${credentialPath}`);
           }
-        } catch (initError: any) {
+        } catch (initError: unknown) {
           console.error(
             "[Firebase Admin] Error during initialization:",
-            initError
+            initError instanceof Error ? initError.message : String(initError)
           );
           throw initError;
         }
@@ -97,9 +97,11 @@ if (!dbAdmin) {
           console.log(
             "[Firebase Admin] Initialized using FIREBASE_SERVICE_ACCOUNT_JSON."
           );
-        } catch (jsonError: any) {
+        } catch (jsonError: unknown) {
           throw new Error(
-            `Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: ${jsonError.message}`
+            `Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: ${
+              jsonError instanceof Error ? jsonError.message : String(jsonError)
+            }`
           );
         }
       } else {
@@ -125,12 +127,12 @@ if (!dbAdmin) {
     console.log(
       "[Firebase Admin] Auth and Firestore services obtained successfully."
     );
-  } catch (error: any) {
-    initError = error; // Store the initialization error
+  } catch (error: unknown) {
+    initError = error instanceof Error ? error : new Error(String(error)); // Store the initialization error
     console.error(
       "[Firebase Admin] CRITICAL INITIALIZATION ERROR:",
-      error.message,
-      error.stack
+      initError.message,
+      initError.stack
     );
     // Keep authAdmin and dbAdmin as null
   }

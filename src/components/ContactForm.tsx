@@ -395,12 +395,12 @@ export default function ContactForm() {
               href={socialLinks.facebook}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              className="flex items-center justify-center w-12 h-12 bg-gray-300 backdrop-blur-sm rounded-full hover:bg-gray-400 transition-all duration-300 group hover:scale-110"
               title="Facebook"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
+                className="h-6 w-6 text-gray-700 group-hover:text-black transition-colors duration-200"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -420,10 +420,10 @@ export default function ContactForm() {
               href={socialLinks.facebookPage}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              className="flex items-center justify-center w-12 h-12 bg-gray-300 backdrop-blur-sm rounded-full hover:bg-gray-400 transition-all duration-300 group hover:scale-110"
               title="Facebook Page"
             >
-              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
+              <div className="h-6 w-6 text-gray-700 group-hover:text-black transition-colors duration-200">
                 <FacebookPageIcon />
               </div>
             </a>
@@ -436,12 +436,12 @@ export default function ContactForm() {
               href={socialLinks.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              className="flex items-center justify-center w-12 h-12 bg-gray-300 backdrop-blur-sm rounded-full hover:bg-gray-400 transition-all duration-300 group hover:scale-110"
               title="Instagram"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
+                className="h-6 w-6 text-gray-700 group-hover:text-black transition-colors duration-200"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -473,10 +473,10 @@ export default function ContactForm() {
               href={socialLinks.tiktok}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              className="flex items-center justify-center w-12 h-12 bg-gray-300 backdrop-blur-sm rounded-full hover:bg-gray-400 transition-all duration-300 group hover:scale-110"
               title="TikTok"
             >
-              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
+              <div className="h-6 w-6 text-gray-700 group-hover:text-black transition-colors duration-200">
                 <TiktokIcon />
               </div>
             </a>
@@ -487,10 +487,10 @@ export default function ContactForm() {
               href={socialLinks.youtube}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              className="flex items-center justify-center w-12 h-12 bg-gray-300 backdrop-blur-sm rounded-full hover:bg-gray-400 transition-all duration-300 group hover:scale-110"
               title="YouTube"
             >
-              <div className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200">
+              <div className="h-6 w-6 text-gray-700 group-hover:text-black transition-colors duration-200">
                 <YoutubeIcon />
               </div>
             </a>
@@ -501,12 +501,12 @@ export default function ContactForm() {
               href={socialLinks.email}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-all duration-300 group hover:scale-110"
+              className="flex items-center justify-center w-12 h-12 bg-gray-300 backdrop-blur-sm rounded-full hover:bg-gray-400 transition-all duration-300 group hover:scale-110"
               title="Email"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-white group-hover:text-[#FFD700] transition-colors duration-200"
+                className="h-6 w-6 text-gray-700 group-hover:text-black transition-colors duration-200"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ImageData } from "@/hooks/useImages"; // Assuming ImageData is exported from useImages
 
 // Function to determine columns based on width

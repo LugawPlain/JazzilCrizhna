@@ -29,7 +29,7 @@ export const HorizontalScrollCarousel = () => {
         ref={scrollContainerRef}
         className="flex flex-row gap-8 p-10 lg:pt-25 lg:pb-5 max-w-screen overflow-auto scrollbar-thin scrollbar-track-red-500 md:scrollbar-thumb-red-500  md:scrollbar-track-black md:hover:scrollbar-thumb-amber-500 snap-x snap-mandatory md:snap-none"
       >
-        {categories.map((project: CategoryData, index: number) => (
+        {categories.map((project: CategoryData) => (
           <div
             key={project.category}
             className="snap-center md:snap-align-none"
