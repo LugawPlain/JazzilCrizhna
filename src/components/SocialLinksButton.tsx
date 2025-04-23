@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import TiktokIcon from "./icons/TiktokIcon";
 import YoutubeIcon from "./icons/YoutubeIcon";
 import FacebookPageIcon from "./icons/FacebookPageIcon";
@@ -10,6 +10,7 @@ import socialLinks from "../data/socialLinks.json";
 const SocialLinksButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showText, setShowText] = useState(true);
 
   const socialLinksData = [
     {
@@ -127,9 +128,17 @@ const SocialLinksButton = () => {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowText(false);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div
-      className="fixed right-8 bottom-8 z-50 cursor-pointer"
+      className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 cursor-pointer"
       ref={containerRef}
     >
       {/* Social Media Icons */}
@@ -178,21 +187,30 @@ const SocialLinksButton = () => {
         >
           <SocialMediaIcon width={40} height={40} />
         </button>
-        {/* Animated Text element */}
-        <motion.div
-          className="absolute top-1/2 right-full transform -translate-y-1/2 mr-2 text-white whitespace-nowrap"
-          initial={{ x: 0 }}
-          animate={{ x: [0, -5, 0] }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            repeatType: "loop",
-            ease: "easeInOut",
-            repeatDelay: 2,
-          }}
-        >
-          Social Media Links!!!
-        </motion.div>
+        {/* Animated Text element - wrapped in AnimatePresence */}
+        <AnimatePresence>
+          {showText && (
+            <motion.div
+              className="absolute top-1/2 right-full transform -translate-y-1/2 mr-2 text-white whitespace-nowrap hidden md:block"
+              initial={{ opacity: 1, x: 0 }}
+              animate={{ x: [0, -5, 0] }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{
+                x: {
+                  duration: 1.5,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                  ease: "easeInOut",
+                },
+                opacity: {
+                  duration: 0.5,
+                },
+              }}
+            >
+              Social Media Links!!!
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
