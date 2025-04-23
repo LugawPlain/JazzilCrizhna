@@ -8,6 +8,7 @@ import ImageCard from "@/components/ImageCard";
 import ImageDetailModal from "@/components/ImageDetailModal";
 import { formatDisplayDate, getEndDateFromRange } from "@/utils/dateUtils";
 import { useImages, ImageData } from "@/hooks/useImages";
+import { useResponsiveImageGrid } from "@/hooks/useResponsiveImageGrid";
 
 interface CategoryPageContentProps {
   category: string;
@@ -37,8 +38,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     null
   );
   const [userColumnCount, setUserColumnCount] = useState<number | null>(null);
-  const [activeLayout, setActiveLayout] = useState<ImageData[][]>([]);
-  const [activeColumnCount, setActiveColumnCount] = useState(1);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedImageKeys, setSelectedImageKeys] = useState<Set<string>>(
     new Set()
@@ -70,27 +69,18 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     handleImageDeleted,
   } = useImages(category, r2PublicUrl);
 
+  // Use the new layout hook
+  const { activeLayout, activeColumnCount } = useResponsiveImageGrid(
+    images,
+    userColumnCount,
+    loading
+  );
+
   // Function to capitalize first letter - memoized
   const capitalizeFirstLetter = useCallback((string: string) => {
     if (!string) return "";
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   }, []);
-
-  // Memoized distributeImages function
-  const distributeImages = useCallback(
-    (numColumns: number) => {
-      const columns = Array.from(
-        { length: numColumns },
-        () => [] as ImageData[]
-      );
-      images.forEach((image, index) => {
-        const columnIndex = index % numColumns;
-        columns[columnIndex].push(image);
-      });
-      return columns;
-    },
-    [images]
-  );
 
   // Modal open handler
   const handleImageClick = useCallback(
@@ -217,35 +207,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
     },
     [isAdmin, pinnedImageKeys, setPinnedImageKeys] // Depends on hook values
   );
-
-  // Update active layout and column count based on window size
-  useEffect(() => {
-    const updateLayout = () => {
-      let columnsToUse: number;
-
-      if (userColumnCount) {
-        columnsToUse = userColumnCount;
-      } else {
-        const width = window.innerWidth;
-        if (width < 640) columnsToUse = 1;
-        else if (width < 768) columnsToUse = 2;
-        else if (width < 1024) columnsToUse = 3;
-        else if (width < 1280) columnsToUse = 4;
-        else columnsToUse = 5;
-      }
-
-      setActiveColumnCount(columnsToUse);
-      if (images.length > 0) {
-        setActiveLayout(distributeImages(columnsToUse));
-      }
-    };
-
-    if (!loading) {
-      updateLayout();
-      window.addEventListener("resize", updateLayout);
-      return () => window.removeEventListener("resize", updateLayout);
-    }
-  }, [userColumnCount, distributeImages, images, loading]);
 
   // --- Bulk Selection Handlers ---
   const toggleSelectMode = () => {

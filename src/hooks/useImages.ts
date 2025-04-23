@@ -37,16 +37,16 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
   const [pinnedImageKeys, setPinnedImageKeys] = useState<Set<string>>(
     new Set()
   );
-  const [rawFetchedImages, setRawFetchedImages] = useState<ImageData[] | null>(
-    null
-  ); // Unsorted, fetched images
+  const [fetchedRawUnsortedImages, setFetchedRawUnsortedImages] = useState<
+    ImageData[] | null
+  >(null); // Unsorted, fetched images
   const { status: sessionStatus } = useSession(); // Needed for pinned fetch timing
 
   // Effect 1: Fetch raw images when category or R2 URL changes
   useEffect(() => {
     // Reset state for new category fetch
     setImages([]);
-    setRawFetchedImages(null);
+    setFetchedRawUnsortedImages(null);
     setError(null);
     setLoading(true);
 
@@ -61,7 +61,8 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
       return;
     }
 
-    let isMounted = true; // Prevent state updates on unmounted component
+    const controller = new AbortController();
+    const signal = controller.signal;
 
     const fetchImages = async () => {
       try {
@@ -69,7 +70,8 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
         const response = await fetch(
           `/api/fetchimages?category=${encodeURIComponent(
             category
-          )}&t=${timestamp}`
+          )}&t=${timestamp}`,
+          { signal }
         );
 
         if (!response.ok) {
@@ -114,19 +116,16 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
           advertisingLink: item.advertisingLink || null,
         }));
 
-        if (isMounted) {
-          setRawFetchedImages(formattedImages);
-          // Don't setLoading(false) here; sorting effect handles it
-        }
-      } catch (fetchError: unknown) {
-        if (isMounted) {
-          console.error("[useImages] Error fetching images:", fetchError);
+        setFetchedRawUnsortedImages(formattedImages);
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === "AbortError") {
+          console.log("Fetch aborted"); // Request was cancelled, ignore
+        } else {
+          console.error("Fetch error:", error);
           setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : "An unknown error occurred"
+            error instanceof Error ? error.message : "An unknown error occurred"
           );
-          setRawFetchedImages([]); // Set to empty array on error to stop loading in sort effect
+          setFetchedRawUnsortedImages([]); // Set to empty array on error to stop loading in sort effect
           setLoading(false); // Stop loading on fetch error
         }
       }
@@ -134,54 +133,76 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
 
     fetchImages();
 
+    // Cleanup function
     return () => {
-      isMounted = false;
-    }; // Cleanup function
+      controller.abort(); // Abort the fetch request on cleanup
+    };
   }, [category, r2PublicUrl]);
 
   // Effect 2: Fetch pinned image keys when category or session status changes
   useEffect(() => {
-    let isMounted = true;
+    // Return early if category is missing or session is still loading
+    if (!category) {
+      setPinnedImageKeys(new Set()); // Clear pinned keys if no category
+      return;
+    }
+    if (sessionStatus === "loading") {
+      // Don't fetch until session status is resolved
+      return;
+    }
+
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const fetchPinnedStatus = async () => {
-      if (category && sessionStatus !== "loading") {
-        try {
-          const response = await fetch(
-            `/api/pinned-images?category=${encodeURIComponent(category)}`
+      try {
+        const response = await fetch(
+          `/api/pinned-images?category=${encodeURIComponent(category)}`,
+          { signal } // Pass signal to fetch
+        );
+
+        if (response.ok) {
+          const pinnedKeys: string[] = await response.json();
+          // Update state only if fetch wasn't aborted
+          setPinnedImageKeys(new Set(pinnedKeys));
+        } else {
+          // Handle non-ok response (but not abortion)
+          console.error(
+            "[useImages] Failed to fetch pinned images:",
+            response.statusText
           );
-          if (response.ok) {
-            const pinnedKeys: string[] = await response.json();
-            if (isMounted) setPinnedImageKeys(new Set(pinnedKeys));
-          } else {
-            console.error(
-              "[useImages] Failed to fetch pinned images:",
-              response.statusText
-            );
-            if (isMounted) setPinnedImageKeys(new Set()); // Reset on failure
-          }
-        } catch (error) {
-          console.error("[useImages] Error fetching pinned images:", error);
-          if (isMounted) setPinnedImageKeys(new Set()); // Reset on error
+          setPinnedImageKeys(new Set()); // Reset on failure
         }
-      } else if (!category && isMounted) {
-        setPinnedImageKeys(new Set()); // Clear if no category
+      } catch (error: unknown) {
+        // Check if the error is due to abortion
+        if (error instanceof Error && error.name === "AbortError") {
+          console.log("[useImages] Pinned images fetch aborted.");
+          // Don't update state if the request was aborted
+        } else {
+          // Handle actual fetch errors
+          console.error("[useImages] Error fetching pinned images:", error);
+          setPinnedImageKeys(new Set()); // Reset on error
+        }
       }
     };
 
     fetchPinnedStatus();
+
+    // Cleanup function: Abort fetch if component unmounts or deps change
     return () => {
-      isMounted = false;
+      controller.abort();
     };
-  }, [category, sessionStatus]);
+  }, [category, sessionStatus]); // Dependencies remain the same
 
   // Effect 3: Sort images when raw images or pinned keys change
   useEffect(() => {
-    if (rawFetchedImages === null) {
-      // Still waiting for fetch or fetch failed but setRawFetchedImages wasn't called yet
+    if (fetchedRawUnsortedImages === null) {
+      // Still waiting for fetch or fetch failed but setFetchedRawUnsortedImages wasn't called yet
       // Loading state is managed by fetch effect
       return;
     }
 
-    const sorted = [...rawFetchedImages].sort((a, b) => {
+    const sorted = [...fetchedRawUnsortedImages].sort((a, b) => {
       const aIsPinned = !!a.r2FileKey && pinnedImageKeys.has(a.r2FileKey);
       const bIsPinned = !!b.r2FileKey && pinnedImageKeys.has(b.r2FileKey);
 
@@ -222,7 +243,7 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
 
     setImages(sorted);
     setLoading(false); // Data is fetched and sorted, stop loading
-  }, [rawFetchedImages, pinnedImageKeys]);
+  }, [fetchedRawUnsortedImages, pinnedImageKeys]);
 
   // Callback to update image details locally (e.g., after modal edit)
   const handleDetailsUpdated = useCallback(
@@ -237,7 +258,7 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
         ) ?? null;
 
       // Update both raw and sorted lists
-      setRawFetchedImages(updateList);
+      setFetchedRawUnsortedImages(updateList);
       // Sorting effect will re-run and update `images`
     },
     []
@@ -253,7 +274,7 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
       ) ?? null;
 
     // Update both raw and sorted lists
-    setRawFetchedImages(filterList);
+    setFetchedRawUnsortedImages(filterList);
     // Sorting effect will re-run and update `images`
 
     // Also remove from pinned keys if it was pinned
