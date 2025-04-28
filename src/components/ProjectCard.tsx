@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CategoryData } from "../CategoryData";
+import { CategoryData } from "../app/portfolio/CategoryData";
 
 interface ProjectCardProps {
   project: CategoryData;

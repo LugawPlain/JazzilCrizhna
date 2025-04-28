@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { categories, CategoryData } from "../CategoryData";
+import { categories, CategoryData } from "../app/portfolio/CategoryData";
 import { ProjectCard } from "./ProjectCard";
 
 export const HorizontalScrollCarousel = () => {

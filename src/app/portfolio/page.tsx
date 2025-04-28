@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { HorizontalScrollCarousel } from "./components/HorizontalScrollCarousel";
+import { HorizontalScrollCarousel } from "../../components/HorizontalScrollCarousel";
 
 const Portfolio = () => {
   return (

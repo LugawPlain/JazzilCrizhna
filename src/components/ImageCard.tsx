@@ -28,6 +28,7 @@ interface ImageCardProps {
   isSelecting?: boolean;
   isSelected?: boolean;
   onImageSelectToggle?: (imageKey: string) => void;
+  onSetProjectImage?: (image: ImageData) => void;
 }
 
 const ImageCard = React.memo(
@@ -41,6 +42,7 @@ const ImageCard = React.memo(
     isSelecting = false,
     isSelected = false,
     onImageSelectToggle,
+    onSetProjectImage,
   }: ImageCardProps) => {
     const ref = useRef<HTMLDivElement>(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -149,49 +151,81 @@ const ImageCard = React.memo(
             </div>
           )}
 
-          {/* Admin Pin Star Overlay (Placeholder) */}
+          {/* Admin Controls Container */}
           {isAdmin && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering onImageClick
-                onPinClick?.(image);
-              }}
-              className="absolute top-2 right-2 z-10 p-1 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/75 focus:outline-none"
-              aria-label={pinned ? "Unpin image" : "Pin image"}
-            >
-              {/* Star SVG will go here */}
-              {pinned ? (
-                // Filled Star SVG Placeholder
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-6 h-6 text-yellow-400"
+            <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* Set Project Image Button (New) */}
+              {!isSelecting && ( // Only show if not in selection mode
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSetProjectImage?.(image);
+                  }}
+                  className="p-1 rounded-full bg-black/50 text-white hover:bg-black/75 focus:outline-none"
+                  title="Set as Project Image"
+                  aria-label="Set as Project Image"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                // Outline Star SVG Placeholder
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.31h5.518a.562.562 0 0 1 .329.958l-4.48 3.261a.564.564 0 0 0-.186.618l1.708 5.332a.562.562 0 0 1-.827.623l-4.54-2.738a.563.563 0 0 0-.626 0l-4.54 2.738a.562.562 0 0 1-.827-.623l1.708-5.332a.564.564 0 0 0-.186-.618L2.43 9.88a.562.562 0 0 1 .329-.958h5.518a.563.563 0 0 0 .475-.31L11.48 3.5Z"
-                  />
-                </svg>
+                  {/* Placeholder Icon - replace with a suitable one */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                    />
+                  </svg>
+                </button>
               )}
-            </button>
+
+              {/* Pin Button */}
+              {!isSelecting && ( // Only show if not in selection mode
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering onImageClick
+                    onPinClick?.(image);
+                  }}
+                  className="p-1 rounded-full bg-black/50 text-white hover:bg-black/75 focus:outline-none"
+                  title={pinned ? "Unpin image" : "Pin image"}
+                  aria-label={pinned ? "Unpin image" : "Pin image"}
+                >
+                  {pinned ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-6 h-6 text-yellow-400"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-6 h-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.31h5.518a.562.562 0 0 1 .329.958l-4.48 3.261a.564.564 0 0 0-.186.618l1.708 5.332a.562.562 0 0 1-.827.623l-4.54-2.738a.563.563 0 0 0-.626 0l-4.54 2.738a.562.562 0 0 1-.827-.623l1.708-5.332a.564.564 0 0 0-.186-.618L2.43 9.88a.562.562 0 0 1 .329-.958h5.518a.563.563 0 0 0 .475-.31L11.48 3.5Z"
+                      />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </div>
           )}
 
           {/* Image Info Overlay */}

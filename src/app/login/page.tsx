@@ -45,6 +45,8 @@ export default function LoginPage() {
   }
 
   if (session) {
+    const isAdmin = session.user?.role === "admin"; // Check if user is admin
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-900">
         <div className="bg-neutral-800 p-8 rounded-lg shadow-md w-full max-w-md text-center">
@@ -65,7 +67,7 @@ export default function LoginPage() {
             You are already logged in.
           </p>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })} // Sign out and redirect to home
+            onClick={() => signOut()} // Sign out and redirect to home
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 mb-4"
           >
             Sign Out
@@ -76,6 +78,16 @@ export default function LoginPage() {
           >
             Go to Homepage
           </button>
+
+          {/* Add Upload Button for Admins */}
+          {isAdmin && (
+            <button
+              onClick={() => router.push("/admin/upload")} // Navigate to upload page
+              className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300"
+            >
+              Go to Upload Page
+            </button>
+          )}
         </div>
       </div>
     );

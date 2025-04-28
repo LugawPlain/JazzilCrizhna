@@ -263,6 +263,48 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   };
   // --- End Bulk Selection Handlers ---
 
+  // --- Set Project Image Handler ---
+  const handleSetProjectImage = useCallback(
+    async (image: ImageData) => {
+      if (!isAdmin || !image.r2FileKey) {
+        console.warn(
+          "Set project image action aborted: Not admin or image missing key."
+        );
+        return;
+      }
+
+      if (
+        !window.confirm(
+          `Set this image as the project card cover for the '${capitalizeFirstLetter(
+            category
+          )}' category?`
+        )
+      ) {
+        return;
+      }
+
+      console.log(
+        `Admin wants to set image ${image.r2FileKey} for category ${category}`
+      );
+      // TODO: Implement API call to /api/admin/set-project-image
+      // Show loading/feedback
+      try {
+        // Example: const response = await fetch('/api/admin/set-project-image', { ... });
+        // Handle response
+        alert(
+          `Project image for ${capitalizeFirstLetter(
+            category
+          )} would be set to ${image.r2FileKey}. (API call not implemented yet)`
+        );
+      } catch (error) {
+        console.error("Error setting project image:", error);
+        alert("Failed to set project image. (API call not implemented yet)");
+      }
+    },
+    [isAdmin, category, capitalizeFirstLetter]
+  );
+  // --- End Set Project Image Handler ---
+
   // Render logic
   if (loading) {
     return (
@@ -382,6 +424,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
                     onPinClick={() => {
                       handlePinClick(image);
                     }}
+                    onSetProjectImage={() => handleSetProjectImage(image)}
                   />
                 );
               })}
