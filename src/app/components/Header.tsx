@@ -156,18 +156,20 @@ export default function Header() {
                 Contact
               </Link>
 
-              {/* Desktop Admin Icon */}
+              {/* Admin Avatar Link to Login Page */}
               {status === "authenticated" &&
                 session.user?.role === "admin" &&
                 session.user.image && (
-                  <Image
-                    src={session.user.image}
-                    alt={session.user.name || "Admin avatar"}
-                    width={32} // Smaller size for header
-                    height={32} // Smaller size for header
-                    className="rounded-full" // Removed mx-auto
-                    referrerPolicy="no-referrer" // Add this for external images
-                  />
+                  <Link href="/login" className="ml-4">
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || "Admin avatar"}
+                      width={32} // Smaller size for header
+                      height={32} // Smaller size for header
+                      className="rounded-full hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+                      referrerPolicy="no-referrer" // Add this for external images
+                    />
+                  </Link>
                 )}
             </div>
 
