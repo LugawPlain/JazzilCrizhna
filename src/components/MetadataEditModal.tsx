@@ -1,5 +1,15 @@
 "use client";
 import React, { useState, useEffect, FormEvent } from "react";
+import { format, parse } from "date-fns";
+import { Calendar as CalendarIcon, X as XIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Re-use the FileMetadata type definition (or import if moved to a types file)
 
@@ -10,8 +20,11 @@ interface EditableMetadata {
   photographerLink: string;
   eventDate: string;
   location: string;
+  locationLink: string;
   event: string;
-  advertisingLink: string; // <-- Add field
+  eventLink: string;
+  advertising: string;
+  advertisingLink: string;
 }
 
 // Define a type for the data passed as props
@@ -37,117 +50,22 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
   // Local state for form inputs
   const [photographer, setPhotographer] = useState("");
   const [photographerLink, setPhotographerLink] = useState("");
-  const [eventDate, setEventDate] = useState("");
   const [location, setLocation] = useState("");
+  const [locationLink, setLocationLink] = useState("");
   const [event, setEvent] = useState("");
+  const [eventLink, setEventLink] = useState("");
+  const [advertising, setAdvertising] = useState("");
   // State for the modal's own preview URL
   const [modalPreviewUrl, setModalPreviewUrl] = useState<string | null>(null);
-  // Add state for advertising link
   const [advertisingLink, setAdvertisingLink] = useState("");
 
-  // Add state variables for start and end dates and to track if showing end date
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  // State for the shadcn date pickers
+  const [startDateObj, setStartDateObj] = useState<Date | undefined>();
+  const [endDateObj, setEndDateObj] = useState<Date | undefined>();
   const [showEndDate, setShowEndDate] = useState(false);
 
-  // Add state for validation error
+  // State for validation error
   const [validationError, setValidationError] = useState<string | null>(null);
-
-  // Add references for date inputs
-  const startDateInputRef = React.useRef<HTMLInputElement>(null);
-  const endDateInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Update the handleUpToClick to show the second date field
-  const handleUpToClick = () => {
-    setShowEndDate(true);
-
-    // Set endDate to startDate as default if not set yet
-    if (!endDate && startDate) {
-      setEndDate(startDate);
-    }
-
-    // Focus the end date input after state update
-    setTimeout(() => {
-      if (endDateInputRef.current) {
-        endDateInputRef.current.focus();
-        // Select all text in the input for easy replacement
-        endDateInputRef.current.select();
-      }
-    }, 0);
-
-    // Update the combined date
-    updateCombinedDate(startDate, endDate || startDate);
-  };
-
-  // Handle start date change
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newStartDate = e.target.value;
-    setStartDate(newStartDate);
-
-    // Update combined date
-    updateCombinedDate(newStartDate, showEndDate ? endDate : "");
-  };
-
-  // Helper to format date from YYYY-MM-DD to MM/DD/YYYY for display
-  const formatDateForDisplay = (dateStr: string): string => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-    } catch {
-      return dateStr;
-    }
-  };
-
-  // Helper to format date from MM/DD/YYYY to YYYY-MM-DD for input
-  const formatDateForInput = (dateStr: string): string => {
-    if (!dateStr) return "";
-    try {
-      // If already in YYYY-MM-DD format, return as is
-      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
-
-      // Parse MM/DD/YYYY format
-      const parts = dateStr.split("/");
-      if (parts.length !== 3) return dateStr;
-
-      const month = parseInt(parts[0], 10);
-      const day = parseInt(parts[1], 10);
-      const year = parseInt(parts[2], 10);
-
-      if (isNaN(month) || isNaN(day) || isNaN(year)) return dateStr;
-
-      // Format as YYYY-MM-DD with padding
-      return `${year}-${month.toString().padStart(2, "0")}-${day
-        .toString()
-        .padStart(2, "0")}`;
-    } catch {
-      return dateStr;
-    }
-  };
-
-  // Helper function to update the combined date
-  const updateCombinedDate = (start: string, end: string) => {
-    if (start && end && showEndDate) {
-      // Format dates for display in MM/DD/YYYY format
-      const formattedStart = formatDateForDisplay(start);
-      const formattedEnd = formatDateForDisplay(end);
-      setEventDate(`${formattedStart} - ${formattedEnd}`);
-    } else if (start) {
-      setEventDate(formatDateForDisplay(start));
-    } else {
-      setEventDate("");
-    }
-  };
-
-  // Handle end date change
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndDate = e.target.value;
-    setEndDate(newEndDate);
-
-    // Update combined date
-    updateCombinedDate(startDate, newEndDate);
-  };
 
   // Effect to update local state and create/revoke modal preview URL
   useEffect(() => {
@@ -159,27 +77,39 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
       );
 
       // Get the eventDate value
-      const fileDate = selectedFileData.currentMetadata.eventDate || "";
-      setEventDate(fileDate);
+      const fileDateString = selectedFileData.currentMetadata.eventDate || "";
+      if (fileDateString.includes(" - ")) {
+        const [startStr, endStr] = fileDateString.split(" - ");
+        // Attempt to parse using expected format
+        const parsedStart = parse(startStr, "MM/dd/yyyy", new Date());
+        const parsedEnd = parse(endStr, "MM/dd/yyyy", new Date());
 
-      // Parse the date for our dual input fields
-      if (fileDate.includes(" - ")) {
-        const [start, end] = fileDate.split(" - ");
-        setStartDate(formatDateForInput(start));
-        setEndDate(formatDateForInput(end));
+        if (!isNaN(parsedStart.getTime())) setStartDateObj(parsedStart);
+        else setStartDateObj(undefined); // Clear if parse fails
+
+        if (!isNaN(parsedEnd.getTime())) setEndDateObj(parsedEnd);
+        else setEndDateObj(undefined);
+
         setShowEndDate(true);
-      } else if (fileDate) {
-        setStartDate(formatDateForInput(fileDate));
-        setEndDate("");
+      } else if (fileDateString) {
+        const parsedStart = parse(fileDateString, "MM/dd/yyyy", new Date());
+        if (!isNaN(parsedStart.getTime())) setStartDateObj(parsedStart);
+        else setStartDateObj(undefined);
+
+        setEndDateObj(undefined); // Clear end date
         setShowEndDate(false);
       } else {
-        setStartDate("");
-        setEndDate("");
+        // Clear dates if incoming string is empty
+        setStartDateObj(undefined);
+        setEndDateObj(undefined);
         setShowEndDate(false);
       }
 
       setLocation(selectedFileData.currentMetadata.location || "");
+      setLocationLink(selectedFileData.currentMetadata.locationLink || "");
       setEvent(selectedFileData.currentMetadata.event || "");
+      setEventLink(selectedFileData.currentMetadata.eventLink || "");
+      setAdvertising(selectedFileData.currentMetadata.advertising || "");
       setAdvertisingLink(
         selectedFileData.currentMetadata.advertisingLink || ""
       ); // Set advertising link state
@@ -194,19 +124,27 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
           URL.revokeObjectURL(url);
         }
         setModalPreviewUrl(null); // Reset URL state
-        setStartDate("");
-        setEndDate("");
+        setStartDateObj(undefined);
+        setEndDateObj(undefined);
         setShowEndDate(false);
         setAdvertisingLink(""); // Reset advertising link state
+        setLocationLink("");
+        setEventLink("");
+        setAdvertising("");
+        setValidationError(null);
       };
     } else {
       // Reset fields and URL if modal is closing or no file selected
       setModalPreviewUrl(null);
       // Reset date fields
-      setStartDate("");
-      setEndDate("");
+      setStartDateObj(undefined);
+      setEndDateObj(undefined);
       setShowEndDate(false);
       setAdvertisingLink(""); // Reset advertising link state
+      setLocationLink("");
+      setEventLink("");
+      setAdvertising("");
+      setValidationError(null);
     }
   }, [isOpen, selectedFileData]); // Depend on isOpen and the selected file data
 
@@ -227,12 +165,30 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
 
     if (selectedFileData) {
       // Construct the updated metadata object from individual states
+      let formattedEventDate = "";
+      if (startDateObj) {
+        formattedEventDate = format(startDateObj, "MM/dd/yyyy");
+        if (showEndDate && endDateObj) {
+          // Double check validity (Calendar handles disabling, but good practice)
+          if (endDateObj >= startDateObj) {
+            formattedEventDate += ` - ${format(endDateObj, "MM/dd/yyyy")}`;
+          } else {
+            console.warn(
+              "End date is before start date in modal, saving start date only."
+            );
+          }
+        }
+      }
+
       const updatedMetadata: EditableMetadata = {
         photographer: photographer,
         photographerLink: photographerLink,
-        eventDate: eventDate, // eventDate state already holds the combined/formatted date
+        eventDate: formattedEventDate,
         location: location,
+        locationLink: locationLink,
         event: event,
+        eventLink: eventLink,
+        advertising: advertising,
         advertisingLink: advertisingLink,
       };
 
@@ -321,80 +277,100 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                 />
               </div>
               <div>
-                <label
-                  htmlFor="modalStartDate"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Date: (Optional)
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date(s):
                 </label>
-                <div className="mt-1 flex flex-wrap items-center space-y-2 md:space-y-0">
-                  <div className="flex-1 min-w-[180px] mr-2">
-                    <input
-                      type="date"
-                      id="modalStartDate"
-                      ref={startDateInputRef}
-                      value={startDate}
-                      onChange={handleStartDateChange}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    />
-                  </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !startDateObj && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDateObj ? (
+                          format(startDateObj, "MM/dd/yyyy")
+                        ) : (
+                          <span>Start date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={startDateObj}
+                        onSelect={setStartDateObj}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
 
                   {showEndDate ? (
-                    <div className="flex-1 min-w-[180px] mr-2">
-                      <input
-                        type="date"
-                        id="modalEndDate"
-                        ref={endDateInputRef}
-                        value={endDate}
-                        onChange={handleEndDateChange}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-500">-</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[140px] justify-start text-left font-normal",
+                              !endDateObj && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDateObj ? (
+                              format(endDateObj, "MM/dd/yyyy")
+                            ) : (
+                              <span>End date</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={endDateObj}
+                            onSelect={setEndDateObj}
+                            disabled={
+                              startDateObj
+                                ? { before: startDateObj }
+                                : undefined
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShowEndDate(false);
+                          setEndDateObj(undefined);
+                        }}
+                        className="h-8 w-8 p-0"
+                      >
+                        <XIcon className="h-4 w-4" />
+                        <span className="sr-only">Remove end date</span>
+                      </Button>
                     </div>
                   ) : (
-                    <button
+                    <Button
                       type="button"
-                      onClick={handleUpToClick}
-                      className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowEndDate(true);
+                        if (startDateObj && !endDateObj) {
+                          setEndDateObj(startDateObj);
+                        }
+                      }}
                     >
                       Add End Date
-                    </button>
-                  )}
-
-                  {showEndDate && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowEndDate(false);
-                        setEndDate("");
-                        updateCombinedDate(startDate, "");
-                      }}
-                      className="inline-flex items-center ml-2 px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
+                    </Button>
                   )}
                 </div>
-
-                {/* Hidden field to preserve the actual combined date value */}
-                <input
-                  type="hidden"
-                  id="modalEventDate"
-                  name="eventDate"
-                  value={eventDate}
-                />
               </div>
               <div>
                 <label
@@ -410,6 +386,23 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                   onChange={(e) => setLocation(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder="Where was the photo taken?"
+                />
+              </div>
+              {/* Location Link Input */}
+              <div>
+                <label
+                  htmlFor="modalLocationLink"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Location Link: (Optional)
+                </label>
+                <input
+                  type="url"
+                  id="modalLocationLink"
+                  value={locationLink}
+                  onChange={(e) => setLocationLink(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="e.g. Venue Website"
                 />
               </div>
               <div>
@@ -428,6 +421,40 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                   placeholder="What event was this for?"
                 />
               </div>
+              {/* Event Link Input */}
+              <div>
+                <label
+                  htmlFor="modalEventLink"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Event Link: (Optional)
+                </label>
+                <input
+                  type="url"
+                  id="modalEventLink"
+                  value={eventLink}
+                  onChange={(e) => setEventLink(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="e.g. Event Page URL"
+                />
+              </div>
+              {/* Advertising Input */}
+              <div>
+                <label
+                  htmlFor="modalAdvertising"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Advertising/Brand: (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="modalAdvertising"
+                  value={advertising}
+                  onChange={(e) => setAdvertising(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="e.g. Brand Name"
+                />
+              </div>
               {/* Add Advertising Link Field */}
               <div className="mb-4">
                 <label
@@ -440,8 +467,8 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                   type="url"
                   id="advertisingLink"
                   name="advertisingLink"
-                  value={advertisingLink} // Use advertisingLink state
-                  onChange={(e) => setAdvertisingLink(e.target.value)} // Use setter directly
+                  value={advertisingLink}
+                  onChange={(e) => setAdvertisingLink(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder="https://example.com/ad"
                 />

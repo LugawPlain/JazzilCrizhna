@@ -1,5 +1,17 @@
 "use client";
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, X as XIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils"; // Assuming you have this utility function
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 import MetadataEditModal from "./MetadataEditModal"; // Import the modal
 // import { db, storage } from "../lib/firebase"; // Commented out
 // import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
@@ -12,7 +24,7 @@ interface FileMetadata {
   photographerLink: string; // Added field for photographer's link
   event: string;
   eventLink: string;
-  eventDate: string;
+  eventDate: string; // Keep as string for final data structure if backend expects it
   location: string; // Added location state
   locationLink: string;
   advertising: string;
@@ -27,7 +39,7 @@ interface GlobalMetadataDefaults {
   globalPhotographerLink: string;
   globalEvent: string;
   globalEventLink: string;
-  globalEventDate: string;
+  globalEventDate: string; // Keep as string matching FileMetadata
   globalLocation: string;
   globalLocationLink: string;
   globalAdvertising: string;
@@ -53,7 +65,7 @@ const applyGlobalDefaults = (
   if (updated.eventLink === "") {
     updated.eventLink = globals.globalEventLink;
   }
-  // Check for empty string OR the specific default date placeholder if you add one
+  // Event date: Apply default string if specific string is empty
   if (updated.eventDate === "") {
     updated.eventDate = globals.globalEventDate;
   }
@@ -74,33 +86,36 @@ const applyGlobalDefaults = (
 };
 
 function UploadForm() {
-  // Keep global states for now, might be used as defaults or if no specific metadata is set
-  const [globalEventDate, setGlobalEventDate] = useState("");
-  const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
-  const [globalLocationLink, setGlobalLocationLink] = useState(""); // Added state for location link
-  const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
-  const [globalPhotographerLink, setGlobalPhotographerLink] = useState(""); // Added state for photographer link
-  const [globalEventLink, setGlobalEventLink] = useState(""); // Added state for event link
-  const [globalAdvertising, setGlobalAdvertising] = useState(""); // Added state for advertising
-  const [globalAdvertisingLink, setGlobalAdvertisingLink] = useState(""); // <-- Add global state
-  const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
-  const [globalEvent, setGlobalEvent] = useState(""); // Changed from event
+  // --- Global State ---
+  // Restore separate date states & showEndDate flag
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [showEndDate, setShowEndDate] = useState<boolean>(false);
+  // Keep other global states
+  const [globalLocation, setGlobalLocation] = useState("");
+  const [globalLocationLink, setGlobalLocationLink] = useState("");
+  const [globalPhotographer, setGlobalPhotographer] = useState("");
+  const [globalPhotographerLink, setGlobalPhotographerLink] = useState("");
+  const [globalEventLink, setGlobalEventLink] = useState("");
+  const [globalAdvertising, setGlobalAdvertising] = useState("");
+  const [globalAdvertisingLink, setGlobalAdvertisingLink] = useState("");
+  const [globalCategory, setGlobalCategory] = useState("");
+  const [globalEvent, setGlobalEvent] = useState("");
 
-  // State for individual files and their metadata
+  // --- File & Upload State ---
   const [filesWithMetadata, setFilesWithMetadata] = useState<FileMetadata[]>(
     []
   );
-
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // State for the modal
+  // --- Modal State ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
-  // Categories for the dropdown
+  // --- Categories ---
   const categories = [
     "PAGEANT",
     "MODELING",
@@ -112,14 +127,6 @@ function UploadForm() {
     "OTHERS",
   ];
 
-  // Add state variables for start and end dates and to track if showing end date
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [showEndDate, setShowEndDate] = useState(false);
-
-  // Add references for date inputs
-  const endDateInputRef = React.useRef<HTMLInputElement>(null);
-
   // --- Cleanup Object URLs ---
   useEffect(() => {
     return () => {
@@ -127,21 +134,19 @@ function UploadForm() {
     };
   }, [filesWithMetadata]);
 
+  // --- File Handling ---
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Clear previous errors/success messages
       setError(null);
       setSuccess(false);
       setSuccessMessage("");
-
-      // Revoke previous URLs before creating new ones
       filesWithMetadata.forEach((item) => URL.revokeObjectURL(item.previewUrl));
 
       const selectedFiles = Array.from(e.target.files);
       const newFilesWithMetadata: FileMetadata[] = selectedFiles.map(
         (file, index) => {
           const previewUrl = URL.createObjectURL(file);
-          const id = `${file.name}-${index}-${Date.now()}`; // Create a simple unique ID
+          const id = `${file.name}-${index}-${Date.now()}`;
           return {
             id,
             file,
@@ -150,7 +155,7 @@ function UploadForm() {
             photographerLink: "",
             event: "",
             eventLink: "",
-            eventDate: "",
+            eventDate: "", // Initialize eventDate as empty string
             location: "",
             locationLink: "",
             advertising: "",
@@ -158,114 +163,86 @@ function UploadForm() {
           };
         }
       );
-
       setFilesWithMetadata(newFilesWithMetadata);
     }
-    // Reset file input visually if needed (optional)
-    // If you want the input to show "No file chosen" after selection, uncomment:
-    // if (e.target) {
-    //    e.target.value = "";
-    // }
   };
 
-  // Define a type for the expected structure of an uploaded file from the API response
+  // --- API Response Type ---
   interface UploadedFileResult {
     originalFilename: string;
     fileKey: string;
     firestoreDocId: string;
-    // Add other expected properties if any
   }
 
+  // --- Form Submission ---
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Check if any files are selected
     if (filesWithMetadata.length === 0) {
       setError("Please select at least one image.");
       return;
     }
-
-    // Category is still required globally
     if (!globalCategory) {
       setError("Please select a category.");
       return;
     }
 
-    // Validate date formats
-    if (globalEventDate) {
-      if (!isValidDateFormat(globalEventDate)) {
-        setError(
-          "Invalid date format. Use MM/DD/YYYY for single dates or MM/DD/YYYY - MM/DD/YYYY for ranges. For ranges, end date must be after start date."
-        );
-        return;
-      }
-
-      console.log("Global date validated successfully:", globalEventDate);
-    }
-
-    // Check individual file date formats
-    const invalidDates = filesWithMetadata.filter(
-      (item) => item.eventDate && !isValidDateFormat(item.eventDate)
-    );
-
-    if (invalidDates.length > 0) {
-      setError(
-        `Invalid date format in ${invalidDates.length} file(s). Check that your dates use MM/DD/YYYY format and end dates are after start dates.`
-      );
-      return;
-    }
+    // If start date IS required globally, add this check:
+    // if (!startDate) {
+    //   setError("Please select a start date.");
+    //   return;
+    // }
 
     setIsUploading(true);
     setError(null);
     setSuccess(false);
     setSuccessMessage("");
 
-    // --- Prepare per-file metadata, applying global defaults ---
-    const finalMetadata = filesWithMetadata.map((item) => {
-      // Log the original metadata before any processing
-      console.log(`Processing file: ${item.file.name} (ID: ${item.id})`);
-      console.log("Original metadata:", {
-        photographer: item.photographer,
-        photographerLink: item.photographerLink,
-        eventDate: item.eventDate,
-        location: item.location,
-        event: item.event,
-        eventLink: item.eventLink,
-        locationLink: item.locationLink,
-        advertising: item.advertising,
-        advertisingLink: item.advertisingLink,
-      });
+    // --- Prepare Metadata ---
+    // Format the selected date(s) into the string format
+    let formattedGlobalEventDate = "";
+    if (startDate) {
+      formattedGlobalEventDate = format(startDate, "MM/dd/yyyy");
+      // Append end date only if it's shown and selected
+      if (showEndDate && endDate) {
+        // Ensure end date is not before start date (Calendar prop handles selection, but double-check)
+        if (endDate >= startDate) {
+          formattedGlobalEventDate += ` - ${format(endDate, "MM/dd/yyyy")}`;
+        } else {
+          // Handle case where somehow end date is before start date (e.g., log warning)
+          console.warn(
+            "End date is before start date, submitting start date only."
+          );
+        }
+      }
+    }
 
-      // Start with the specific metadata from the item
+    const finalMetadata = filesWithMetadata.map((item) => {
       const specificMetadata = {
         photographer: item.photographer,
         photographerLink: item.photographerLink,
-        eventDate: item.eventDate,
-        location: item.location,
         event: item.event,
         eventLink: item.eventLink,
+        eventDate: item.eventDate, // Start with the item's specific date string
+        location: item.location,
         locationLink: item.locationLink,
         advertising: item.advertising,
         advertisingLink: item.advertisingLink,
-        // Include original filename, might be useful for backend matching
         originalFilename: item.file.name,
       };
 
-      // Prepare the global defaults object
       const globalDefaults: GlobalMetadataDefaults = {
         globalPhotographer,
         globalPhotographerLink,
         globalEvent,
         globalEventLink,
-        globalEventDate,
+        globalEventDate: formattedGlobalEventDate, // Use formatted date string as default
         globalLocation,
         globalLocationLink,
         globalAdvertising,
         globalAdvertisingLink,
       };
 
-      // Apply global defaults using the helper function
-      // We exclude originalFilename before passing and add it back after
       const metadataWithDefaults = applyGlobalDefaults(
         {
           photographer: specificMetadata.photographer,
@@ -281,25 +258,20 @@ function UploadForm() {
         globalDefaults
       );
 
-      // Combine the result with the original filename
       const finalItemMetadata = {
         ...metadataWithDefaults,
         originalFilename: specificMetadata.originalFilename,
       };
 
-      // Log the final metadata after processing
       console.log("Final metadata after applying defaults:", finalItemMetadata);
-
       return finalItemMetadata;
     });
 
     // --- Create FormData ---
     const formData = new FormData();
-
     filesWithMetadata.forEach((item) => {
       formData.append(`file`, item.file);
     });
-
     if (globalCategory) {
       formData.append("category", globalCategory);
     } else {
@@ -307,7 +279,6 @@ function UploadForm() {
       setIsUploading(false);
       return;
     }
-
     formData.append("metadataArray", JSON.stringify(finalMetadata));
 
     // --- Send Request ---
@@ -318,32 +289,27 @@ function UploadForm() {
         method: "POST",
         body: formData,
       });
-
       if (!response.ok) {
         throw new Error(`Upload failed with status: ${response.status}`);
       }
-
       const result = await response.json();
       console.log("Upload API response:", result);
 
-      // Log successful uploads
+      // Log success
       if (
         result.results &&
         Array.isArray(result.results) &&
         result.results.length > 0
       ) {
-        // Use the defined type here
         result.results.forEach((uploadedFile: UploadedFileResult) => {
           console.log(`Uploaded file: ${uploadedFile.originalFilename}`);
           console.log(`File key: ${uploadedFile.fileKey}`);
           console.log(`Firestore doc ID: ${uploadedFile.firestoreDocId}`);
         });
       }
-
-      // Add more metadata update logging here
       const metadataLog = finalMetadata.map((metadata) => ({
         file: metadata.originalFilename,
-        eventDate: metadata.eventDate, // Log as eventDate
+        eventDate: metadata.eventDate,
         photographer: metadata.photographer,
         photographerLink: metadata.photographerLink,
         location: metadata.location,
@@ -353,13 +319,10 @@ function UploadForm() {
         advertising: metadata.advertising,
         advertisingLink: metadata.advertisingLink,
       }));
-
-      // Detailed summary of uploads
       console.log("Files uploaded with the following metadata:");
       console.table(metadataLog);
 
       setSuccess(true);
-      // Update success message for multiple files
       setSuccessMessage(
         result.message ||
           `${
@@ -367,9 +330,11 @@ function UploadForm() {
           } file(s) uploaded successfully!`
       );
 
-      // Reset state
-      setFilesWithMetadata([]); // Clear files
-      setGlobalEventDate(""); // Reset to empty instead of default date
+      // --- Reset State ---
+      setFilesWithMetadata([]);
+      setStartDate(undefined); // Reset start date
+      setEndDate(undefined); // Reset end date
+      setShowEndDate(false); // Hide end date picker
       setGlobalLocation("");
       setGlobalLocationLink("");
       setGlobalPhotographer("");
@@ -377,9 +342,9 @@ function UploadForm() {
       setGlobalEvent("");
       setGlobalEventLink("");
       setGlobalAdvertising("");
-      setGlobalAdvertisingLink(""); // <-- Reset global state
+      setGlobalAdvertisingLink("");
       setGlobalCategory("");
-      // Reset file input visually (important if not resetting e.target.value in handleFileChange)
+
       const fileInput = document.getElementById(
         "fileInput"
       ) as HTMLInputElement;
@@ -387,9 +352,7 @@ function UploadForm() {
         fileInput.value = "";
       }
     } catch (err: unknown) {
-      // Change type to unknown
       console.error("Upload failed:", err);
-      // Type check before accessing properties
       let errorMessage = "An unknown upload error occurred.";
       if (err instanceof Error) {
         errorMessage = `Upload failed: ${err.message}`;
@@ -404,10 +367,10 @@ function UploadForm() {
     }
   };
 
-  // --- Add handleSaveMetadata function ---
+  // --- Metadata Modal Save Handler ---
+  // Maintaining the fix based on original linter error
   const handleSaveMetadata = (
     id: string,
-    // Explicitly include advertisingLink in the expected type
     updatedMetadata: Pick<
       FileMetadata,
       | "photographer"
@@ -426,13 +389,10 @@ function UploadForm() {
 
     setFilesWithMetadata((prevFiles) => {
       const updatedFiles = prevFiles.map((file) =>
-        file.id === id
-          ? { ...file, ...updatedMetadata } // Spread the updated metadata
-          : file
+        file.id === id ? { ...file, ...updatedMetadata } : file
       );
 
-      // Log the updated file for verification
-      const updatedFile = updatedFiles.find((file) => file.id === id);
+      const updatedFile = updatedFiles.find((f) => f.id === id);
       console.log("File after metadata update:", {
         id: updatedFile?.id,
         photographer: updatedFile?.photographer,
@@ -443,7 +403,7 @@ function UploadForm() {
         event: updatedFile?.event,
         eventLink: updatedFile?.eventLink,
         advertising: updatedFile?.advertising,
-        advertisingLink: updatedFile?.advertisingLink, // Log the new field
+        advertisingLink: updatedFile?.advertisingLink,
         fileName: updatedFile?.file.name,
       });
 
@@ -456,265 +416,44 @@ function UploadForm() {
     (f) => f.id === selectedFileId
   );
 
-  // Prepare props for the modal in the new format
+  // --- Prepare Modal Data ---
+  // Maintaining the fix based on original linter error
   const modalPropsData = selectedFileForModal
     ? {
         id: selectedFileForModal.id,
         file: selectedFileForModal.file,
         currentMetadata: {
-          // Extract current metadata part
           photographer: selectedFileForModal.photographer,
           photographerLink: selectedFileForModal.photographerLink,
           eventDate: selectedFileForModal.eventDate,
           location: selectedFileForModal.location,
-          locationLink: selectedFileForModal.locationLink,
+          locationLink: selectedFileForModal.locationLink, // Excluded
           event: selectedFileForModal.event,
-          eventLink: selectedFileForModal.eventLink,
-          advertising: selectedFileForModal.advertising,
-          advertisingLink: selectedFileForModal.advertisingLink, // <-- Pass to modal
+          eventLink: selectedFileForModal.eventLink, // Excluded
+          advertising: selectedFileForModal.advertising, // Excluded
+          advertisingLink: selectedFileForModal.advertisingLink,
         },
       }
     : null;
 
-  // Function to update the combined date based on start and end dates
-  const updateCombinedDate = (start: string, end: string) => {
-    // Validate start date
-    if (!start) {
-      setGlobalEventDate("");
-      return;
-    }
-
-    // Parse dates for validation
-    const startDate = new Date(start);
-    let endDate = null;
-
-    if (end && showEndDate) {
-      endDate = new Date(end);
-
-      // Validate both dates
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        console.warn("Invalid date input detected");
-        return;
-      }
-
-      // Check if end date is after start date
-      if (endDate < startDate) {
-        console.warn("End date is before start date");
-        // Option 1: Switch the dates
-        // const temp = start;
-        // start = end;
-        // end = temp;
-
-        // Option 2: Set end date equal to start date
-        end = start;
-      }
-
-      // Format dates for display in MM/DD/YYYY format
-      const formattedStart = formatDateForDisplay(start);
-      const formattedEnd = formatDateForDisplay(end);
-
-      // Store as a range string: "MM/DD/YYYY - MM/DD/YYYY"
-      setGlobalEventDate(`${formattedStart} - ${formattedEnd}`);
-      console.log("Date range set:", `${formattedStart} - ${formattedEnd}`);
-    } else {
-      // Just single date
-      if (isNaN(startDate.getTime())) {
-        console.warn("Invalid start date");
-        return;
-      }
-
-      setGlobalEventDate(formatDateForDisplay(start));
-      console.log("Single date set:", formatDateForDisplay(start));
-    }
-  };
-
-  // Helper to format date from YYYY-MM-DD to MM/DD/YYYY for display
-  const formatDateForDisplay = (dateStr: string): string => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return dateStr;
-
-      // Format as MM/DD/YYYY with proper padding
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const day = date.getDate().toString().padStart(2, "0");
-      const year = date.getFullYear();
-
-      return `${month}/${day}/${year}`;
-    } catch /*(e)*/ {
-      // Remove unused 'e'
-      return dateStr;
-    }
-  };
-
-  // Helper to format date from MM/DD/YYYY to YYYY-MM-DD for input
-  const formatDateForInput = (dateStr: string): string => {
-    if (!dateStr) return "";
-    try {
-      // If already in YYYY-MM-DD format, return as is
-      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
-
-      // Parse MM/DD/YYYY format
-      const parts = dateStr.split("/");
-      if (parts.length !== 3) return dateStr;
-
-      const month = parseInt(parts[0], 10);
-      const day = parseInt(parts[1], 10);
-      const year = parseInt(parts[2], 10);
-
-      if (isNaN(month) || isNaN(day) || isNaN(year)) return dateStr;
-
-      // Format as YYYY-MM-DD with padding
-      return `${year}-${month.toString().padStart(2, "0")}-${day
-        .toString()
-        .padStart(2, "0")}`;
-    } catch (error: unknown) {
-      console.error("Date formatting error:", error);
-      return dateStr;
-    }
-  };
-
-  const isValidDateFormat = (dateStr: string): boolean => {
-    if (!dateStr.trim()) return true;
-
-    if (dateStr.includes(" - ")) {
-      const dateParts = dateStr.split(" - ").map((part) => part.trim());
-
-      if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
-        console.warn("Invalid date range format:", dateStr);
-        return false;
-      }
-
-      try {
-        const startDate = new Date(dateParts[0]);
-        const endDate = new Date(dateParts[1]);
-
-        // Both must be valid dates
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          console.warn("Invalid date(s) in range:", dateStr);
-          return false;
-        }
-
-        // End date should be after or equal to start date
-        if (endDate < startDate) {
-          console.warn("End date before start date in range:", dateStr);
-          return false;
-        }
-
-        return true;
-      } catch (e) {
-        console.error("Error validating date range:", e);
-        return false;
-      }
-    }
-
-    // If not a range, just check if it's a valid date
-    try {
-      const date = new Date(dateStr);
-      return !isNaN(date.getTime());
-    } catch (e) {
-      console.error("Error validating single date:", e);
-      return false;
-    }
-  };
-
-  // Handle start date change
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newStartDate = e.target.value;
-    setStartDate(newStartDate);
-
-    // Update combined date
-    updateCombinedDate(newStartDate, showEndDate ? endDate : "");
-  };
-
-  // Handle end date change
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndDateValue = e.target.value;
-    let finalEndDate = newEndDateValue; // Assume new value initially
-
-    // Only proceed if both start and new end date values exist
-    if (startDate && newEndDateValue) {
-      try {
-        const parsedStartDate = new Date(startDate);
-        const parsedEndDate = new Date(newEndDateValue);
-
-        // Check if both dates are valid and if end date is before start date
-        if (
-          !isNaN(parsedStartDate.getTime()) &&
-          !isNaN(parsedEndDate.getTime()) &&
-          parsedEndDate < parsedStartDate
-        ) {
-          console.warn(
-            "End date cannot be before start date. Setting end date equal to start date."
-          );
-          finalEndDate = startDate; // Adjust finalEndDate to match startDate
-        }
-      } catch (error) {
-        console.error("Error parsing dates during end date change:", error);
-        // Optionally handle parsing error, maybe revert or clear?
-        // For now, we'll proceed with the potentially unadjusted newEndDateValue
-        // if parsing fails, relying on updateCombinedDate for further checks.
-      }
-    }
-
-    setEndDate(finalEndDate); // Update state with the potentially adjusted date
-
-    // Update combined date string using the potentially adjusted end date
-    updateCombinedDate(startDate, finalEndDate);
-  };
-
-  // Handle the "Up To" button click
+  // --- Date Picker UI Handlers ---
   const handleUpToClick = () => {
     setShowEndDate(true);
-
-    // Set endDate to startDate as default if not set yet
-    if (!endDate && startDate) {
+    // Optionally set end date to start date if start date exists
+    if (startDate && !endDate) {
       setEndDate(startDate);
     }
-
-    // Focus the end date input after state update
-    setTimeout(() => {
-      if (endDateInputRef.current) {
-        endDateInputRef.current.focus();
-      }
-    }, 0);
-
-    // Update the combined date
-    updateCombinedDate(startDate, endDate || startDate);
   };
 
-  // Effect to sync the individual date fields when globalEventDate changes from outside
-  // (e.g. when the form is reset)
-  useEffect(() => {
-    if (!globalEventDate) {
-      // Empty - reset all
-      setStartDate("");
-      setEndDate("");
-      setShowEndDate(false);
-    } else if (globalEventDate === "1/1/2000") {
-      // Default state - just first date
-      setStartDate(formatDateForInput("1/1/2000"));
-      setEndDate("");
-      setShowEndDate(false);
-    } else if (globalEventDate.includes(" - ")) {
-      // Has range format
-      const [start, end] = globalEventDate.split(" - ");
-      setStartDate(formatDateForInput(start));
-      setEndDate(formatDateForInput(end));
-      setShowEndDate(true);
-    } else {
-      // Just a single date
-      setStartDate(formatDateForInput(globalEventDate));
-      setEndDate("");
-      setShowEndDate(false);
-    }
-  }, [globalEventDate]);
+  const handleRemoveEndDate = () => {
+    setShowEndDate(false);
+    setEndDate(undefined);
+  };
 
   return (
     // --- Main Flex Container ---
     <div className="flex flex-col md:flex-row gap-6 p-4 md:p-8 min-h-screen mt-24">
       {/* --- Left Column: Form --- */}
-      {/* Removed mx-auto, added width constraints */}
       <div className="w-full md:w-2/5 lg:w-1/3 p-6 bg-white rounded-lg shadow-md self-start">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
           Upload New Photos
@@ -725,7 +464,6 @@ function UploadForm() {
             {error}
           </div>
         )}
-
         {success && successMessage && (
           <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
             {successMessage}
@@ -733,6 +471,7 @@ function UploadForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* File Input */}
           <div className="space-y-2">
             <label
               htmlFor="fileInput"
@@ -777,97 +516,100 @@ function UploadForm() {
                 <p className="text-xs text-gray-500">Images or Videos</p>
               </div>
             </div>
-            {/* Display names of selected files - REMOVED */}
-            {/* {filesWithMetadata.length > 0 && ( 
-              <div className="mt-2 text-sm text-gray-600">
-                <p>Selected files:</p>
-                <ul className="list-disc list-inside pl-4 max-h-20 overflow-y-auto">
-                  {filesWithMetadata.map((item, index) => (
-                    <li key={index} className="truncate">
-                      {item.file.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )} */}
           </div>
 
+          {/* --- Date Picker Section --- */}
           <div>
-            <label
-              htmlFor="eventDate"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Date Taken: (Optional)
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date(s) Taken: (Optional)
             </label>
-            <div className="mt-1 flex flex-wrap items-center space-y-2 md:space-y-0">
-              <div className="flex-1 min-w-[180px] mr-2">
-                <input
-                  type="date"
-                  id="startDate"
-                  value={startDate}
-                  onChange={handleStartDateChange}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                />
-              </div>
-
-              {showEndDate ? (
-                <div className="flex-1 min-w-[180px] mr-2">
-                  <input
-                    type="date"
-                    id="endDate"
-                    ref={endDateInputRef}
-                    value={endDate}
-                    onChange={handleEndDateChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Start Date Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[200px] justify-start text-left font-normal", // Adjusted width
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? (
+                      format(startDate, "MM/dd/yyyy")
+                    ) : (
+                      <span>Start date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    // Optionally disable future dates: disabled={{ after: new Date() }}
                   />
+                </PopoverContent>
+              </Popover>
+
+              {/* End Date Picker OR Add Button */}
+              {showEndDate ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">-</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[200px] justify-start text-left font-normal", // Adjusted width
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? (
+                          format(endDate, "MM/dd/yyyy")
+                        ) : (
+                          <span>End date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        disabled={startDate ? { before: startDate } : undefined}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {/* Remove End Date Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveEndDate}
+                    className="h-8 w-8 p-0"
+                  >
+                    <XIcon className="h-4 w-4" />
+                    <span className="sr-only">Remove end date</span>
+                  </Button>
                 </div>
               ) : (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={handleUpToClick}
-                  className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Add End Date
-                </button>
-              )}
-
-              {showEndDate && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEndDate(false);
-                    setEndDate("");
-                    updateCombinedDate(startDate, "");
-                  }}
-                  className="inline-flex items-center ml-2 px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                </Button>
               )}
             </div>
-
-            {/* Hidden field to preserve the actual combined date value */}
-            <input
-              type="hidden"
-              id="eventDate"
-              name="eventDate"
-              value={globalEventDate}
-            />
           </div>
+          {/* --- End Date Picker Section --- */}
 
+          {/* Location Input */}
           <div>
             <label
               htmlFor="location"
@@ -884,7 +626,25 @@ function UploadForm() {
               placeholder="Where was the photo taken?"
             />
           </div>
+          {/* Location Link Input */}
+          <div>
+            <label
+              htmlFor="locationLink"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Location Link: (Optional)
+            </label>
+            <input
+              type="url"
+              id="locationLink"
+              value={globalLocationLink}
+              onChange={(e) => setGlobalLocationLink(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Link for location (e.g., venue website)"
+            />
+          </div>
 
+          {/* Photographer Input */}
           <div>
             <label
               htmlFor="photographer"
@@ -901,7 +661,7 @@ function UploadForm() {
               placeholder="Who took the photo?"
             />
           </div>
-
+          {/* Photographer Link Input */}
           <div>
             <label
               htmlFor="photographerLink"
@@ -919,6 +679,7 @@ function UploadForm() {
             />
           </div>
 
+          {/* Event Input */}
           <div>
             <label
               htmlFor="event"
@@ -935,7 +696,43 @@ function UploadForm() {
               placeholder="What event was this for?"
             />
           </div>
+          {/* Event Link Input */}
+          <div>
+            <label
+              htmlFor="eventLink"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Event Link: (Optional)
+            </label>
+            <input
+              type="url"
+              id="eventLink"
+              value={globalEventLink}
+              onChange={(e) => setGlobalEventLink(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Link for the event (if any)"
+            />
+          </div>
 
+          {/* Advertising Input */}
+          <div>
+            <label
+              htmlFor="advertising"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Advertising: (Optional)
+            </label>
+            <input
+              type="text"
+              id="advertising"
+              value={globalAdvertising}
+              onChange={(e) => setGlobalAdvertising(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Related advertisement/brand (if any)"
+            />
+          </div>
+
+          {/* Advertising Link Input */}
           <div>
             <label
               htmlFor="advertisingLink"
@@ -953,6 +750,7 @@ function UploadForm() {
             />
           </div>
 
+          {/* Category Select */}
           <div>
             <label
               htmlFor="category"
@@ -976,6 +774,7 @@ function UploadForm() {
             </select>
           </div>
 
+          {/* Submit Button */}
           <div className="pt-4">
             <button
               type="submit"
@@ -986,35 +785,11 @@ function UploadForm() {
                   : "bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               }`}
             >
-              {isUploading ? (
-                <span className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Uploading...
-                </span>
-              ) : (
-                `Upload ${
-                  filesWithMetadata.length > 0 ? filesWithMetadata.length : ""
-                } Photo(s)`
-              )}
+              {isUploading
+                ? /* Loading spinner */ "Uploading..."
+                : `Upload ${
+                    filesWithMetadata.length > 0 ? filesWithMetadata.length : ""
+                  } Photo(s)`}
             </button>
           </div>
         </form>
@@ -1023,8 +798,6 @@ function UploadForm() {
 
       {/* --- Right Column: Preview Area --- */}
       <div className="w-full md:w-3/5 lg:w-2/3 bg-gray-50 p-4 rounded-lg shadow-inner md:h-[calc(100vh-4rem)] overflow-y-auto">
-        {" "}
-        {/* Adjusted height and overflow */}
         <h3 className="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">
           Previews
         </h3>
@@ -1033,7 +806,6 @@ function UploadForm() {
             <p>Selected image previews will appear here.</p>
           </div>
         ) : (
-          // Moved and adjusted preview grid
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filesWithMetadata.map((item) => (
               <div
@@ -1047,27 +819,8 @@ function UploadForm() {
                 <img
                   src={item.previewUrl}
                   alt={`Preview of ${item.file.name}`}
-                  // Increased image size
                   className="h-48 w-full object-contain"
                 />
-                {/* Overlay */}
-                {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-opacity duration-200">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-white opacity-0 group-hover:opacity-100"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                </div> */}
-                {/* Optional: Display filename below image */}
                 <p
                   className="text-xs text-center p-1 bg-gray-100 truncate"
                   title={item.file.name}
@@ -1088,13 +841,10 @@ function UploadForm() {
           setIsModalOpen(false);
           setSelectedFileId(null);
         }}
-        // Pass the prepared data object in the selectedFileData prop
         selectedFileData={modalPropsData}
         onSave={handleSaveMetadata}
       />
-      {/* --- End Modal --- */}
     </div>
-    // --- End Main Flex Container ---
   );
 }
 
