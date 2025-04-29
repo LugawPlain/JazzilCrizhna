@@ -365,8 +365,8 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       );
       // Show loading/feedback
       try {
-        const response = await fetch("/api/admin/set-project-image", {
-          method: "POST",
+        const response = await fetch("/api/admin/set-portfolio-image", {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             image: image,

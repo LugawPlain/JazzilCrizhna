@@ -1,6 +1,3 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
-import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
 import { dbAdmin } from "@/lib/firebase/adminApp";
 import { FieldValue } from "firebase-admin/firestore";
@@ -43,27 +40,48 @@ function isValidEventDateFormat(dateStr: string | null | undefined): boolean {
 // --- End Helper function ---
 
 // Assuming Request is NextRequest if middleware is used, otherwise use standard Request
-export async function POST(request: NextRequest) {
-  // Use NextRequest if needed
+export async function PUT(request: NextRequest) {
+  const endpoint = "/api/admin/set-portfolio-image"; // For consistent log prefix
+  const logPrefix = `[${endpoint}]`;
+
   if (!dbAdmin) {
     console.error(
-      "[API SetProjectImage] Firestore instance (dbAdmin) is not available. Check lib/firebase/adminApp logs."
+      `${logPrefix} Firestore instance (dbAdmin) is not available. Check lib/firebase/adminApp logs.`
     );
     return NextResponse.json(
       { error: "Server configuration error (Database not ready)." },
       { status: 500 }
     );
   }
-  console.log(
-    "[/api/admin/set-project-image] POST request received. Firestore check passed."
-  );
+  console.log(`${logPrefix} PUT request received. Firestore check passed.`);
+
+  let requestBody: any;
+  try {
+    requestBody = await request.json();
+    console.log(`${logPrefix} Successfully parsed request body.`);
+  } catch (parseError) {
+    console.error(
+      `${logPrefix} Failed to parse request body as JSON:`,
+      parseError
+    );
+    return NextResponse.json(
+      { error: "Invalid JSON in request body." },
+      { status: 400 }
+    );
+  }
 
   try {
-    // Use request.json() to get data from JSON body
-    const { image } = await request.json(); // Expect { image: { ... } }
+    const { image } = requestBody; // Expect { image: { ... } }
 
     // --- Validation ---
+    console.log(
+      `${logPrefix} Starting validation... Received image data:`,
+      image
+    );
     if (!image || typeof image !== "object") {
+      console.error(
+        `${logPrefix} Validation failed: Invalid request body structure.`
+      );
       return NextResponse.json(
         { error: "Invalid request body. Expecting { image: { ... } }" },
         { status: 400 }
@@ -85,6 +103,10 @@ export async function POST(request: NextRequest) {
     delete incomingMetadata.uploadedAt; // Should usually be set on initial upload
 
     if (!category || typeof category !== "string" || category.trim() === "") {
+      console.error(
+        `${logPrefix} Validation failed: Category missing or invalid. Received:`,
+        category
+      );
       return NextResponse.json(
         {
           error:
@@ -94,6 +116,10 @@ export async function POST(request: NextRequest) {
       );
     }
     if (!imageKey || typeof imageKey !== "string" || imageKey.trim() === "") {
+      console.error(
+        `${logPrefix} Validation failed: r2FileKey missing or invalid. Received:`,
+        imageKey
+      );
       return NextResponse.json(
         {
           error:
@@ -102,36 +128,49 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log(
+      `${logPrefix} Basic validation passed for category '${category}' and key '${imageKey}'.`
+    );
 
     // Validate eventDate format from incoming metadata
     let validatedEventDate: string | null = null;
     if (incomingMetadata.eventDate) {
       const dateStr = String(incomingMetadata.eventDate).trim();
+      console.log(`${logPrefix} Validating eventDate: '${dateStr}'`);
       if (isValidEventDateFormat(dateStr)) {
         validatedEventDate = dateStr;
+        console.log(`${logPrefix} eventDate validation successful.`);
       } else {
         console.warn(
-          `[API SetProjectImage] Invalid event date format received: "${dateStr}". Storing null.`
+          `${logPrefix} Invalid event date format received: "${dateStr}". Storing null.`
         );
-        // Optionally, return a 400 error if invalid date is unacceptable
-        // return NextResponse.json({ error: `Invalid eventDate format: "${dateStr}". Use M/D/YYYY or M/D/YYYY - M/D/YYYY.` }, { status: 400 });
       }
+    } else {
+      console.log(`${logPrefix} No eventDate provided in incoming metadata.`);
     }
     // Ensure the metadata object uses the validated date (or null)
     incomingMetadata.eventDate = validatedEventDate;
+    console.log(
+      `${logPrefix} Cleaned metadata to be saved (excluding keys/category):`,
+      incomingMetadata
+    );
 
     // --- Firestore Update Logic ---
     const collectionName = "portfolio_uploads"; // Target collection
     console.log(
-      `[API SetProjectImage] Attempting to set project image and update metadata in '${collectionName}' for category '${category}' using image key '${imageKey}'`
+      `${logPrefix} Attempting transaction in '${collectionName}' for category '${category}', key '${imageKey}'`
     );
 
     let wasImageCreated = false; // Flag to track if a new doc was made
 
     await dbAdmin!.runTransaction(async (transaction) => {
+      console.log(`${logPrefix} Transaction started.`);
       const collectionRef = dbAdmin!.collection(collectionName);
 
-      // --- Step 1: Find the current project image for this category (if any) ---
+      // --- Step 1: Find the current project image ---
+      console.log(
+        `${logPrefix} Querying for current project image in category '${category}'...`
+      );
       const currentProjectImageQuery = collectionRef
         .where("category", "==", category)
         .where("isProjectImage", "==", true)
@@ -143,8 +182,22 @@ export async function POST(request: NextRequest) {
         currentProjectImageSnapshot.docs.length > 0
           ? currentProjectImageSnapshot.docs[0]
           : null;
+      if (currentProjectDoc) {
+        console.log(
+          `${logPrefix} Found current project image: ID ${
+            currentProjectDoc.id
+          }, Key ${currentProjectDoc.data().r2FileKey}`
+        );
+      } else {
+        console.log(
+          `${logPrefix} No current project image found for category '${category}'.`
+        );
+      }
 
       // --- Step 2: Find the target image document by imageKey ---
+      console.log(
+        `${logPrefix} Querying for target image with key '${imageKey}'...`
+      );
       const targetImageQuery = collectionRef
         .where("r2FileKey", "==", imageKey)
         .limit(1);
@@ -154,74 +207,92 @@ export async function POST(request: NextRequest) {
       if (!targetImageSnapshot.empty) {
         // **Target Image Exists - Update it**
         const targetImageDoc = targetImageSnapshot.docs[0];
-        const targetImageData = targetImageDoc.data(); // Current data
+        const targetImageData = targetImageDoc.data();
+        console.log(
+          `${logPrefix} Target image found: ID ${targetImageDoc.id}. Current data:`,
+          targetImageData
+        );
 
-        // Verify the category in the database matches (redundant check?)
         if (targetImageData.category !== category) {
-          const mismatchError = new Error(
-            `Database inconsistency: Image with key '${imageKey}' has category '${targetImageData.category}', expected '${category}'.`
+          // This check might be redundant if your logic ensures keys are unique per category
+          console.error(
+            `${logPrefix} Database inconsistency detected! Image ${targetImageDoc.id} (key: ${imageKey}) has category '${targetImageData.category}', but expected '${category}'.`
           );
-          (mismatchError as any).status = 500; // Internal error
+          const mismatchError = new Error(
+            `Database inconsistency: Image key '${imageKey}' category mismatch.`
+          );
+          (mismatchError as any).status = 500;
           throw mismatchError;
         }
 
-        // Delete the previous project image doc if it exists and is different
+        // Unset previous project image if it exists and is different
         if (currentProjectDoc && currentProjectDoc.id !== targetImageDoc.id) {
           console.log(
-            `[API SetProjectImage Transaction] Deleting previous project image doc ${currentProjectDoc.id} in category '${category}'`
+            `${logPrefix} Deleting previous project image document: ID ${currentProjectDoc.id}. Transaction: delete.`
           );
           transaction.delete(currentProjectDoc.ref);
+        } else if (
+          currentProjectDoc &&
+          currentProjectDoc.id === targetImageDoc.id
+        ) {
+          console.log(
+            `${logPrefix} Target image is already the current project image. Will update metadata.`
+          );
         }
 
-        // Update the target image with new metadata and set as project image
-        console.log(
-          `[API SetProjectImage Transaction] Updating existing image ${targetImageDoc.id} (key: ${imageKey}) with new metadata and setting isProjectImage=true`
-        );
-        transaction.update(targetImageDoc.ref, {
+        const updateData = {
           ...incomingMetadata, // Spread the validated & cleaned metadata
           isProjectImage: true,
           projectImageSetAt: FieldValue.serverTimestamp(),
-          // Ensure essential fields aren't overwritten with null if not provided in partial update
-          category: category, // Keep category consistent
-          r2FileKey: imageKey, // Keep key consistent
-        });
+          // Ensure essential fields aren't overwritten with null if not provided
+          category: category,
+          r2FileKey: imageKey,
+        };
+        console.log(
+          `${logPrefix} Updating existing image ${targetImageDoc.id}. Transaction: update. Data:`,
+          updateData
+        );
+        transaction.update(targetImageDoc.ref, updateData);
       } else {
         // **Target Image Does Not Exist - Create it**
-        wasImageCreated = true; // Mark that we are creating it
+        wasImageCreated = true;
         console.log(
-          `[API SetProjectImage Transaction] Image with key '${imageKey}' not found. Creating new document with provided metadata.`
+          `${logPrefix} Target image with key '${imageKey}' not found.`
         );
 
-        // Delete the previous project image doc if one exists
+        // Unset previous project image if one exists
         if (currentProjectDoc) {
           console.log(
-            `[API SetProjectImage Transaction] Deleting previous project image doc ${currentProjectDoc.id} before creating new one.`
+            `${logPrefix} Deleting previous project image document: ID ${currentProjectDoc.id} before creating new one. Transaction: delete.`
           );
           transaction.delete(currentProjectDoc.ref);
         }
 
-        // Create the new document with all provided metadata
         const newDocRef = collectionRef.doc(); // Auto-generate ID
-        console.log(
-          `[API SetProjectImage Transaction] Creating new image document ${newDocRef.id} with key '${imageKey}' as project image for category '${category}'`
-        );
-        transaction.set(newDocRef, {
-          ...incomingMetadata, // Spread the validated & cleaned metadata
-          r2FileKey: imageKey, // Set the key
-          category: category, // Set the category
-          isProjectImage: true, // Set as project image immediately
+        const setData = {
+          ...incomingMetadata,
+          r2FileKey: imageKey,
+          category: category,
+          isProjectImage: true,
           projectImageSetAt: FieldValue.serverTimestamp(),
-          createdAt: FieldValue.serverTimestamp(), // Add a creation timestamp
-          uploadedAt: FieldValue.serverTimestamp(), // Set uploadedAt same as createdAt for new entries via this route
-        });
+          createdAt: FieldValue.serverTimestamp(),
+          uploadedAt: FieldValue.serverTimestamp(), // Set timestamps for new doc
+        };
+        console.log(
+          `${logPrefix} Creating new image document ${newDocRef.id} as project image. Transaction: set. Data:`,
+          setData
+        );
+        transaction.set(newDocRef, setData);
       }
+      console.log(`${logPrefix} Transaction operations queued.`);
     });
+    console.log(`${logPrefix} Transaction completed successfully.`);
 
     const successMessage = wasImageCreated
-      ? `Image with key '${imageKey}' was not found, created a new record with the provided metadata and set it as the project image for category '${category}'.`
-      : `Project image for category '${category}' successfully set to image with key '${imageKey}' and metadata updated.`;
+      ? `Image with key '${imageKey}' was not found, created new record and set as project image for '${category}'.`
+      : `Project image for category '${category}' set to image key '${imageKey}', metadata updated.`;
 
-    console.log(`[API SetProjectImage] ${successMessage}`);
+    console.log(`${logPrefix} Success: ${successMessage}`);
 
     // --- Response ---
     return NextResponse.json(
@@ -233,29 +304,31 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: unknown) {
-    const err = error as any; // Type assertion to access potential custom status
+    const err = error as any;
     const errorMessage =
       err instanceof Error ? err.message : "An unexpected error occurred.";
-    // Use custom status from transaction errors, default to 500
     const status = typeof err.status === "number" ? err.status : 500;
 
     console.error(
-      `[API SetProjectImage] Error (Status: ${status}):`,
-      errorMessage,
-      error
+      `${logPrefix} Error during processing (Status: ${status}): ${errorMessage}`,
+      err // Log the full error object
     );
 
-    // Specific check for JSON parsing errors
+    // Specific check for JSON parsing errors (redundant due to initial check, but safe)
     if (error instanceof SyntaxError) {
+      console.error(`${logPrefix} Responding with 400 due to SyntaxError.`);
       return NextResponse.json(
         {
           error: "Failed to set project image",
           details: "Invalid JSON format in request body.",
         },
-        { status: 400 } // Bad Request for syntax errors
+        { status: 400 }
       );
     }
 
+    console.error(
+      `${logPrefix} Responding with ${status} due to caught error.`
+    );
     return NextResponse.json(
       { error: "Failed to set project image", details: errorMessage },
       { status }
