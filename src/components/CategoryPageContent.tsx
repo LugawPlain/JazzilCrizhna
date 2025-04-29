@@ -432,7 +432,7 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-neutral-900 pt-24 pb-16"
+      className="min-h-screen bg-neutral-900 pb-16"
     >
       <div className="mx-auto px-4">
         <motion.div

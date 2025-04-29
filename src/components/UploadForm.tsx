@@ -643,42 +643,6 @@ function UploadForm() {
               placeholder="Link for location (e.g., venue website)"
             />
           </div>
-
-          {/* Photographer Input */}
-          <div>
-            <label
-              htmlFor="photographer"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Photographer: (Optional)
-            </label>
-            <input
-              type="text"
-              id="photographer"
-              value={globalPhotographer}
-              onChange={(e) => setGlobalPhotographer(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Who took the photo?"
-            />
-          </div>
-          {/* Photographer Link Input */}
-          <div>
-            <label
-              htmlFor="photographerLink"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Photographer Link: (Optional)
-            </label>
-            <input
-              type="url"
-              id="photographerLink"
-              value={globalPhotographerLink}
-              onChange={(e) => setGlobalPhotographerLink(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Photographer's website or social media"
-            />
-          </div>
-
           {/* Event Input */}
           <div>
             <label
@@ -711,6 +675,40 @@ function UploadForm() {
               onChange={(e) => setGlobalEventLink(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               placeholder="Link for the event (if any)"
+            />
+          </div>
+          {/* Photographer Input */}
+          <div>
+            <label
+              htmlFor="photographer"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Photographer: (Optional)
+            </label>
+            <input
+              type="text"
+              id="photographer"
+              value={globalPhotographer}
+              onChange={(e) => setGlobalPhotographer(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Who took the photo?"
+            />
+          </div>
+          {/* Photographer Link Input */}
+          <div>
+            <label
+              htmlFor="photographerLink"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Photographer Link: (Optional)
+            </label>
+            <input
+              type="url"
+              id="photographerLink"
+              value={globalPhotographerLink}
+              onChange={(e) => setGlobalPhotographerLink(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Photographer's website or social media"
             />
           </div>
 

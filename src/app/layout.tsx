@@ -37,6 +37,7 @@ export default function RootLayout({
       >
         <Providers>
           <Header />
+
           <SocialLinksButton />
           {children}
           <Footer />

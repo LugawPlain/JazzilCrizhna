@@ -24,22 +24,20 @@ export const HorizontalScrollCarousel = () => {
   }, []);
 
   return (
-    <div className="relative bg-neutral-900 pt-20 lg:pt-4 pb-24">
-      <div
-        ref={scrollContainerRef}
-        className="flex flex-row gap-8 p-10 lg:pt-25 lg:pb-5 max-w-screen overflow-auto scrollbar-thin scrollbar-track-red-500 md:scrollbar-thumb-red-500  md:scrollbar-track-black md:hover:scrollbar-thumb-amber-500 snap-x snap-mandatory md:snap-none"
-      >
-        {categories.map((project: CategoryData) => (
-          <div
-            key={project.category}
-            className="snap-center md:snap-align-none"
-          >
-            <Link href={`/portfolio/${project.category.toLowerCase()}`}>
-              <ProjectCard project={project} />
-            </Link>
-          </div>
-        ))}
-      </div>
+    <div
+      ref={scrollContainerRef}
+      className="flex flex-row gap-8 p-10  max-w-screen overflow-auto scrollbar-thin scrollbar-track-red-500 md:scrollbar-thumb-red-500  md:scrollbar-track-black md:hover:scrollbar-thumb-amber-500 snap-x snap-mandatory md:snap-none"
+    >
+      {categories.map((project: CategoryData) => (
+        <div
+          key={project.category}
+          className="snap-center md:snap-align-none min-h-4/5"
+        >
+          <Link href={`/portfolio/${project.category.toLowerCase()}`}>
+            <ProjectCard project={project} />
+          </Link>
+        </div>
+      ))}
     </div>
   );
 };

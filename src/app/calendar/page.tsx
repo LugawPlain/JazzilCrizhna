@@ -55,7 +55,7 @@ export default function CalendarPage() {
       {/* Background Images */}
 
       {/* Content */}
-      <div className="relative z-10 py-20 px-4">
+      <div className="relative z-10 py-20 px-4 pt-24">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className=" bg-neutral-800 rounded-lg shadow-xl overflow-hidden border border-neutral-700 relative">
             {/* Under Construction Overlay */}

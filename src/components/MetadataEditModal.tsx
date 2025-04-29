@@ -245,40 +245,8 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
           >
             <div className="flex-grow space-y-4">
               <div>
-                <label
-                  htmlFor="modalPhotographer"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Photographer: (Optional)
-                </label>
-                <input
-                  type="text"
-                  id="modalPhotographer"
-                  value={photographer}
-                  onChange={(e) => setPhotographer(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Who took the photo?"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="modalPhotographerLink"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Photographer Link: (Optional)
-                </label>
-                <input
-                  type="url"
-                  id="modalPhotographerLink"
-                  value={photographerLink}
-                  onChange={(e) => setPhotographerLink(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Photographer's website or social media"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date(s):
+                  Date(s): (Optional)
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
                   <Popover>
@@ -405,6 +373,7 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                   placeholder="e.g. Venue Website"
                 />
               </div>
+
               <div>
                 <label
                   htmlFor="modalEvent"
@@ -436,6 +405,38 @@ const MetadataEditModal: React.FC<MetadataEditModalProps> = ({
                   onChange={(e) => setEventLink(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder="e.g. Event Page URL"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="modalPhotographer"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Photographer: (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="modalPhotographer"
+                  value={photographer}
+                  onChange={(e) => setPhotographer(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Who took the photo?"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="modalPhotographerLink"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Photographer Link: (Optional)
+                </label>
+                <input
+                  type="url"
+                  id="modalPhotographerLink"
+                  value={photographerLink}
+                  onChange={(e) => setPhotographerLink(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Photographer's website or social media"
                 />
               </div>
               {/* Advertising Input */}
