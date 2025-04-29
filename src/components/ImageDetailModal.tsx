@@ -655,7 +655,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                       </strong>
                       {isEditing ? (
                         // --- START: Date Picker Replacement ---
-                        <div className="flex flex-col sm:flex-row gap-2 items-start w-full">
+                        <div className="flex flex-col  gap-2 items-start w-full">
                           {/* Start Date Picker */}
                           <Popover>
                             <PopoverTrigger asChild>
@@ -675,7 +675,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent
-                              className="w-auto p-0"
+                              className="w-auto p-0 z-[110]"
                               align="start"
                             >
                               <Calendar
@@ -699,27 +699,6 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           </Popover>
 
                           {/* Add/Remove End Date Button */}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
-                            onClick={() => {
-                              if (showEditEndDate) {
-                                setEditEndDate(undefined);
-                              }
-                              setShowEditEndDate(!showEditEndDate);
-                            }}
-                          >
-                            {showEditEndDate ? (
-                              <XIcon className="h-4 w-4 mr-1" />
-                            ) : (
-                              <CalendarIcon className="h-4 w-4 mr-1" />
-                            )}
-                            {showEditEndDate
-                              ? "Remove End Date"
-                              : "Add End Date"}
-                          </Button>
 
                           {/* End Date Picker (Conditional) */}
                           {showEditEndDate && (
@@ -742,7 +721,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
-                                className="w-auto p-0"
+                                className="w-auto p-0 z-[110]"
                                 align="start"
                               >
                                 <Calendar
@@ -764,8 +743,28 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           {formatDateDisplay(formData.eventDate)}
                         </span>
                       )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
+                        onClick={() => {
+                          if (showEditEndDate) {
+                            setEditEndDate(undefined);
+                          }
+                          setShowEditEndDate(!showEditEndDate);
+                        }}
+                      >
+                        {showEditEndDate ? (
+                          <XIcon className="h-4 w-4 mr-1" />
+                        ) : (
+                          <CalendarIcon className="h-4 w-4 mr-1" />
+                        )}
+                        {showEditEndDate ? "Remove End Date" : "Add End Date"}
+                      </Button>
                     </p>
                   </div>
+
                   {/* Photographer - Changed label color and link color */}
                   <div className="">
                     <p className="flex items-center">
@@ -887,32 +886,35 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                 {isAdmin && (
                   <div className="mt-6 flex items-center gap-3">
                     {!isEditing ? (
-                      <button onClick={handleEditClick} className="edit-btn">
+                      <Button onClick={handleEditClick} size="sm">
                         Edit Details
-                      </button>
+                      </Button>
                     ) : (
                       <>
-                        <button
+                        <Button
                           onClick={handleSaveClick}
                           disabled={isSaving || isDeleting}
-                          className="save-btn"
+                          size="sm"
+                          variant="default"
                         >
                           {isSaving ? "Saving..." : "Save Changes"}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={handleCancelClick}
                           disabled={isSaving || isDeleting}
-                          className="cancel-btn"
+                          size="sm"
+                          variant="secondary"
                         >
                           Cancel
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={handleDeleteClick}
                           disabled={isSaving || isDeleting}
-                          className="delete-btn"
+                          size="sm"
+                          variant="destructive"
                         >
                           Delete Image
-                        </button>
+                        </Button>
                       </>
                     )}
                   </div>
@@ -980,38 +982,5 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     </motion.div>
   );
 };
-
-// Add some basic reusable styles (adjust as needed)
-const InputFieldStyles =
-  "bg-neutral-700/60 border border-neutral-500 rounded px-3 py-1.5 text-sm md:text-base w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none placeholder-neutral-500 disabled:opacity-60 transition-colors duration-150";
-const BaseButtonStyles =
-  "px-4 py-1.5 text-xs font-medium rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black/50 disabled:opacity-60 transition-all duration-150 ease-in-out";
-const EditButtonStyles = `${BaseButtonStyles} bg-blue-600 hover:bg-blue-500 text-white focus:ring-blue-500`;
-const SaveButtonStyles = `${BaseButtonStyles} bg-green-600 hover:bg-green-500 text-white focus:ring-green-500`;
-const CancelButtonStyles = `${BaseButtonStyles} bg-neutral-600 hover:bg-neutral-500 text-neutral-100 focus:ring-neutral-500`;
-const DeleteButtonStyles = `${BaseButtonStyles} bg-red-700 hover:bg-red-600 text-white focus:ring-red-600`;
-
-// Helper component or apply styles directly
-// You might want to extract styles to a CSS module
-const applyStyles = () => {
-  if (typeof window !== "undefined") {
-    const styleId = "image-detail-modal-styles";
-    // Prevent adding styles multiple times if component re-renders
-    if (document.getElementById(styleId)) return;
-
-    const styleSheet = document.createElement("style");
-    styleSheet.id = styleId;
-    styleSheet.type = "text/css";
-    styleSheet.innerText = `
-          .input-field { @apply ${InputFieldStyles}; }
-          .edit-btn { @apply ${EditButtonStyles}; }
-          .save-btn { @apply ${SaveButtonStyles}; }
-          .cancel-btn { @apply ${CancelButtonStyles}; }
-          .delete-btn { @apply ${DeleteButtonStyles}; }
-      `;
-    document.head.appendChild(styleSheet);
-  }
-};
-applyStyles(); // Apply styles on module load
 
 export default ImageDetailModal;

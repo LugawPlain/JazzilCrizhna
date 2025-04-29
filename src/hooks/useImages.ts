@@ -13,7 +13,10 @@ export interface ImageData {
   photographer: string;
   photographerLink: string;
   location: string;
+  locationLink: string;
   event: string;
+  eventLink: string;
+  advertising: string;
   advertisingLink?: string | null;
   id?: string; // Database ID
   r2FileKey?: string; // R2 object key
@@ -107,13 +110,16 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
           photographer: item.photographer || "Unknown",
           photographerLink: item.photographerLink || "#",
           location: item.location || "Unknown",
+          locationLink: item.locationLink || "#",
           event: item.event || "Unknown",
+          eventLink: item.eventLink || "#",
           id: item.id,
           r2FileKey: item.r2FileKey,
           originalFilename: item.originalFilename,
           uploadedAt: item.uploadedAt,
           contentType: item.contentType,
           category: item.category,
+          advertising: item.advertising || "",
           advertisingLink: item.advertisingLink || null,
         }));
 
