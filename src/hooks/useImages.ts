@@ -68,7 +68,7 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
       try {
         const timestamp = Date.now(); // Cache busting
         const response = await fetch(
-          `/api/fetchimages?category=${encodeURIComponent(
+          `/api/fetchcategoryimages?category=${encodeURIComponent(
             category
           )}&t=${timestamp}`,
           { signal }
