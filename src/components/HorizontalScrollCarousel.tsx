@@ -1,6 +1,6 @@
 "use client"; // Ensure this is a client component
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 // REMOVED: import { categories, CategoryData } from "../app/portfolio/CategoryData";
 import { ProjectCard } from "./ProjectCard";
@@ -23,6 +23,8 @@ export const HorizontalScrollCarousel = () => {
   const [projectImages, setProjectImages] = useState<ProjectCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Ref to track if the listener is currently attached
+  const listenerAttachedRef = useRef(false);
 
   // Fetch data on component mount from the correct endpoint
   useEffect(() => {
@@ -69,20 +71,54 @@ export const HorizontalScrollCarousel = () => {
     fetchProjectImages();
   }, []); // Empty dependency array ensures this runs only once on mount
 
-  // Horizontal scroll wheel effect (no changes needed)
+  // Define the wheel handler using useCallback to keep its reference stable
+  const handleWheel = useCallback((e: WheelEvent) => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      // Prevent default vertical page scroll ONLY when handling the event here
+      e.preventDefault();
+      container.scrollLeft += e.deltaY;
+    }
+  }, []); // No dependencies needed as it only uses the ref
+
+  // Attach listener on mouse enter
+  const handleMouseEnter = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container && !listenerAttachedRef.current) {
+      console.log("[HorizontalScrollCarousel] Attaching wheel listener.");
+      container.addEventListener("wheel", handleWheel, { passive: false });
+      listenerAttachedRef.current = true;
+    }
+  }, [handleWheel]); // Depends on handleWheel's stable reference
+
+  // Detach listener on mouse leave
+  const handleMouseLeave = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container && listenerAttachedRef.current) {
+      console.log("[HorizontalScrollCarousel] Removing wheel listener.");
+      container.removeEventListener("wheel", handleWheel);
+      listenerAttachedRef.current = false;
+    }
+  }, [handleWheel]); // Depends on handleWheel's stable reference
+
+  // Effect for cleanup on unmount
   useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    const handleWheel = (e: WheelEvent) => {
-      if (scrollContainer) {
-        e.preventDefault();
-        scrollContainer.scrollLeft += e.deltaY;
+    // Store the current ref value and the handler in variables
+    // that the cleanup function can close over.
+    const container = scrollContainerRef.current;
+    const currentHandleWheel = handleWheel;
+    const listenerAttached = listenerAttachedRef.current;
+
+    return () => {
+      if (listenerAttached && container) {
+        console.log(
+          "[HorizontalScrollCarousel] Cleaning up wheel listener on unmount."
+        );
+        container.removeEventListener("wheel", currentHandleWheel);
+        // No need to set listenerAttachedRef.current = false here, component is gone
       }
     };
-    scrollContainer?.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      scrollContainer?.removeEventListener("wheel", handleWheel);
-    };
-  }, []);
+  }, [handleWheel]); // Rerun if handleWheel changes (it shouldn't due to useCallback)
 
   // Render Loading State
   if (loading) {
@@ -119,6 +155,9 @@ export const HorizontalScrollCarousel = () => {
       <div
         ref={scrollContainerRef}
         className="flex flex-row gap-8 p-10 max-w-screen overflow-auto scrollbar-thin scrollbar-track-red-500 md:scrollbar-thumb-red-500 md:scrollbar-track-black md:hover:scrollbar-thumb-amber-500 snap-x snap-mandatory md:snap-none"
+        // Add mouse event handlers
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Map over the fetched projectImages state */}
         {projectImages.map((project) => (

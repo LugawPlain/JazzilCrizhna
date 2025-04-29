@@ -10,10 +10,14 @@ interface UpdateDetailsRequestBody {
   category?: string; // Expecting category to find collection
   updates: {
     event?: string;
+    eventLink?: string;
     location?: string;
+    locationLink?: string;
     eventDate?: string; // Changed from date to eventDate
     photographer?: string;
     photographerLink?: string;
+    advertising?: string;
+    advertisingLink?: string;
   };
 }
 

@@ -2,6 +2,16 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, X as XIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Define the same ImageData interface or import it
 interface ImageData {
@@ -12,7 +22,10 @@ interface ImageData {
   photographer: string;
   photographerLink: string;
   location: string;
+  locationLink: string;
   event: string;
+  eventLink: string;
+  advertising: string;
   advertisingLink?: string | null;
   id?: string;
   r2FileKey?: string;
@@ -34,10 +47,13 @@ interface ImageDetailModalProps {
 type EditableImageData = Pick<
   ImageData,
   | "event"
+  | "eventLink"
   | "location"
+  | "locationLink"
   | "eventDate"
   | "photographer"
   | "photographerLink"
+  | "advertising"
   | "advertisingLink"
 >;
 
@@ -65,9 +81,12 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const [formData, setFormData] = useState<EditableImageData>({
     event: image.event,
     location: image.location,
-    eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
+    locationLink: image.locationLink,
+    eventDate: image.eventDate || "",
+    eventLink: image.eventLink,
     photographer: image.photographer,
     photographerLink: image.photographerLink,
+    advertising: image.advertising,
     advertisingLink: image.advertisingLink || "",
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -76,18 +95,30 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(true);
 
+  // State for date pickers in edit mode
+  const [editStartDate, setEditStartDate] = useState<Date | undefined>();
+  const [editEndDate, setEditEndDate] = useState<Date | undefined>();
+  const [showEditEndDate, setShowEditEndDate] = useState(false);
+
   // Reset form data if the image prop changes (e.g., navigating with next/prev)
   useEffect(() => {
     setFormData({
       event: image.event,
       location: image.location,
-      eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
+      locationLink: image.locationLink,
+      eventLink: image.eventLink,
+      eventDate: image.eventDate || "", // Fall back to date for compatibility
       photographer: image.photographer,
       photographerLink: image.photographerLink,
+      advertising: image.advertising,
       advertisingLink: image.advertisingLink || "",
     });
     setIsEditing(false); // Exit edit mode when image changes
     setError(null); // Clear errors
+    // Also reset date picker states (redundant due to useEffect, but good practice)
+    setEditStartDate(undefined);
+    setEditEndDate(undefined);
+    setShowEditEndDate(false);
   }, [image]);
 
   // Prevent background scrolling and layout shift
@@ -122,6 +153,34 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
   const handleEditClick = () => {
     setIsEditing(true);
     setError(null);
+    // Parse existing eventDate to populate date pickers
+    const currentDate = formData.eventDate || image.date || "";
+    if (currentDate.includes(" - ")) {
+      const parts = currentDate.split(" - ");
+      const start = new Date(parts[0].trim());
+      const end = new Date(parts[1].trim());
+      if (!isNaN(start.getTime())) {
+        setEditStartDate(start);
+      }
+      if (!isNaN(end.getTime())) {
+        setEditEndDate(end);
+        setShowEditEndDate(true);
+      } else {
+        setShowEditEndDate(false); // Hide if end date is invalid
+      }
+    } else if (currentDate) {
+      const start = new Date(currentDate.trim());
+      if (!isNaN(start.getTime())) {
+        setEditStartDate(start);
+      }
+      setEditEndDate(undefined);
+      setShowEditEndDate(false);
+    } else {
+      // No date initially, clear pickers
+      setEditStartDate(undefined);
+      setEditEndDate(undefined);
+      setShowEditEndDate(false);
+    }
   };
 
   const handleCancelClick = () => {
@@ -131,11 +190,18 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
     setFormData({
       event: image.event,
       location: image.location,
+      locationLink: image.locationLink,
       eventDate: image.eventDate || image.date || "", // Fall back to date for compatibility
+      eventLink: image.eventLink,
       photographer: image.photographer,
       photographerLink: image.photographerLink,
+      advertising: image.advertising,
       advertisingLink: image.advertisingLink || "",
     });
+    // Also reset date picker states (redundant due to useEffect, but good practice)
+    setEditStartDate(undefined);
+    setEditEndDate(undefined);
+    setShowEditEndDate(false);
   };
 
   const handleSaveClick = async () => {
@@ -148,29 +214,19 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       return;
     }
 
-    try {
-      // Basic date range validation
-      if (formData.eventDate && formData.eventDate.includes("-")) {
-        const dateParts = formData.eventDate
-          .split("-")
-          .map((part: string) => part.trim());
-        if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
-          setError("Date range format should be 'start - end'");
-          setIsSaving(false);
-          return;
-        }
-
-        // Optional: Add more validation for date formats here if needed
-        // For example, check if both parts are valid dates
-        const startDate = new Date(dateParts[0]);
-        const endDate = new Date(dateParts[1]);
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          setError("Invalid date format in range");
-          setIsSaving(false);
-          return;
-        }
+    // --- START: Format date from pickers into string ---
+    let formattedDateString = "";
+    if (editStartDate) {
+      formattedDateString = format(editStartDate, "M/d/yyyy");
+      if (showEditEndDate && editEndDate) {
+        formattedDateString += ` - ${format(editEndDate, "M/d/yyyy")}`;
       }
+    }
+    // Update formData right before sending
+    const dataToSend = { ...formData, eventDate: formattedDateString };
+    // --- END: Format date from pickers into string ---
 
+    try {
       // API call to update image details
       const response = await fetch("/api/admin/updateimagedetails", {
         method: "POST", // Or PUT
@@ -178,7 +234,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         body: JSON.stringify({
           identifier: imageId,
           category: image.category, // Pass category for finding collection
-          updates: formData, // Send the changed form data
+          updates: dataToSend, // Send the data with the formatted date
         }),
       });
 
@@ -193,7 +249,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
       // Call the callback to update parent state
       onDetailsUpdated({
-        ...formData,
+        ...dataToSend,
         id: image.id,
         r2FileKey: image.r2FileKey,
       });
@@ -206,30 +262,36 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         category: image.category,
         changes: {
           event:
-            formData.event !== image.event
-              ? { from: image.event, to: formData.event }
+            dataToSend.event !== image.event
+              ? { from: image.event, to: dataToSend.event }
               : "unchanged",
           location:
-            formData.location !== image.location
-              ? { from: image.location, to: formData.location }
+            dataToSend.location !== image.location
+              ? { from: image.location, to: dataToSend.location }
               : "unchanged",
           eventDate:
-            formData.eventDate !== (image.eventDate || image.date)
-              ? { from: image.eventDate || image.date, to: formData.eventDate }
+            dataToSend.eventDate !== (image.eventDate || image.date)
+              ? {
+                  from: image.eventDate || image.date,
+                  to: dataToSend.eventDate,
+                }
               : "unchanged",
           photographer:
-            formData.photographer !== image.photographer
-              ? { from: image.photographer, to: formData.photographer }
+            dataToSend.photographer !== image.photographer
+              ? { from: image.photographer, to: dataToSend.photographer }
               : "unchanged",
           photographerLink:
-            formData.photographerLink !== image.photographerLink
-              ? { from: image.photographerLink, to: formData.photographerLink }
+            dataToSend.photographerLink !== image.photographerLink
+              ? {
+                  from: image.photographerLink,
+                  to: dataToSend.photographerLink,
+                }
               : "unchanged",
           advertisingLink:
-            formData.advertisingLink !== (image.advertisingLink || "")
+            dataToSend.advertisingLink !== (image.advertisingLink || "")
               ? {
                   from: image.advertisingLink || "",
-                  to: formData.advertisingLink,
+                  to: dataToSend.advertisingLink,
                 }
               : "unchanged",
         },
@@ -493,8 +555,41 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   />
                 ) : (
                   <h2 className="text-xl md:text-3xl font-semibold mb-4 drop-shadow-lg">
-                    {formData.event}
+                    {formData.eventLink && formData.eventLink !== "#" ? (
+                      <Link
+                        href={formData.eventLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                        onClick={(e) => e.stopPropagation()} // Prevent modal close
+                      >
+                        {formData.event}
+                      </Link>
+                    ) : (
+                      formData.event // Display text if no link
+                    )}
                   </h2>
+                )}
+
+                {/* Event Link Input (Edit Mode) */}
+                {isEditing && (
+                  <div className="mb-2">
+                    {" "}
+                    {/* Add some margin below */}
+                    <p className="flex items-center">
+                      <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        Event URL:
+                      </strong>
+                      <input
+                        type="url"
+                        name="eventLink"
+                        value={formData.eventLink || ""} // Ensure value is controlled
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="https://... (Event link)"
+                      />
+                    </p>
+                  </div>
                 )}
 
                 {/* Increased spacing between detail rows */}
@@ -516,11 +611,42 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                         />
                       ) : (
                         <span className="text-neutral-100">
-                          {formData.location}
+                          {formData.locationLink &&
+                          formData.locationLink !== "#" ? (
+                            <Link
+                              href={formData.locationLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                              onClick={(e) => e.stopPropagation()} // Prevent modal close
+                            >
+                              {formData.location}
+                            </Link>
+                          ) : (
+                            formData.location // Display text if no link
+                          )}
                         </span>
                       )}
                     </p>
                   </div>
+                  {/* Location Link Input (Edit Mode) */}
+                  {isEditing && (
+                    <div className="">
+                      <p className="flex items-center">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                          Location URL:
+                        </strong>
+                        <input
+                          type="url"
+                          name="locationLink"
+                          value={formData.locationLink || ""} // Ensure value is controlled
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="https://... (Location link)"
+                        />
+                      </p>
+                    </div>
+                  )}
                   {/* Date - Changed label color */}
                   <div className="">
                     <p className="flex items-center">
@@ -528,15 +654,112 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                         Date:
                       </strong>
                       {isEditing ? (
-                        <input
-                          type="text"
-                          name="eventDate"
-                          value={formData.eventDate}
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="M/D/YYYY or M/D/YYYY - M/D/YYYY"
-                        />
+                        // --- START: Date Picker Replacement ---
+                        <div className="flex flex-col sm:flex-row gap-2 items-start w-full">
+                          {/* Start Date Picker */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full justify-start text-left font-normal h-auto py-1.5 px-3 text-sm md:text-base bg-neutral-700/60 border-neutral-500 hover:bg-neutral-700 hover:text-white",
+                                  !editStartDate && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {editStartDate ? (
+                                  format(editStartDate, "P")
+                                ) : (
+                                  <span>Pick a start date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={editStartDate}
+                                onSelect={(date) => {
+                                  setEditStartDate(date);
+                                  // Ensure end date is not before start date
+                                  if (
+                                    editEndDate &&
+                                    date &&
+                                    date > editEndDate
+                                  ) {
+                                    setEditEndDate(undefined);
+                                    setShowEditEndDate(false); // Optionally hide end date if start goes past it
+                                  }
+                                }}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+
+                          {/* Add/Remove End Date Button */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
+                            onClick={() => {
+                              if (showEditEndDate) {
+                                setEditEndDate(undefined);
+                              }
+                              setShowEditEndDate(!showEditEndDate);
+                            }}
+                          >
+                            {showEditEndDate ? (
+                              <XIcon className="h-4 w-4 mr-1" />
+                            ) : (
+                              <CalendarIcon className="h-4 w-4 mr-1" />
+                            )}
+                            {showEditEndDate
+                              ? "Remove End Date"
+                              : "Add End Date"}
+                          </Button>
+
+                          {/* End Date Picker (Conditional) */}
+                          {showEditEndDate && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal h-auto py-1.5 px-3 text-sm md:text-base bg-neutral-700/60 border-neutral-500 hover:bg-neutral-700 hover:text-white",
+                                    !editEndDate && "text-muted-foreground"
+                                  )}
+                                  disabled={!editStartDate}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {editEndDate ? (
+                                    format(editEndDate, "P")
+                                  ) : (
+                                    <span>Pick an end date</span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-auto p-0"
+                                align="start"
+                              >
+                                <Calendar
+                                  mode="single"
+                                  selected={editEndDate}
+                                  onSelect={setEditEndDate}
+                                  disabled={(date) =>
+                                    editStartDate ? date < editStartDate : false
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
                       ) : (
+                        // --- END: Date Picker Replacement ---
                         <span className="text-neutral-100">
                           {formatDateDisplay(formData.eventDate)}
                         </span>
@@ -590,6 +813,35 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           onChange={handleInputChange}
                           className="input-field w-full"
                           placeholder="https://..."
+                        />
+                      </p>
+                    </div>
+                  )}
+                  {/* Advertising Display */}
+                  {!isEditing && formData.advertising && (
+                    <p className="flex items-center">
+                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        Advertising:
+                      </strong>
+                      <span className="text-neutral-100">
+                        {formData.advertising}
+                      </span>
+                    </p>
+                  )}
+                  {/* Advertising Input (Edit Mode) */}
+                  {isEditing && (
+                    <div className="">
+                      <p className="flex items-center">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                          Advertising:
+                        </strong>
+                        <input
+                          type="text"
+                          name="advertising"
+                          value={formData.advertising || ""}
+                          onChange={handleInputChange}
+                          className="input-field w-full"
+                          placeholder="Advertising Info"
                         />
                       </p>
                     </div>

@@ -743,7 +743,7 @@ function UploadForm() {
               id="advertisingLink"
               value={globalAdvertisingLink}
               onChange={(e) => setGlobalAdvertisingLink(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pointer"
               placeholder="Link for related advertisement (if any)"
             />
           </div>

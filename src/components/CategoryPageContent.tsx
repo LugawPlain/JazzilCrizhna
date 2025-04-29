@@ -23,7 +23,7 @@ const categoryDescriptions: { [key: string]: string } = {
     "(Fashion Styling, Brand Campaigns, S treetwear Modeling, Designer Showcases)",
   muse: "(Sports League Muse)",
   photoshoot: "(Portraits, Studio Shoots, Outdoor Shoots, Creative Concepts)",
-  cosplay: "", // Add description if available, otherwise leave blank or handle default
+  cosplay: "(Character Modeling, Costume Design, Cosplay Competition)", // Add description if available, otherwise leave blank or handle default
   // Add other categories and their descriptions here
 };
 // const categoryMetaData: {} = {
