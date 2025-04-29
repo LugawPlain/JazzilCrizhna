@@ -113,12 +113,33 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
       advertising: image.advertising,
       advertisingLink: image.advertisingLink || "",
     });
-    setIsEditing(false); // Exit edit mode when image changes
     setError(null); // Clear errors
-    // Also reset date picker states (redundant due to useEffect, but good practice)
-    setEditStartDate(undefined);
-    setEditEndDate(undefined);
-    setShowEditEndDate(false);
+    // Also reset date picker states if image changes WHILE editing
+    // This ensures the date picker reflects the *new* image's date
+    // Parse existing eventDate to populate date pickers
+    const currentDate = image.eventDate || image.date || ""; // Use new image data directly
+    if (currentDate.includes(" - ")) {
+      const parts = currentDate.split(" - ");
+      const start = new Date(parts[0].trim());
+      const end = new Date(parts[1].trim());
+      setEditStartDate(!isNaN(start.getTime()) ? start : undefined);
+      if (!isNaN(end.getTime())) {
+        setEditEndDate(end);
+        setShowEditEndDate(true);
+      } else {
+        setEditEndDate(undefined);
+        setShowEditEndDate(false);
+      }
+    } else if (currentDate) {
+      const start = new Date(currentDate.trim());
+      setEditStartDate(!isNaN(start.getTime()) ? start : undefined);
+      setEditEndDate(undefined);
+      setShowEditEndDate(false);
+    } else {
+      setEditStartDate(undefined);
+      setEditEndDate(undefined);
+      setShowEditEndDate(false);
+    }
   }, [image]);
 
   // Prevent background scrolling and layout shift
@@ -577,7 +598,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                     {" "}
                     {/* Add some margin below */}
                     <p className="flex items-center">
-                      <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                      <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Event URL:
                       </strong>
                       <input
@@ -597,7 +618,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {/* Location - Changed label color */}
                   <div className="">
                     <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Location:
                       </strong>
                       {isEditing ? (
@@ -633,7 +654,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {isEditing && (
                     <div className="">
                       <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
                           Location URL:
                         </strong>
                         <input
@@ -650,7 +671,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {/* Date - Changed label color */}
                   <div className="">
                     <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Date:
                       </strong>
                       {isEditing ? (
@@ -743,32 +764,35 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           {formatDateDisplay(formData.eventDate)}
                         </span>
                       )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
-                        onClick={() => {
-                          if (showEditEndDate) {
-                            setEditEndDate(undefined);
-                          }
-                          setShowEditEndDate(!showEditEndDate);
-                        }}
-                      >
-                        {showEditEndDate ? (
-                          <XIcon className="h-4 w-4 mr-1" />
-                        ) : (
-                          <CalendarIcon className="h-4 w-4 mr-1" />
-                        )}
-                        {showEditEndDate ? "Remove End Date" : "Add End Date"}
-                      </Button>
+                      {/* Conditionally render the button only when editing */}
+                      {isEditing && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
+                          onClick={() => {
+                            if (showEditEndDate) {
+                              setEditEndDate(undefined);
+                            }
+                            setShowEditEndDate(!showEditEndDate);
+                          }}
+                        >
+                          {showEditEndDate ? (
+                            <XIcon className="h-4 w-4 mr-1" />
+                          ) : (
+                            <CalendarIcon className="h-4 w-4 mr-1" />
+                          )}
+                          {showEditEndDate ? "Remove End Date" : "Add End Date"}
+                        </Button>
+                      )}
                     </p>
                   </div>
 
                   {/* Photographer - Changed label color and link color */}
                   <div className="">
                     <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Photographer: 📸
                       </strong>
                       {isEditing ? (
@@ -819,7 +843,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {/* Advertising Display */}
                   {!isEditing && formData.advertising && (
                     <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Advertising:
                       </strong>
                       <span className="text-neutral-100">
@@ -831,7 +855,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {isEditing && (
                     <div className="">
                       <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
                           Advertising:
                         </strong>
                         <input
@@ -848,7 +872,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {/* Advertising Link Display */}
                   {formData.advertisingLink && !isEditing && (
                     <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-32 flex-shrink-0">
+                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Ad Link:
                       </strong>
                       <Link
@@ -866,7 +890,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   {isEditing && (
                     <div className="">
                       <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-32 flex-shrink-0">
+                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
                           Ad Link:
                         </strong>
                         <input
