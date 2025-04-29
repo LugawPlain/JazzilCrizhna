@@ -12,9 +12,13 @@ interface ImageData {
   photographerLink?: string | null;
   eventDate?: string | null;
   location?: string | null;
+  locationLink?: string | null;
   event?: string | null;
+  eventLink?: string | null;
   category?: string;
   uploadedAt?: string | null;
+  isProjectImage?: boolean;
+  advertising?: string | null;
   advertisingLink?: string | null;
   [key: string]: unknown; // Changed any to unknown
 }
@@ -122,22 +126,22 @@ export async function GET(request: NextRequest) {
   }
 
   // Sanitize category to create collection name (same logic as upload)
-  const collectionName = `${category
-    .toLowerCase()
-    .replace(/\s+/g, "_")}_uploads`;
+  const collectionName = "portfolio_uploads";
   console.log(
-    `[/api/getimages] Fetching data for category: ${category} from collection: ${collectionName}`
+    `[/api/getimages] Fetching data for category: ${category} from MAIN collection: ${collectionName}`
   );
 
   try {
     // Fetch all documents first, sorted by upload date
-    const querySnapshot = await db
+    const query = db
       .collection(collectionName)
-      .orderBy("uploadedAt", "desc")
-      .get();
+      .where("category", "==", category)
+      .orderBy("uploadedAt", "desc");
+
+    const querySnapshot = await query.get();
 
     console.log(
-      `[/api/getimages] Successfully retrieved ${querySnapshot.docs.length} documents from Firestore`
+      `[/api/getimages] Successfully retrieved ${querySnapshot.docs.length} documents from Firestore for category '${category}'`
     );
 
     const imagesData = querySnapshot.docs.map((doc, index) => {
@@ -180,7 +184,9 @@ export async function GET(request: NextRequest) {
         index % 5 === 0
       ) {
         console.log(
-          `[/api/getimages] Image ${index + 1}/${querySnapshot.docs.length}:`,
+          `[/api/getimages] Image ${index + 1}/${
+            querySnapshot.docs.length
+          } (Category: ${category}):`,
           {
             id: imageData.id,
             r2FileKey: imageData.r2FileKey,
@@ -190,6 +196,7 @@ export async function GET(request: NextRequest) {
             contentType: imageData.contentType,
             uploadedAt: imageData.uploadedAt,
             advertisingLink: imageData.advertisingLink,
+            isProjectImage: imageData.isProjectImage,
           }
         );
       }
@@ -214,15 +221,18 @@ export async function GET(request: NextRequest) {
 
     // Log how sorting affected the order
     console.log(
-      `[/api/getimages] Images sorted by start date (for date ranges). Original order changed: ${
-        JSON.stringify(imagesData.slice(0, 3).map((img) => img.id)) !==
-        JSON.stringify(sortedImagesData.slice(0, 3).map((img) => img.id))
+      `[/api/getimages] Images sorted by start date. Order changed check: ${
+        imagesData.length > 0 &&
+        sortedImagesData.length > 0 &&
+        imagesData[0].id !== sortedImagesData[0].id
       }`
     );
 
     // Log statistics about fetched images
     const imageStats = {
       total: sortedImagesData.length,
+      projectImages: sortedImagesData.filter((img) => img.isProjectImage)
+        .length,
       withEventDate: sortedImagesData.filter((img) => img.eventDate).length,
       withDateRange: sortedImagesData.filter((img) =>
         img.eventDate?.includes(" - ")
@@ -265,11 +275,11 @@ export async function GET(request: NextRequest) {
     // Type guard for error message
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
-      `[/api/getimages] Error fetching images for ${category}:`,
-      error // Log original error object
+      `[/api/getimages] Error fetching images for ${category} from ${collectionName}:`,
+      error
     );
     return NextResponse.json(
-      { error: "Failed to fetch images.", details: errorMessage }, // Use safe message
+      { error: "Failed to fetch images.", details: errorMessage },
       { status: 500 }
     );
   }

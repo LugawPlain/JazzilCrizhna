@@ -1,43 +1,157 @@
-import { useEffect, useRef } from "react";
+"use client"; // Ensure this is a client component
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { categories, CategoryData } from "../app/portfolio/CategoryData";
+// REMOVED: import { categories, CategoryData } from "../app/portfolio/CategoryData";
 import { ProjectCard } from "./ProjectCard";
+
+// Define the structure fetched from /api/fetch-project-images
+// This aligns with ProjectCardData from the API route
+interface ProjectCardData {
+  category: string;
+  imageSrc: string;
+  title?: string;
+  link?: string;
+  photographer?: string | null;
+  photographerLink?: string | null;
+}
 
 export const HorizontalScrollCarousel = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // State for fetched data, loading, and errors
+  // Use the corrected interface name
+  const [projectImages, setProjectImages] = useState<ProjectCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch data on component mount from the correct endpoint
+  useEffect(() => {
+    const fetchProjectImages = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log(
+          "[HorizontalScrollCarousel] Fetching project images from /api/fetch-project-images..."
+        );
+        // Ensure we call the correct endpoint
+        const response = await fetch("/api/fetch-project-images"); // Correct endpoint
+        if (!response.ok) {
+          throw new Error(
+            `API Error: ${response.status} ${response.statusText}`
+          );
+        }
+        const data = await response.json();
+        if (!data || !Array.isArray(data.projectImages)) {
+          console.error(
+            "[HorizontalScrollCarousel] Invalid data format received:",
+            data
+          );
+          throw new Error("Invalid data format received from API.");
+        }
+        console.log(
+          `[HorizontalScrollCarousel] Received ${data.projectImages.length} project images.`
+        );
+        // Set the state with the data matching ProjectCardData
+        setProjectImages(data.projectImages);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load project images.";
+        setError(message);
+        console.error(
+          "[HorizontalScrollCarousel] Error fetching project images:",
+          err
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectImages();
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // Horizontal scroll wheel effect (no changes needed)
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
-
     const handleWheel = (e: WheelEvent) => {
       if (scrollContainer) {
         e.preventDefault();
         scrollContainer.scrollLeft += e.deltaY;
       }
     };
-
     scrollContainer?.addEventListener("wheel", handleWheel, { passive: false });
-
     return () => {
       scrollContainer?.removeEventListener("wheel", handleWheel);
     };
   }, []);
 
+  // Render Loading State
+  if (loading) {
+    return (
+      <div className="relative bg-neutral-900 p-10 text-center text-neutral-400 min-h-[200px] flex items-center justify-center">
+        Loading projects...
+      </div>
+    );
+  }
+
+  // Render Error State
+  if (error) {
+    return (
+      <div className="relative bg-neutral-900 p-10 text-center text-red-500 min-h-[200px] flex items-center justify-center">
+        Error loading projects: {error}
+      </div>
+    );
+  }
+
+  // Render No Projects Found State
+  if (projectImages.length === 0) {
+    return (
+      <div className="relative bg-neutral-900 p-10 text-center text-neutral-500 min-h-[200px] flex items-center justify-center">
+        No project cover images found.
+      </div>
+    );
+  }
+
+  // Render Carousel with Fetched Data
   return (
-    <div
-      ref={scrollContainerRef}
-      className="flex flex-row gap-8 p-10  max-w-screen overflow-auto scrollbar-thin scrollbar-track-red-500 md:scrollbar-thumb-red-500  md:scrollbar-track-black md:hover:scrollbar-thumb-amber-500 snap-x snap-mandatory md:snap-none"
-    >
-      {categories.map((project: CategoryData) => (
-        <div
-          key={project.category}
-          className="snap-center md:snap-align-none min-h-4/5"
-        >
-          <Link href={`/portfolio/${project.category.toLowerCase()}`}>
-            <ProjectCard project={project} />
-          </Link>
-        </div>
-      ))}
+    <div className="relative bg-neutral-900">
+      {" "}
+      {/* Keep outer container if needed */}
+      <div
+        ref={scrollContainerRef}
+        className="flex flex-row gap-8 p-10 max-w-screen overflow-auto scrollbar-thin scrollbar-track-red-500 md:scrollbar-thumb-red-500 md:scrollbar-track-black md:hover:scrollbar-thumb-amber-500 snap-x snap-mandatory md:snap-none"
+      >
+        {/* Map over the fetched projectImages state */}
+        {projectImages.map((project) => (
+          <div
+            key={project.category} // Use category as key
+            className="snap-center md:snap-align-none min-h-4/5"
+          >
+            {/* Use the link generated by the API or default */}
+            <Link
+              href={
+                project.link || `/portfolio/${project.category.toLowerCase()}`
+              }
+            >
+              {/* Map fetched data to the props expected by ProjectCard */}
+              <ProjectCard
+                project={{
+                  // Fields likely expected by ProjectCard based on old CategoryData/linter error:
+                  category: project.category,
+                  title: project.title || project.category, // Use title or fallback to category
+                  image: project.imageSrc, // Map imageSrc from API to 'image' prop
+                  link:
+                    project.link ||
+                    `/portfolio/${project.category.toLowerCase()}`, // Map link from API to 'link' prop
+                  // Provide fallback empty string for potentially null/undefined values
+                  photographer: project.photographer || "",
+                  photographerlink: project.photographerLink || "", // Map photographerLink to 'photographerlink' (lowercase L)
+                  // Add any other required fields from the original CategoryData if needed
+                }}
+              />
+            </Link>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
