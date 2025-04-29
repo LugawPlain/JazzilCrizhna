@@ -44,11 +44,14 @@ function isValidEventDateFormat(dateStr: string): boolean {
 
 interface FileSpecificMetadata {
   photographer: string | null;
-  photographerLink: string | null;
+  photographerLink?: string | null;
   eventDate: string | null;
   location: string | null;
+  locationLink?: string | null;
   event: string | null;
-  advertisingLink: string | null;
+  eventLink?: string | null;
+  advertising?: string | null;
+  advertisingLink?: string | null;
   originalFilename: string;
 }
 
@@ -218,8 +221,6 @@ export async function POST(request: NextRequest) {
               `[/api/uploadimages] Metadata not found for file: ${currentFileName}.`
             );
             errors.push(`Metadata missing for ${currentFileName}`);
-            // Continue or error out based on requirements
-            // continue;
           }
           console.log(
             `[/api/uploadimages] Found metadata for ${currentFileName}:`,

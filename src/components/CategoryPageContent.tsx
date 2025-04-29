@@ -13,6 +13,83 @@ interface CategoryPageContentProps {
   category: string;
 }
 
+// Define category descriptions
+const categoryDescriptions: { [key: string]: string } = {
+  pageant: "(Sagala, Runway, Guest Judge)",
+  modeling: "(Booth Model, Editorial, Commercial)",
+  advertising:
+    "(Product Promotion, Service Marketing, Location Shoots, Event Coverage)",
+  clothing:
+    "(Fashion Styling, Brand Campaigns, S treetwear Modeling, Designer Showcases)",
+  muse: "(Sports League Muse)",
+  photoshoot: "(Portraits, Studio Shoots, Outdoor Shoots, Creative Concepts)",
+  cosplay: "", // Add description if available, otherwise leave blank or handle default
+  // Add other categories and their descriptions here
+};
+// const categoryMetaData: {} = {
+//   pageant: {
+// event:string
+// eventLink:string,
+// date:string
+// location:string,
+// locationLink:string,
+// photographer:string,
+// photographerLink:string,
+//   }
+//   modeling: {
+//     event:string
+// eventLink:string,
+// date:string
+// location:string,
+// locationLink:string,
+// photographer:string,
+// photographerLink:string,
+//   }
+//   advertising:
+// {
+//   advertising:string
+//   advertisingLink:string
+//   date:string
+//   location:string,
+//   locationLink:string,
+//   photographer:string,
+//   photographerLink:string,
+// }
+//   clothing:
+// {
+//   advertising:string
+//   advertisingLink:string
+// date:string
+// location:string,
+// locationLink:string,
+// photographer:string,
+// photographerLink:string,
+//   }
+//   muse: {
+//     event:string
+// eventLink:string,
+// date:string
+// location:string,
+// locationLink:string,
+// photographer:string,
+// photographerLink:string,
+//   }
+//   photoshoot: {
+// date:string
+// location:string,
+// locationLink:string,
+// photographer:string,
+// photographerLink:string,
+//   }
+//   cosplay: {
+//     Cosplay:string
+//     date:string
+// location:string,
+// locationLink:string,
+// photographer:string,
+// photographerLink:string,
+//   },
+// };
 const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
   category: rawCategory,
 }) => {
@@ -286,19 +363,36 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       console.log(
         `Admin wants to set image ${image.r2FileKey} for category ${category}`
       );
-      // TODO: Implement API call to /api/admin/set-project-image
       // Show loading/feedback
       try {
-        // Example: const response = await fetch('/api/admin/set-project-image', { ... });
-        // Handle response
+        const response = await fetch("/api/admin/set-project-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: image,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            result.details || result.error || `API Error: ${response.status}`
+          );
+        }
+
+        console.log("Set project image successful:", result.message);
         alert(
-          `Project image for ${capitalizeFirstLetter(
-            category
-          )} would be set to ${image.r2FileKey}. (API call not implemented yet)`
+          result.message ||
+            `Successfully set project image for ${capitalizeFirstLetter(
+              category
+            )}.`
         );
-      } catch (error) {
-        console.error("Error setting project image:", error);
-        alert("Failed to set project image. (API call not implemented yet)");
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : "An unknown error occurred";
+        console.error("Error setting project image:", errorMessage);
+        alert(`Failed to set project image: ${errorMessage}`);
       }
     },
     [isAdmin, category, capitalizeFirstLetter]
@@ -350,7 +444,12 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           <h1 className="text-4xl font-bold text-white mb-4">
             {capitalizeFirstLetter(category)}
           </h1>
-          <p className="text-gray-400">{images.length} image(s)</p>
+          {/* Look up and render the description based on the category */}
+          <p className="text-gray-400 text-sm md:text-base">
+            {categoryDescriptions[category.toLowerCase()] ||
+              `${images.length} image(s)`}{" "}
+            {/* Fallback to image count */}
+          </p>
         </motion.div>
 
         {isAdmin && (
