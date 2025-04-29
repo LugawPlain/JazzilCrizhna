@@ -10,20 +10,78 @@ interface FileMetadata {
   id: string; // Use a unique ID, maybe based on file name + index
   photographer: string;
   photographerLink: string; // Added field for photographer's link
+  event: string;
+  eventLink: string;
   eventDate: string;
   location: string; // Added location state
-  event: string;
+  locationLink: string;
+  advertising: string;
   advertisingLink: string; // <-- Add advertising link
   previewUrl: string;
   file: File; // Keep the original file object associated
 }
 
+// Define a type for the global default values used in applyGlobalDefaults
+interface GlobalMetadataDefaults {
+  globalPhotographer: string;
+  globalPhotographerLink: string;
+  globalEvent: string;
+  globalEventLink: string;
+  globalEventDate: string;
+  globalLocation: string;
+  globalLocationLink: string;
+  globalAdvertising: string;
+  globalAdvertisingLink: string;
+}
+
+// Helper function to apply global defaults to specific metadata
+const applyGlobalDefaults = (
+  specific: Omit<FileMetadata, "id" | "previewUrl" | "file">,
+  globals: GlobalMetadataDefaults
+): Omit<FileMetadata, "id" | "previewUrl" | "file"> => {
+  const updated = { ...specific }; // Create a copy to avoid mutating the original
+
+  if (updated.photographer === "") {
+    updated.photographer = globals.globalPhotographer;
+  }
+  if (updated.photographerLink === "") {
+    updated.photographerLink = globals.globalPhotographerLink;
+  }
+  if (updated.event === "") {
+    updated.event = globals.globalEvent;
+  }
+  if (updated.eventLink === "") {
+    updated.eventLink = globals.globalEventLink;
+  }
+  // Check for empty string OR the specific default date placeholder if you add one
+  if (updated.eventDate === "") {
+    updated.eventDate = globals.globalEventDate;
+  }
+  if (updated.location === "") {
+    updated.location = globals.globalLocation;
+  }
+  if (updated.locationLink === "") {
+    updated.locationLink = globals.globalLocationLink;
+  }
+  if (updated.advertising === "") {
+    updated.advertising = globals.globalAdvertising;
+  }
+  if (updated.advertisingLink === "") {
+    updated.advertisingLink = globals.globalAdvertisingLink;
+  }
+
+  return updated;
+};
+
 function UploadForm() {
   // Keep global states for now, might be used as defaults or if no specific metadata is set
   const [globalEventDate, setGlobalEventDate] = useState("");
   const [globalLocation, setGlobalLocation] = useState(""); // Changed from location
+  const [globalLocationLink, setGlobalLocationLink] = useState(""); // Added state for location link
   const [globalPhotographer, setGlobalPhotographer] = useState(""); // Changed from photographer
   const [globalPhotographerLink, setGlobalPhotographerLink] = useState(""); // Added state for photographer link
+  const [globalEventLink, setGlobalEventLink] = useState(""); // Added state for event link
+  const [globalAdvertising, setGlobalAdvertising] = useState(""); // Added state for advertising
   const [globalAdvertisingLink, setGlobalAdvertisingLink] = useState(""); // <-- Add global state
   const [globalCategory, setGlobalCategory] = useState(""); // Category remains global, changed from category
   const [globalEvent, setGlobalEvent] = useState(""); // Changed from event
@@ -64,11 +122,10 @@ function UploadForm() {
 
   // --- Cleanup Object URLs ---
   useEffect(() => {
-    // This function will run when the component unmounts or before the effect runs again
     return () => {
       filesWithMetadata.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     };
-  }, [filesWithMetadata]); // Dependency array ensures cleanup happens when files change
+  }, [filesWithMetadata]);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -91,10 +148,13 @@ function UploadForm() {
             previewUrl,
             photographer: "",
             photographerLink: "",
-            eventDate: "", // Set default date
-            location: "",
             event: "",
-            advertisingLink: "", // <-- Initialize
+            eventLink: "",
+            eventDate: "",
+            location: "",
+            locationLink: "",
+            advertising: "",
+            advertisingLink: "",
           };
         }
       );
@@ -170,6 +230,9 @@ function UploadForm() {
         eventDate: item.eventDate,
         location: item.location,
         event: item.event,
+        eventLink: item.eventLink,
+        locationLink: item.locationLink,
+        advertising: item.advertising,
         advertisingLink: item.advertisingLink,
       });
 
@@ -180,82 +243,77 @@ function UploadForm() {
         eventDate: item.eventDate,
         location: item.location,
         event: item.event,
+        eventLink: item.eventLink,
+        locationLink: item.locationLink,
+        advertising: item.advertising,
         advertisingLink: item.advertisingLink,
         // Include original filename, might be useful for backend matching
         originalFilename: item.file.name,
       };
 
-      // Only apply global defaults if the specific metadata is still at default values
-      // For photographer, photographerLink, location, and event - empty string is the default
-      // For eventDate, "1/1/2000" is the default value set during file selection
+      // Prepare the global defaults object
+      const globalDefaults: GlobalMetadataDefaults = {
+        globalPhotographer,
+        globalPhotographerLink,
+        globalEvent,
+        globalEventLink,
+        globalEventDate,
+        globalLocation,
+        globalLocationLink,
+        globalAdvertising,
+        globalAdvertisingLink,
+      };
 
-      // Only use global photographer if the specific one wasn't set or modified
-      if (specificMetadata.photographer === "") {
-        specificMetadata.photographer = globalPhotographer;
-      }
+      // Apply global defaults using the helper function
+      // We exclude originalFilename before passing and add it back after
+      const metadataWithDefaults = applyGlobalDefaults(
+        {
+          photographer: specificMetadata.photographer,
+          photographerLink: specificMetadata.photographerLink,
+          eventDate: specificMetadata.eventDate,
+          location: specificMetadata.location,
+          event: specificMetadata.event,
+          eventLink: specificMetadata.eventLink,
+          locationLink: specificMetadata.locationLink,
+          advertising: specificMetadata.advertising,
+          advertisingLink: specificMetadata.advertisingLink,
+        },
+        globalDefaults
+      );
 
-      // Only use global photographer link if the specific one wasn't set or modified
-      if (specificMetadata.photographerLink === "") {
-        specificMetadata.photographerLink = globalPhotographerLink;
-      }
-
-      // Only use global date if the specific one is still at default or empty
-      if (
-        specificMetadata.eventDate === "1/1/2000" ||
-        specificMetadata.eventDate === ""
-      ) {
-        specificMetadata.eventDate = globalEventDate;
-      }
-
-      // Only use global location if the specific one wasn't set or modified
-      if (specificMetadata.location === "") {
-        specificMetadata.location = globalLocation;
-      }
-
-      // Only use global event if the specific one wasn't set or modified
-      if (specificMetadata.event === "") {
-        specificMetadata.event = globalEvent;
-      }
-
-      // Only use global advertising link if the specific one wasn't set or modified
-      if (specificMetadata.advertisingLink === "") {
-        specificMetadata.advertisingLink = globalAdvertisingLink;
-      }
+      // Combine the result with the original filename
+      const finalItemMetadata = {
+        ...metadataWithDefaults,
+        originalFilename: specificMetadata.originalFilename,
+      };
 
       // Log the final metadata after processing
-      console.log("Final metadata after applying defaults:", specificMetadata);
+      console.log("Final metadata after applying defaults:", finalItemMetadata);
 
-      return specificMetadata;
+      return finalItemMetadata;
     });
 
     // --- Create FormData ---
     const formData = new FormData();
 
-    // 1. Append all the files (ensure field name matches backend expectations)
     filesWithMetadata.forEach((item) => {
       formData.append(`file`, item.file);
     });
 
-    // 2. Append the global category (still required globally)
     if (globalCategory) {
       formData.append("category", globalCategory);
     } else {
-      // This case should be caught by earlier validation, but added defensively
       setError("Category is missing.");
       setIsUploading(false);
       return;
     }
 
-    // 3. Append the array of final metadata as a JSON string
-    // IMPORTANT: Backend MUST be updated to parse this field!
     formData.append("metadataArray", JSON.stringify(finalMetadata));
 
     // --- Send Request ---
     try {
       console.log("Submitting FormData:");
-      // Log the metadata being sent for debugging
       console.log("Metadata Array:", finalMetadata);
-
       const response = await fetch("/api/admin/uploadimages", {
         method: "POST",
         body: formData,
@@ -289,7 +347,10 @@ function UploadForm() {
         photographer: metadata.photographer,
         photographerLink: metadata.photographerLink,
         location: metadata.location,
+        locationLink: metadata.locationLink,
         event: metadata.event,
+        eventLink: metadata.eventLink,
+        advertising: metadata.advertising,
         advertisingLink: metadata.advertisingLink,
       }));
 
@@ -310,11 +371,14 @@ function UploadForm() {
       setFilesWithMetadata([]); // Clear files
       setGlobalEventDate(""); // Reset to empty instead of default date
       setGlobalLocation("");
+      setGlobalLocationLink("");
       setGlobalPhotographer("");
       setGlobalPhotographerLink("");
+      setGlobalEvent("");
+      setGlobalEventLink("");
+      setGlobalAdvertising("");
       setGlobalAdvertisingLink(""); // <-- Reset global state
       setGlobalCategory("");
-      setGlobalEvent("");
       // Reset file input visually (important if not resetting e.target.value in handleFileChange)
       const fileInput = document.getElementById(
         "fileInput"
@@ -350,7 +414,10 @@ function UploadForm() {
       | "photographerLink"
       | "eventDate"
       | "location"
+      | "locationLink"
       | "event"
+      | "eventLink"
+      | "advertising"
       | "advertisingLink"
     >
   ) => {
@@ -372,7 +439,10 @@ function UploadForm() {
         photographerLink: updatedFile?.photographerLink,
         eventDate: updatedFile?.eventDate,
         location: updatedFile?.location,
+        locationLink: updatedFile?.locationLink,
         event: updatedFile?.event,
+        eventLink: updatedFile?.eventLink,
+        advertising: updatedFile?.advertising,
         advertisingLink: updatedFile?.advertisingLink, // Log the new field
         fileName: updatedFile?.file.name,
       });
@@ -397,7 +467,10 @@ function UploadForm() {
           photographerLink: selectedFileForModal.photographerLink,
           eventDate: selectedFileForModal.eventDate,
           location: selectedFileForModal.location,
+          locationLink: selectedFileForModal.locationLink,
           event: selectedFileForModal.event,
+          eventLink: selectedFileForModal.eventLink,
+          advertising: selectedFileForModal.advertising,
           advertisingLink: selectedFileForModal.advertisingLink, // <-- Pass to modal
         },
       }
@@ -501,22 +574,17 @@ function UploadForm() {
     }
   };
 
-  // Utility to validate date format
   const isValidDateFormat = (dateStr: string): boolean => {
-    // Empty is valid (optional field)
     if (!dateStr.trim()) return true;
 
-    // Check if it's a range (contains a hyphen)
     if (dateStr.includes(" - ")) {
       const dateParts = dateStr.split(" - ").map((part) => part.trim());
 
-      // Must have exactly two parts with content
       if (dateParts.length !== 2 || !dateParts[0] || !dateParts[1]) {
         console.warn("Invalid date range format:", dateStr);
         return false;
       }
 
-      // Try to parse both dates - for MM/DD/YYYY format
       try {
         const startDate = new Date(dateParts[0]);
         const endDate = new Date(dateParts[1]);
@@ -561,11 +629,38 @@ function UploadForm() {
 
   // Handle end date change
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndDate = e.target.value;
-    setEndDate(newEndDate);
+    const newEndDateValue = e.target.value;
+    let finalEndDate = newEndDateValue; // Assume new value initially
 
-    // Update combined date
-    updateCombinedDate(startDate, newEndDate);
+    // Only proceed if both start and new end date values exist
+    if (startDate && newEndDateValue) {
+      try {
+        const parsedStartDate = new Date(startDate);
+        const parsedEndDate = new Date(newEndDateValue);
+
+        // Check if both dates are valid and if end date is before start date
+        if (
+          !isNaN(parsedStartDate.getTime()) &&
+          !isNaN(parsedEndDate.getTime()) &&
+          parsedEndDate < parsedStartDate
+        ) {
+          console.warn(
+            "End date cannot be before start date. Setting end date equal to start date."
+          );
+          finalEndDate = startDate; // Adjust finalEndDate to match startDate
+        }
+      } catch (error) {
+        console.error("Error parsing dates during end date change:", error);
+        // Optionally handle parsing error, maybe revert or clear?
+        // For now, we'll proceed with the potentially unadjusted newEndDateValue
+        // if parsing fails, relying on updateCombinedDate for further checks.
+      }
+    }
+
+    setEndDate(finalEndDate); // Update state with the potentially adjusted date
+
+    // Update combined date string using the potentially adjusted end date
+    updateCombinedDate(startDate, finalEndDate);
   };
 
   // Handle the "Up To" button click
