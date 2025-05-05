@@ -1,10 +1,8 @@
 "use client";
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, X as XIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
-import { cn } from "@/lib/utils"; // Assuming you have this utility function
 import { Button } from "@/components/ui/button";
 
 import MetadataEditModal from "./MetadataEditModal"; // Import the modal
