@@ -1,8 +1,15 @@
 import Image from "next/image";
-import { CategoryData } from "../app/portfolio/CategoryData";
 
+// Define the props based on actual usage and data being passed
 interface ProjectCardProps {
-  project: CategoryData;
+  project: {
+    category: string;
+    title: string;
+    image: string; // Expecting the image URL directly
+    link?: string; // Link might be optional based on HorizontalScrollCarousel usage
+    photographer?: string;
+    photographerlink?: string; // Lowercase 'l' as used in the component
+  };
 }
 
 export const ProjectCard = ({ project }: ProjectCardProps) => {
