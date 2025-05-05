@@ -2,7 +2,7 @@ import { initializeApp } from "firebase-admin/app"; // Import specific functions
 import { credential, apps } from "firebase-admin"; // Import credential and apps from the main package
 import { Auth, getAuth } from "firebase-admin/auth"; // Import specific types and functions
 import { Firestore, getFirestore } from "firebase-admin/firestore";
-// Restore path and fs imports as they are needed for the fallback logic
+// Restore path and fs imports as they are needed
 import path from "path";
 import fs from "fs";
 
@@ -10,6 +10,9 @@ import fs from "fs";
 let authAdmin: Auth | null = null;
 let dbAdmin: Firestore | null = null;
 let initError: Error | null = null; // Variable to store initialization error
+
+// Define the fixed path where the build script writes the file (for deployed env)
+const fixedCredentialPath = "config/service-account.json";
 
 // Check if already initialized (by checking if dbAdmin is already set)
 if (!dbAdmin) {
@@ -20,115 +23,98 @@ if (!dbAdmin) {
     if (!apps.length) {
       // Initialize only if no apps exist
 
-      // *** NEW: Prioritize Base64 encoded credentials ***
-      if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+      let serviceAccount: object | undefined;
+      let initMethod: string | undefined;
+
+      // *** NEW: Check for local dev credentials FIRST ***
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         try {
-          console.log(
-            "[Firebase Admin] Attempting initialization using Base64 encoded credentials."
-          );
-          const base64Credentials = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-          const decodedJsonString = Buffer.from(
-            base64Credentials,
-            "base64"
-          ).toString("utf-8");
-          const serviceAccount = JSON.parse(decodedJsonString);
-
-          console.log(
-            `[Firebase Admin] Successfully decoded Base64. Project ID: ${
-              serviceAccount.project_id || "undefined"
-            }`
+          const localCredentialPath =
+            process.env.GOOGLE_APPLICATION_CREDENTIALS;
+          console.warn(
+            `[Firebase Admin] Using local credentials path from GOOGLE_APPLICATION_CREDENTIALS: ${localCredentialPath}`
           );
 
-          initializeApp({
-            credential: credential.cert(serviceAccount),
-          });
+          // Handle relative paths correctly
+          const absoluteLocalPath = path.resolve(
+            process.cwd(),
+            localCredentialPath
+          );
 
-          console.log(
-            "[Firebase Admin] Initialized successfully using Base64 credentials."
-          );
-        } catch (base64Error: unknown) {
-          const errorMessage =
-            base64Error instanceof Error
-              ? base64Error.message
-              : String(base64Error);
-          console.error(
-            "[Firebase Admin] Error initializing from Base64 credentials:",
-            errorMessage
-          );
-          // Add more context if possible
-          if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64.length > 4000) {
-            console.warn(
-              "[Firebase Admin] Base64 credential string might be too large (>4KB)."
+          if (fs.existsSync(absoluteLocalPath)) {
+            serviceAccount = JSON.parse(
+              fs.readFileSync(absoluteLocalPath, "utf8")
             );
-          }
-          throw new Error(
-            `Failed to initialize from Base64 credentials: ${errorMessage}`
-          );
-        }
-      }
-      // *** FALLBACK: Keep GOOGLE_APPLICATION_CREDENTIALS (as file path) for local/alternative setups ***
-      else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // --- Keep the existing file path logic as a fallback ---
-        let credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-        // This block should only be relevant for local dev or specific non-Netlify setups now
-        console.warn(
-          "[Firebase Admin] Using GOOGLE_APPLICATION_CREDENTIALS (file path) - Ensure this is intended for the environment."
-        );
-
-        // Check if it's a relative path (less likely needed now, but kept for compatibility)
-        if (
-          credentialPath.startsWith("./") ||
-          credentialPath.startsWith("../")
-        ) {
-          // Use the imported 'path' module directly
-          const absolutePath = path.resolve(process.cwd(), credentialPath);
-          console.log(
-            `[Firebase Admin] Converting relative path to absolute: ${absolutePath}`
-          );
-          credentialPath = absolutePath;
-        }
-
-        console.log(
-          `[Firebase Admin] Using credentials file path: ${credentialPath}`
-        );
-
-        try {
-          // Use the imported 'fs' module directly
-          if (fs.existsSync(credentialPath)) {
-            const serviceAccountJson = JSON.parse(
-              fs.readFileSync(credentialPath, "utf8")
-            );
-            console.log(
-              `[Firebase Admin] Parsed service account file. Project ID: ${serviceAccountJson.project_id}`
-            );
-            initializeApp({
-              credential: credential.cert(serviceAccountJson),
-            });
-            console.log(
-              "[Firebase Admin] Initialized with service account from file path."
-            );
+            initMethod = `local file path (${localCredentialPath})`;
           } else {
             throw new Error(
-              `Credentials file not found at path: ${credentialPath}`
+              `Local credentials file not found at: ${absoluteLocalPath}. Check GOOGLE_APPLICATION_CREDENTIALS in .env.local.`
             );
           }
-        } catch (fileError: unknown) {
+        } catch (localError: unknown) {
           console.error(
-            "[Firebase Admin] Error during file path initialization:",
-            fileError instanceof Error ? fileError.message : String(fileError)
+            "[Firebase Admin] Error initializing from local GOOGLE_APPLICATION_CREDENTIALS path:",
+            localError instanceof Error
+              ? localError.message
+              : String(localError)
           );
-          throw fileError; // Re-throw
+          // Don't re-throw yet, allow fallback to fixed path
         }
-        // --- End of file path fallback logic ---
       }
-      // *** REMOVE or comment out the direct JSON string logic if not needed ***
-      // else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) { ... }
-      else {
-        // If neither Base64 nor file path is provided
+
+      // *** FALLBACK: Check for fixed file path (for deployed env) ***
+      if (!serviceAccount) {
+        try {
+          const absoluteFixedPath = path.resolve(
+            process.cwd(),
+            fixedCredentialPath
+          );
+          console.log(
+            `[Firebase Admin] Attempting initialization using fixed file path (deployment mode): ${absoluteFixedPath}`
+          );
+
+          if (fs.existsSync(absoluteFixedPath)) {
+            serviceAccount = JSON.parse(
+              fs.readFileSync(absoluteFixedPath, "utf8")
+            );
+            initMethod = `fixed build path (${fixedCredentialPath})`;
+          } else {
+            // Only throw error here if local dev check also failed
+            throw new Error(
+              `Credentials file not found at fixed path: ${absoluteFixedPath}. Was the build successful?`
+            );
+          }
+        } catch (fixedPathError: unknown) {
+          console.error(
+            "[Firebase Admin] Error initializing from fixed file path:",
+            fixedPathError instanceof Error
+              ? fixedPathError.message
+              : String(fixedPathError)
+          );
+          // If we get here, neither local nor fixed path worked
+          throw fixedPathError; // Re-throw to halt initialization
+        }
+      }
+
+      // --- Actual Initialization ---
+      if (!serviceAccount || !initMethod) {
+        // This should theoretically not be reached if the logic above is correct
         throw new Error(
-          "Missing Firebase Admin credentials. Set FIREBASE_SERVICE_ACCOUNT_BASE64 (recommended for Netlify) or GOOGLE_APPLICATION_CREDENTIALS (file path for local/other)."
+          "Could not determine valid Firebase credentials source."
         );
       }
+
+      console.log(
+        `[Firebase Admin] Using credentials from: ${initMethod}. Project ID: ${
+          (serviceAccount as any).project_id || "undefined"
+        }`
+      );
+
+      initializeApp({
+        credential: credential.cert(serviceAccount),
+      });
+
+      console.log("[Firebase Admin] Initialized successfully.");
     } else {
       console.log("[Firebase Admin] Using existing Firebase Admin app.");
     }
