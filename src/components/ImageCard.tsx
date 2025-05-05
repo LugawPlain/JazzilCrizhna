@@ -250,7 +250,7 @@ const ImageCard = React.memo(
                   <span className="text-md font-mono  ">{image.event}</span>
                 </p>
                 <p className="text-xs opacity-90">
-                  📌: <span className="text-sm">{image.location}</span>
+                  Location: <span className="text-sm">{image.location}</span>
                 </p>
                 <p className="text-xs opacity-80">
                   Date:{" "}

@@ -286,9 +286,17 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
             dataToSend.event !== image.event
               ? { from: image.event, to: dataToSend.event }
               : "unchanged",
+          eventLink:
+            dataToSend.eventLink !== image.eventLink
+              ? { from: image.eventLink, to: dataToSend.eventLink }
+              : "unchanged",
           location:
             dataToSend.location !== image.location
               ? { from: image.location, to: dataToSend.location }
+              : "unchanged",
+          locationLink:
+            dataToSend.locationLink !== image.locationLink
+              ? { from: image.locationLink, to: dataToSend.locationLink }
               : "unchanged",
           eventDate:
             dataToSend.eventDate !== (image.eventDate || image.date)
@@ -307,6 +315,10 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   from: image.photographerLink,
                   to: dataToSend.photographerLink,
                 }
+              : "unchanged",
+          advertising:
+            dataToSend.advertising !== image.advertising
+              ? { from: image.advertising, to: dataToSend.advertising }
               : "unchanged",
           advertisingLink:
             dataToSend.advertisingLink !== (image.advertisingLink || "")
@@ -670,7 +682,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                   )}
                   {/* Date - Changed label color */}
                   <div className="">
-                    <p className="flex items-center">
+                    <div className="flex items-center">
                       <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
                         Date:
                       </strong>
@@ -786,7 +798,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           {showEditEndDate ? "Remove End Date" : "Add End Date"}
                         </Button>
                       )}
-                    </p>
+                    </div>
                   </div>
 
                   {/* Photographer - Changed label color and link color */}
@@ -810,10 +822,10 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                           href={formData.photographerLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                          className=" underline transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {formData.photographer || "Unknown"}
+                          {formData.photographer || "Unknown"} ↗
                         </Link>
                       ) : (
                         <span className="text-neutral-100">

@@ -32,6 +32,7 @@ export default function ContactForm() {
   >("idle");
   const [showPreview, setShowPreview] = useState(false);
   const [recaptchaValue, setRecaptchaValue] = useState<string | null>(null);
+  const [showRecaptcha, setShowRecaptcha] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,17 +48,26 @@ export default function ContactForm() {
         message: "",
         website: "",
       });
+      setShowRecaptcha(false);
       return;
     }
 
-    // Check if reCAPTCHA is completed
+    // If reCAPTCHA isn't visible yet, show it and stop.
+    if (!showRecaptcha) {
+      setShowRecaptcha(true);
+      setSubmitStatus("idle");
+      return;
+    }
+
+    // If reCAPTCHA is visible, check if it's completed
     if (!recaptchaValue) {
       setSubmitStatus("error");
       return;
     }
 
-    // Show preview modal instead of submitting directly
+    // If reCAPTCHA is shown and completed, show the preview
     setShowPreview(true);
+    setSubmitStatus("idle");
   };
 
   const confirmSubmit = async () => {
@@ -91,6 +101,7 @@ export default function ContactForm() {
         website: "",
       });
       setRecaptchaValue(null);
+      setShowRecaptcha(false);
     } catch (error) {
       console.error("Error sending message:", error);
       setSubmitStatus("error");
@@ -208,21 +219,29 @@ export default function ContactForm() {
             />
           </div>
 
-          <div className="flex justify-center my-4">
-            <ReCAPTCHA
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
-              onChange={(value) => setRecaptchaValue(value)}
-            />
-          </div>
+          {showRecaptcha && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-center my-4"
+            >
+              <ReCAPTCHA
+                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
+                onChange={(value) => setRecaptchaValue(value)}
+                onExpired={() => setRecaptchaValue(null)}
+                onError={() => setRecaptchaValue(null)}
+              />
+            </motion.div>
+          )}
 
           <div className="flex justify-center">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
-              disabled={isSubmitting || !recaptchaValue}
+              disabled={isSubmitting || (showRecaptcha && !recaptchaValue)}
               className={`px-8 py-3 rounded-lg font-medium text-white transition-all duration-300 ${
-                isSubmitting || !recaptchaValue
+                isSubmitting || (showRecaptcha && !recaptchaValue)
                   ? "bg-gray-600 cursor-not-allowed opacity-70"
                   : "bg-gradient-to-r from-[#DC143C] to-[#FF4500] hover:from-[#FF4500] hover:to-[#DC143C] shadow-lg hover:shadow-[#DC143C]/30"
               }`}
@@ -257,7 +276,7 @@ export default function ContactForm() {
             </motion.button>
           </div>
 
-          {submitStatus === "error" && !recaptchaValue && (
+          {submitStatus === "error" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -274,16 +293,6 @@ export default function ContactForm() {
               className="text-center text-green-400 mt-4"
             >
               Message sent successfully!
-            </motion.div>
-          )}
-
-          {submitStatus === "error" && recaptchaValue && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center text-red-400 mt-4"
-            >
-              Failed to send message. Please try again.
             </motion.div>
           )}
         </form>

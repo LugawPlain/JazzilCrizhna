@@ -158,8 +158,12 @@ export async function POST(request: NextRequest) {
     // 5. Prepare Update Data (sanitize/validate updates if necessary)
     const dataToUpdate: { [key: string]: unknown } = {};
     if (updates.event !== undefined) dataToUpdate.event = updates.event;
+    if (updates.eventLink !== undefined)
+      dataToUpdate.eventLink = updates.eventLink;
     if (updates.location !== undefined)
       dataToUpdate.location = updates.location;
+    if (updates.locationLink !== undefined)
+      dataToUpdate.locationLink = updates.locationLink;
 
     // Validate eventDate field (could be a range)
     if (updates.eventDate !== undefined) {
@@ -180,6 +184,10 @@ export async function POST(request: NextRequest) {
       dataToUpdate.photographer = updates.photographer;
     if (updates.photographerLink !== undefined)
       dataToUpdate.photographerLink = updates.photographerLink;
+    if (updates.advertising !== undefined)
+      dataToUpdate.advertising = updates.advertising;
+    if (updates.advertisingLink !== undefined)
+      dataToUpdate.advertisingLink = updates.advertisingLink;
 
     if (Object.keys(dataToUpdate).length === 0) {
       return NextResponse.json(
