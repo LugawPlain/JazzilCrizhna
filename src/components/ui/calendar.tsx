@@ -265,7 +265,7 @@ function Nav({
   onPrevClick?: (date: Date) => void;
   onNextClick?: (date: Date) => void;
 }) {
-  const { nextMonth, previousMonth, goToMonth, selected } = useDayPicker();
+  const { nextMonth, previousMonth, goToMonth } = useDayPicker();
 
   const isPreviousDisabled = (() => {
     if (navView === "years") {
