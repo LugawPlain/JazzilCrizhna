@@ -2,17 +2,14 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, X as XIcon } from "lucide-react";
+import { DateRange } from "react-day-picker";
 
 import { cn } from "@/lib/utils"; // Assuming you have this utility function
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 import MetadataEditModal from "./MetadataEditModal"; // Import the modal
+import DatePicker from "./date-picker";
+import DateRangePicker from "./date-range-picker";
 // import { db, storage } from "../lib/firebase"; // Commented out
 // import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Commented out
 // import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage"; // Commented out
@@ -174,6 +171,12 @@ function UploadForm() {
     firestoreDocId: string;
   }
 
+  // Define the function to handle date range changes
+  const setDateRange = (range: DateRange | undefined) => {
+    setStartDate(range?.from); // Update startDate state
+    setEndDate(range?.to); // Update endDate state
+  };
+
   // --- Form Submission ---
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -332,9 +335,9 @@ function UploadForm() {
 
       // --- Reset State ---
       setFilesWithMetadata([]);
-      setStartDate(undefined); // Reset start date
-      setEndDate(undefined); // Reset end date
-      setShowEndDate(false); // Hide end date picker
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setShowEndDate(false);
       setGlobalLocation("");
       setGlobalLocationLink("");
       setGlobalPhotographer("");
@@ -440,9 +443,9 @@ function UploadForm() {
   const handleUpToClick = () => {
     setShowEndDate(true);
     // Optionally set end date to start date if start date exists
-    if (startDate && !endDate) {
-      setEndDate(startDate);
-    }
+    // if (startDate && !endDate) {
+    //   setEndDate(startDate);
+    // }
   };
 
   const handleRemoveEndDate = () => {
@@ -525,86 +528,25 @@ function UploadForm() {
             </label>
             <div className="flex flex-wrap items-center gap-2">
               {/* Start Date Picker */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[200px] justify-start text-left font-normal", // Adjusted width
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? (
-                      format(startDate, "MM/dd/yyyy")
-                    ) : (
-                      <span>Start date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    // Optionally disable future dates: disabled={{ after: new Date() }}
-                  />
-                </PopoverContent>
-              </Popover>
-
               {/* End Date Picker OR Add Button */}
               {showEndDate ? (
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-500">-</span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[200px] justify-start text-left font-normal", // Adjusted width
-                          !endDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? (
-                          format(endDate, "MM/dd/yyyy")
-                        ) : (
-                          <span>End date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        disabled={startDate ? { before: startDate } : undefined}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {/* Remove End Date Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleRemoveEndDate}
-                    className="h-8 w-8 p-0"
-                  >
-                    <XIcon className="h-4 w-4" />
-                    <span className="sr-only">Remove end date</span>
-                  </Button>
-                </div>
+                <>
+                  <DateRangePicker
+                    value={{
+                      from: startDate,
+                      to: endDate,
+                    }}
+                    onDateChange={setDateRange}
+                  />
+                  <Button onClick={handleRemoveEndDate}>Remove End Date</Button>
+                </>
               ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUpToClick}
-                >
-                  Add End Date
-                </Button>
+                <>
+                  <DatePicker value={startDate} onDateChange={setStartDate} />
+                  <Button onClick={handleUpToClick}>Add End Date</Button>
+                </>
               )}
+              {/* Remove End Date Button */}
             </div>
           </div>
           {/* --- End Date Picker Section --- */}
