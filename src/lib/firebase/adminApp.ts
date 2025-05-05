@@ -2,9 +2,9 @@ import { initializeApp } from "firebase-admin/app"; // Import specific functions
 import { credential, apps } from "firebase-admin"; // Import credential and apps from the main package
 import { Auth, getAuth } from "firebase-admin/auth"; // Import specific types and functions
 import { Firestore, getFirestore } from "firebase-admin/firestore";
-// Remove path and fs imports if no longer needed elsewhere, keep if used for other logic
-// import path from "path";
-// import fs from "fs";
+// Restore path and fs imports as they are needed for the fallback logic
+import path from "path";
+import fs from "fs";
 
 // Declare variables outside, initialize to null
 let authAdmin: Auth | null = null;
@@ -80,8 +80,7 @@ if (!dbAdmin) {
           credentialPath.startsWith("./") ||
           credentialPath.startsWith("../")
         ) {
-          // Need path and fs for this block
-          const path = require("path");
+          // Use the imported 'path' module directly
           const absolutePath = path.resolve(process.cwd(), credentialPath);
           console.log(
             `[Firebase Admin] Converting relative path to absolute: ${absolutePath}`
@@ -94,8 +93,7 @@ if (!dbAdmin) {
         );
 
         try {
-          // Need fs for this block
-          const fs = require("fs");
+          // Use the imported 'fs' module directly
           if (fs.existsSync(credentialPath)) {
             const serviceAccountJson = JSON.parse(
               fs.readFileSync(credentialPath, "utf8")
