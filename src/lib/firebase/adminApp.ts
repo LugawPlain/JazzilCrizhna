@@ -2,8 +2,9 @@ import { initializeApp } from "firebase-admin/app"; // Import specific functions
 import { credential, apps } from "firebase-admin"; // Import credential and apps from the main package
 import { Auth, getAuth } from "firebase-admin/auth"; // Import specific types and functions
 import { Firestore, getFirestore } from "firebase-admin/firestore";
-import path from "path";
-import fs from "fs";
+// Remove path and fs imports if no longer needed elsewhere, keep if used for other logic
+// import path from "path";
+// import fs from "fs";
 
 // Declare variables outside, initialize to null
 let authAdmin: Auth | null = null;
@@ -19,16 +20,68 @@ if (!dbAdmin) {
     if (!apps.length) {
       // Initialize only if no apps exist
 
-      // Prioritize GOOGLE_APPLICATION_CREDENTIALS since it's working for the user
-      if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // Handle relative paths by converting to absolute paths
-        let credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      // *** NEW: Prioritize Base64 encoded credentials ***
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+        try {
+          console.log(
+            "[Firebase Admin] Attempting initialization using Base64 encoded credentials."
+          );
+          const base64Credentials = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+          const decodedJsonString = Buffer.from(
+            base64Credentials,
+            "base64"
+          ).toString("utf-8");
+          const serviceAccount = JSON.parse(decodedJsonString);
 
-        // Check if it's a relative path
+          console.log(
+            `[Firebase Admin] Successfully decoded Base64. Project ID: ${
+              serviceAccount.project_id || "undefined"
+            }`
+          );
+
+          initializeApp({
+            credential: credential.cert(serviceAccount),
+          });
+
+          console.log(
+            "[Firebase Admin] Initialized successfully using Base64 credentials."
+          );
+        } catch (base64Error: unknown) {
+          const errorMessage =
+            base64Error instanceof Error
+              ? base64Error.message
+              : String(base64Error);
+          console.error(
+            "[Firebase Admin] Error initializing from Base64 credentials:",
+            errorMessage
+          );
+          // Add more context if possible
+          if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64.length > 4000) {
+            console.warn(
+              "[Firebase Admin] Base64 credential string might be too large (>4KB)."
+            );
+          }
+          throw new Error(
+            `Failed to initialize from Base64 credentials: ${errorMessage}`
+          );
+        }
+      }
+      // *** FALLBACK: Keep GOOGLE_APPLICATION_CREDENTIALS (as file path) for local/alternative setups ***
+      else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        // --- Keep the existing file path logic as a fallback ---
+        let credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+        // This block should only be relevant for local dev or specific non-Netlify setups now
+        console.warn(
+          "[Firebase Admin] Using GOOGLE_APPLICATION_CREDENTIALS (file path) - Ensure this is intended for the environment."
+        );
+
+        // Check if it's a relative path (less likely needed now, but kept for compatibility)
         if (
           credentialPath.startsWith("./") ||
           credentialPath.startsWith("../")
         ) {
+          // Need path and fs for this block
+          const path = require("path");
           const absolutePath = path.resolve(process.cwd(), credentialPath);
           console.log(
             `[Firebase Admin] Converting relative path to absolute: ${absolutePath}`
@@ -36,77 +89,46 @@ if (!dbAdmin) {
           credentialPath = absolutePath;
         }
 
-        // Log the path for debugging
         console.log(
-          `[Firebase Admin] Using credentials file at: ${credentialPath}`
+          `[Firebase Admin] Using credentials file path: ${credentialPath}`
         );
 
         try {
-          // CHANGE: Read the service account file directly and use it
+          // Need fs for this block
+          const fs = require("fs");
           if (fs.existsSync(credentialPath)) {
             const serviceAccountJson = JSON.parse(
               fs.readFileSync(credentialPath, "utf8")
             );
-
-            // Add logging for parsed project_id
             console.log(
-              `[Firebase Admin] Parsed service account JSON. Project ID: ${serviceAccountJson.project_id}`
+              `[Firebase Admin] Parsed service account file. Project ID: ${serviceAccountJson.project_id}`
             );
-
-            // Initialize with explicit credentials
             initializeApp({
-              // Use directly imported function
-              credential: credential.cert(serviceAccountJson), // Use directly imported object/function
+              credential: credential.cert(serviceAccountJson),
             });
             console.log(
-              "[Firebase Admin] Initialized with service account from file."
+              "[Firebase Admin] Initialized with service account from file path."
             );
           } else {
-            throw new Error(`Credentials file not found at: ${credentialPath}`);
-          }
-        } catch (initError: unknown) {
-          console.error(
-            "[Firebase Admin] Error during initialization:",
-            initError instanceof Error ? initError.message : String(initError)
-          );
-          throw initError;
-        }
-      } else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-        // Only try this if GOOGLE_APPLICATION_CREDENTIALS is not available
-        try {
-          // Check if the JSON string contains a file path (starts with ./ or /)
-          const jsonValue = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-          if (jsonValue.startsWith("./") || jsonValue.startsWith("/")) {
             throw new Error(
-              "FIREBASE_SERVICE_ACCOUNT_JSON appears to contain a file path instead of JSON content"
+              `Credentials file not found at path: ${credentialPath}`
             );
           }
-
-          // Parse service account JSON and log some non-sensitive details for debugging
-          const serviceAccount = JSON.parse(jsonValue);
-          console.log(
-            `[Firebase Admin] Service account found with project_id: ${
-              serviceAccount.project_id || "undefined"
-            }`
+        } catch (fileError: unknown) {
+          console.error(
+            "[Firebase Admin] Error during file path initialization:",
+            fileError instanceof Error ? fileError.message : String(fileError)
           );
-
-          initializeApp({
-            // Use directly imported function
-            credential: credential.cert(serviceAccount), // Use directly imported object/function
-          });
-          console.log(
-            "[Firebase Admin] Initialized using FIREBASE_SERVICE_ACCOUNT_JSON."
-          );
-        } catch (jsonError: unknown) {
-          throw new Error(
-            `Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON: ${
-              jsonError instanceof Error ? jsonError.message : String(jsonError)
-            }`
-          );
+          throw fileError; // Re-throw
         }
-      } else {
+        // --- End of file path fallback logic ---
+      }
+      // *** REMOVE or comment out the direct JSON string logic if not needed ***
+      // else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) { ... }
+      else {
+        // If neither Base64 nor file path is provided
         throw new Error(
-          "Missing Firebase Admin credentials (set GOOGLE_APPLICATION_CREDENTIALS or FIREBASE_SERVICE_ACCOUNT_JSON)."
+          "Missing Firebase Admin credentials. Set FIREBASE_SERVICE_ACCOUNT_BASE64 (recommended for Netlify) or GOOGLE_APPLICATION_CREDENTIALS (file path for local/other)."
         );
       }
     } else {
@@ -132,7 +154,7 @@ if (!dbAdmin) {
     console.error(
       "[Firebase Admin] CRITICAL INITIALIZATION ERROR:",
       initError.message,
-      initError.stack
+      initError.stack // Log stack trace for better debugging
     );
     // Keep authAdmin and dbAdmin as null
   }
