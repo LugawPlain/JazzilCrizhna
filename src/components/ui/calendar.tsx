@@ -222,17 +222,18 @@ function Calendar({
             {...props}
           />
         ),
-        MonthGrid: ({ className, children, ...props }) => (
+        MonthGrid: ({ className, children, ...rest }) => (
           <MonthGrid
-            children={children}
             className={className}
+            {...rest}
             displayYears={displayYears}
             startMonth={startMonth}
             endMonth={endMonth}
             navView={navView}
             setNavView={setNavView}
-            {...props}
-          />
+          >
+            {children}
+          </MonthGrid>
         ),
         ...components,
       }}
