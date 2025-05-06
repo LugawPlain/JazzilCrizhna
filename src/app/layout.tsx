@@ -19,6 +19,22 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Yorticia | Jazzil Sarinas",
   description: "Model | Influencer | Ambassadress",
+  openGraph: {
+    title: "Yorticia | Jazzil Sarinas",
+    description: "Model | Influencer | Ambassadress",
+    url: "https://www.yorticia.com/",
+    siteName: "Yorticia",
+    images: [
+      {
+        url: "https://www.yorticia.com/Expanded_Background.webp",
+        width: 1200,
+        height: 630,
+        alt: "Yorticia Portfolio Preview",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
