@@ -9,7 +9,7 @@ interface HerobuttonProps {
 
 const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
   return (
-    <div className="relative flex items-center justify-center ">
+    <div className="relative flex items-center justify-center lg:opacity-40  0 lg:hover:opacity-100 transition-all duration-150">
       <motion.svg
         className="absolute z-0"
         width="200"
