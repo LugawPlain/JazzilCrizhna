@@ -49,5 +49,5 @@ next-env.d.ts
 
 
 # Local Netlify folder
-.netlify
+/config/service-account.json
 
