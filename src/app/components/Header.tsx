@@ -71,6 +71,20 @@ export default function Header() {
     // console.log("Session data:", session);
   }, [session, status]);
 
+  // Effect to disable body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
   // Don't render the header on the home page
   if (pathname === "/") {
     return null;
