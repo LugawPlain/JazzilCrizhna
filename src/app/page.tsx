@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-neutral-900">
+    <div className="relative min-h-[100svh] max-h-[100svh] bg-neutral-900">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
