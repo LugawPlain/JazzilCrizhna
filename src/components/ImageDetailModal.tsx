@@ -523,187 +523,212 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
           </button>
 
           {/* --- Toggle Details Button (Bottom Center) --- */}
-          <button
-            onClick={toggleDetails} // Use the handler created earlier
-            className="absolute bottom-4 right-12 z-20 bg-black/40 text-white p-3 rounded-full hover:bg-black/60 transition-colors"
-            aria-label={detailsVisible ? "Hide details" : "Show details"}
-          >
-            {detailsVisible ? (
-              // Icon for hiding details (e.g., info circle with slash or similar)
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                />
-              </svg>
-            ) : (
-              // Icon for showing details (e.g., info circle)
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                />
-              </svg>
-            )}
-          </button>
+
           {/* --- End Toggle Details Button --- */}
         </div>
 
         {/* Details Section - Modified for Editing */}
-        <AnimatePresence>
-          {detailsVisible && (
-            <motion.div
-              className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6 md:p-8 text-white pointer-events-none"
-              initial={{ opacity: 0, y: 20 }} // Start slightly lower and faded out
-              animate={{ opacity: 1, y: 0 }} // Animate to full opacity and original position
-              exit={{ opacity: 0, y: 20 }} // Animate out downwards and fade
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+        <motion.div
+          className={`absolute bottom-0 px-8 pb-8 left-0 right-0 z-10 bg-gradient-to-t from-black/90 via-black/70 to-black/2 text-white transition-all duration-500 ease-in-out ${
+            detailsVisible ? "" : "translate-y-full"
+          }`}
+        >
+          <button
+            onClick={toggleDetails}
+            className={` ${
+              detailsVisible ? "rotate-0" : "-rotate-180 "
+            } absolute top-0 left-1/2 -translate-y-3/4 transition-transform duration-500 ease-in-out -translate-x-1/2 z-30 bg-black/40 text-white p-3 rounded-full hover:bg-black/60 focus:outline-none`}
+            aria-label={detailsVisible ? "Hide details" : "Show details"}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
             >
-              <div className="pointer-events-auto max-w-2xl">
-                {/* Event Title - Added subtle shadow */}
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="event"
-                    value={formData.event}
-                    onChange={handleInputChange}
-                    className="bg-neutral-800/80 border border-neutral-600 rounded px-3 py-2 text-xl md:text-2xl font-semibold mb-4 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-neutral-500"
-                    placeholder="Event Name"
-                  />
-                ) : (
-                  <h2 className="text-xl md:text-3xl font-semibold mb-4 drop-shadow-lg">
-                    {formData.eventLink && formData.eventLink !== "#" ? (
-                      <Link
-                        href={formData.eventLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline"
-                        onClick={(e) => e.stopPropagation()} // Prevent modal close
-                      >
-                        {formData.event}
-                      </Link>
-                    ) : (
-                      formData.event // Display text if no link
-                    )}
-                  </h2>
-                )}
+              {/* Adjusted icon to be more like a chevron down for "hide" */}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+              />
+            </svg>
+          </button>
 
-                {/* Event Link Input (Edit Mode) */}
+          <div
+            className={`pointer-events-auto max-w-2xl pt-10 transition-opacity duration-300`}
+          >
+            <>
+              {/* Event Title - Added subtle shadow */}
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="event"
+                  value={formData.event}
+                  onChange={handleInputChange}
+                  className="bg-neutral-800/80 border border-neutral-600 rounded px-3 py-2 text-xl md:text-2xl font-semibold mb-4 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-neutral-500"
+                  placeholder="Event Name"
+                />
+              ) : (
+                <h2 className="text-xl md:text-3xl font-semibold mb-4 drop-shadow-lg">
+                  {formData.eventLink && formData.eventLink !== "#" ? (
+                    <Link
+                      href={formData.eventLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                      onClick={(e) => e.stopPropagation()} // Prevent modal close
+                    >
+                      {formData.event}
+                    </Link>
+                  ) : (
+                    formData.event // Display text if no link
+                  )}
+                </h2>
+              )}
+              {/* Event Link Input (Edit Mode) */}
+              {isEditing && (
+                <div className="mb-2">
+                  {" "}
+                  {/* Add some margin below */}
+                  <p className="flex items-center">
+                    <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
+                      Event URL:
+                    </strong>
+                    <input
+                      type="url"
+                      name="eventLink"
+                      value={formData.eventLink || ""} // Ensure value is controlled
+                      onChange={handleInputChange}
+                      className="input-field w-full"
+                      placeholder="https://... (Event link)"
+                    />
+                  </p>
+                </div>
+              )}
+              {/* Increased spacing between detail rows */}
+              <div className="space-y-3 text-sm md:text-base">
+                {/* Location - Changed label color */}
+                <div className="">
+                  <p className="flex items-center">
+                    <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
+                      Location:
+                    </strong>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="Location"
+                      />
+                    ) : (
+                      <span className="text-neutral-100">
+                        {formData.locationLink &&
+                        formData.locationLink !== "#" ? (
+                          <Link
+                            href={formData.locationLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                            onClick={(e) => e.stopPropagation()} // Prevent modal close
+                          >
+                            {formData.location}
+                          </Link>
+                        ) : (
+                          formData.location // Display text if no link
+                        )}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {/* Location Link Input (Edit Mode) */}
                 {isEditing && (
-                  <div className="mb-2">
-                    {" "}
-                    {/* Add some margin below */}
+                  <div className="">
                     <p className="flex items-center">
                       <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
-                        Event URL:
+                        Location URL:
                       </strong>
                       <input
                         type="url"
-                        name="eventLink"
-                        value={formData.eventLink || ""} // Ensure value is controlled
+                        name="locationLink"
+                        value={formData.locationLink || ""} // Ensure value is controlled
                         onChange={handleInputChange}
                         className="input-field w-full"
-                        placeholder="https://... (Event link)"
+                        placeholder="https://... (Location link)"
                       />
                     </p>
                   </div>
                 )}
-
-                {/* Increased spacing between detail rows */}
-                <div className="space-y-3 text-sm md:text-base">
-                  {/* Location - Changed label color */}
-                  <div className="">
-                    <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
-                        Location:
-                      </strong>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="Location"
-                        />
-                      ) : (
-                        <span className="text-neutral-100">
-                          {formData.locationLink &&
-                          formData.locationLink !== "#" ? (
-                            <Link
-                              href={formData.locationLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:underline"
-                              onClick={(e) => e.stopPropagation()} // Prevent modal close
+                {/* Date - Changed label color */}
+                <div className="">
+                  <div className="flex items-center">
+                    <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
+                      Date:
+                    </strong>
+                    {isEditing ? (
+                      // --- START: Date Picker Replacement ---
+                      <div className="flex flex-col  gap-2 items-start w-full">
+                        {/* Start Date Picker */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal h-auto py-1.5 px-3 text-sm md:text-base bg-neutral-700/60 border-neutral-500 hover:bg-neutral-700 hover:text-white",
+                                !editStartDate && "text-muted-foreground"
+                              )}
                             >
-                              {formData.location}
-                            </Link>
-                          ) : (
-                            formData.location // Display text if no link
-                          )}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  {/* Location Link Input (Edit Mode) */}
-                  {isEditing && (
-                    <div className="">
-                      <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
-                          Location URL:
-                        </strong>
-                        <input
-                          type="url"
-                          name="locationLink"
-                          value={formData.locationLink || ""} // Ensure value is controlled
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="https://... (Location link)"
-                        />
-                      </p>
-                    </div>
-                  )}
-                  {/* Date - Changed label color */}
-                  <div className="">
-                    <div className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
-                        Date:
-                      </strong>
-                      {isEditing ? (
-                        // --- START: Date Picker Replacement ---
-                        <div className="flex flex-col  gap-2 items-start w-full">
-                          {/* Start Date Picker */}
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {editStartDate ? (
+                                format(editStartDate, "P")
+                              ) : (
+                                <span>Pick a start date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-0 z-[110]"
+                            align="start"
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={editStartDate}
+                              onSelect={(date) => {
+                                setEditStartDate(date);
+                                // Ensure end date is not before start date
+                                if (editEndDate && date && date > editEndDate) {
+                                  setEditEndDate(undefined);
+                                  setShowEditEndDate(false); // Optionally hide end date if start goes past it
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+
+                        {/* Add/Remove End Date Button */}
+
+                        {/* End Date Picker (Conditional) */}
+                        {showEditEndDate && (
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
                                 variant={"outline"}
                                 className={cn(
                                   "w-full justify-start text-left font-normal h-auto py-1.5 px-3 text-sm md:text-base bg-neutral-700/60 border-neutral-500 hover:bg-neutral-700 hover:text-white",
-                                  !editStartDate && "text-muted-foreground"
+                                  !editEndDate && "text-muted-foreground"
                                 )}
+                                disabled={!editStartDate}
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {editStartDate ? (
-                                  format(editStartDate, "P")
+                                {editEndDate ? (
+                                  format(editEndDate, "P")
                                 ) : (
-                                  <span>Pick a start date</span>
+                                  <span>Pick an end date</span>
                                 )}
                               </Button>
                             </PopoverTrigger>
@@ -713,255 +738,171 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                             >
                               <Calendar
                                 mode="single"
-                                selected={editStartDate}
-                                onSelect={(date) => {
-                                  setEditStartDate(date);
-                                  // Ensure end date is not before start date
-                                  if (
-                                    editEndDate &&
-                                    date &&
-                                    date > editEndDate
-                                  ) {
-                                    setEditEndDate(undefined);
-                                    setShowEditEndDate(false); // Optionally hide end date if start goes past it
-                                  }
-                                }}
+                                selected={editEndDate}
+                                onSelect={setEditEndDate}
+                                disabled={(date) =>
+                                  editStartDate ? date < editStartDate : false
+                                }
                                 initialFocus
                               />
                             </PopoverContent>
                           </Popover>
-
-                          {/* Add/Remove End Date Button */}
-
-                          {/* End Date Picker (Conditional) */}
-                          {showEditEndDate && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal h-auto py-1.5 px-3 text-sm md:text-base bg-neutral-700/60 border-neutral-500 hover:bg-neutral-700 hover:text-white",
-                                    !editEndDate && "text-muted-foreground"
-                                  )}
-                                  disabled={!editStartDate}
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {editEndDate ? (
-                                    format(editEndDate, "P")
-                                  ) : (
-                                    <span>Pick an end date</span>
-                                  )}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-auto p-0 z-[110]"
-                                align="start"
-                              >
-                                <Calendar
-                                  mode="single"
-                                  selected={editEndDate}
-                                  onSelect={setEditEndDate}
-                                  disabled={(date) =>
-                                    editStartDate ? date < editStartDate : false
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          )}
-                        </div>
-                      ) : (
-                        // --- END: Date Picker Replacement ---
-                        <span className="text-neutral-100">
-                          {formatDateDisplay(formData.eventDate)}
-                        </span>
-                      )}
-                      {/* Conditionally render the button only when editing */}
-                      {isEditing && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
-                          onClick={() => {
-                            if (showEditEndDate) {
-                              setEditEndDate(undefined);
-                            }
-                            setShowEditEndDate(!showEditEndDate);
-                          }}
-                        >
-                          {showEditEndDate ? (
-                            <XIcon className="h-4 w-4 mr-1" />
-                          ) : (
-                            <CalendarIcon className="h-4 w-4 mr-1" />
-                          )}
-                          {showEditEndDate ? "Remove End Date" : "Add End Date"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Photographer - Changed label color and link color */}
-                  <div className="">
-                    <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
-                        Photographer: 📸
-                      </strong>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          name="photographer"
-                          value={formData.photographer}
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="Photographer Name"
-                        />
-                      ) : formData.photographerLink &&
-                        formData.photographerLink !== "#" ? (
-                        <Link
-                          href={formData.photographerLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className=" underline transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {formData.photographer || "Unknown"} ↗
-                        </Link>
-                      ) : (
-                        <span className="text-neutral-100">
-                          {formData.photographer || "Unknown"}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  {/* Photographer Link - Only visible in edit mode */}
-                  {isEditing && (
-                    <div className="">
-                      <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-38 flex-shrink-0">
-                          Photograhper URL:
-                        </strong>
-                        <input
-                          type="text"
-                          name="photographerLink"
-                          value={formData.photographerLink}
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="https://..."
-                        />
-                      </p>
-                    </div>
-                  )}
-                  {/* Advertising Display */}
-                  {!isEditing && formData.advertising && (
-                    <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
-                        Advertising:
-                      </strong>
-                      <span className="text-neutral-100">
-                        {formData.advertising}
-                      </span>
-                    </p>
-                  )}
-                  {/* Advertising Input (Edit Mode) */}
-                  {isEditing && (
-                    <div className="">
-                      <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
-                          Advertising:
-                        </strong>
-                        <input
-                          type="text"
-                          name="advertising"
-                          value={formData.advertising || ""}
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="Advertising Info"
-                        />
-                      </p>
-                    </div>
-                  )}
-                  {/* Advertising Link Display */}
-                  {formData.advertisingLink && !isEditing && (
-                    <p className="flex items-center">
-                      <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
-                        Ad Link:
-                      </strong>
-                      <Link
-                        href={formData.advertisingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline truncate transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {formData.advertisingLink}
-                      </Link>
-                    </p>
-                  )}
-                  {/* Advertising Link Input (Edit Mode) */}
-                  {isEditing && (
-                    <div className="">
-                      <p className="flex items-center">
-                        <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
-                          Ad Link:
-                        </strong>
-                        <input
-                          type="url"
-                          name="advertisingLink"
-                          value={formData.advertisingLink || ""}
-                          onChange={handleInputChange}
-                          className="input-field w-full"
-                          placeholder="https://... (Ad link)"
-                        />
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Edit/Save/Cancel Buttons & Error Message */}
-                {isAdmin && (
-                  <div className="mt-6 flex items-center gap-3">
-                    {!isEditing ? (
-                      <Button onClick={handleEditClick} size="sm">
-                        Edit Details
-                      </Button>
+                        )}
+                      </div>
                     ) : (
-                      <>
-                        <Button
-                          onClick={handleSaveClick}
-                          disabled={isSaving || isDeleting}
-                          size="sm"
-                          variant="default"
-                        >
-                          {isSaving ? "Saving..." : "Save Changes"}
-                        </Button>
-                        <Button
-                          onClick={handleCancelClick}
-                          disabled={isSaving || isDeleting}
-                          size="sm"
-                          variant="secondary"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleDeleteClick}
-                          disabled={isSaving || isDeleting}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          Delete Image
-                        </Button>
-                      </>
+                      // --- END: Date Picker Replacement ---
+                      <span className="text-neutral-100">
+                        {formatDateDisplay(formData.eventDate)}
+                      </span>
+                    )}
+                    {/* Conditionally render the button only when editing */}
+                    {isEditing && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-auto text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 flex-shrink-0"
+                        onClick={() => {
+                          if (showEditEndDate) {
+                            setEditEndDate(undefined);
+                          }
+                          setShowEditEndDate(!showEditEndDate);
+                        }}
+                      >
+                        {showEditEndDate ? (
+                          <XIcon className="h-4 w-4 mr-1" />
+                        ) : (
+                          <CalendarIcon className="h-4 w-4 mr-1" />
+                        )}
+                        {showEditEndDate ? "Remove End Date" : "Add End Date"}
+                      </Button>
                     )}
                   </div>
+                </div>
+
+                {/* Photographer - Changed label color and link color */}
+                <div className="">
+                  <p className="flex items-center">
+                    <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
+                      Photographer: 📸
+                    </strong>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        name="photographer"
+                        value={formData.photographer}
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="Photographer Name"
+                      />
+                    ) : formData.photographerLink &&
+                      formData.photographerLink !== "#" ? (
+                      <Link
+                        href={formData.photographerLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className=" underline transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {formData.photographer || "Unknown"} ↗
+                      </Link>
+                    ) : (
+                      <span className="text-neutral-100">
+                        {formData.photographer || "Unknown"}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {/* Photographer Link - Only visible in edit mode */}
+                {isEditing && (
+                  <div className="">
+                    <p className="flex items-center">
+                      <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-38 flex-shrink-0">
+                        Photograhper URL:
+                      </strong>
+                      <input
+                        type="text"
+                        name="photographerLink"
+                        value={formData.photographerLink}
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="https://..."
+                      />
+                    </p>
+                  </div>
                 )}
-                {error && (
-                  <p className="text-red-500 text-sm mt-3">Error: {error}</p>
+                {/* Advertising Display */}
+                {!isEditing && formData.advertising && (
+                  <p className="flex items-center">
+                    <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
+                      Advertising:
+                    </strong>
+                    <span className="text-neutral-100">
+                      {formData.advertising}
+                    </span>
+                  </p>
+                )}
+                {/* Advertising Input (Edit Mode) */}
+                {isEditing && (
+                  <div className="">
+                    <p className="flex items-center">
+                      <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
+                        Advertising:
+                      </strong>
+                      <input
+                        type="text"
+                        name="advertising"
+                        value={formData.advertising || ""}
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="Advertising Info"
+                      />
+                    </p>
+                  </div>
+                )}
+                {/* Advertising Link Display */}
+                {formData.advertisingLink && !isEditing && (
+                  <p className="flex items-center">
+                    <strong className="font-medium text-neutral-400 mr-3 w-34 flex-shrink-0">
+                      Ad Link:
+                    </strong>
+                    <Link
+                      href={formData.advertisingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 underline truncate transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {formData.advertisingLink}
+                    </Link>
+                  </p>
+                )}
+                {/* Advertising Link Input (Edit Mode) */}
+                {isEditing && (
+                  <div className="">
+                    <p className="flex items-center">
+                      <strong className="font-medium text-nowrap text-neutral-400 mr-3 w-34 flex-shrink-0">
+                        Ad Link:
+                      </strong>
+                      <input
+                        type="url"
+                        name="advertisingLink"
+                        value={formData.advertisingLink || ""}
+                        onChange={handleInputChange}
+                        className="input-field w-full"
+                        placeholder="https://... (Ad link)"
+                      />
+                    </p>
+                  </div>
                 )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </>
+
+            {error && (
+              <p className="text-red-500 text-sm mt-3">Error: {error}</p>
+            )}
+          </div>
+        </motion.div>
 
         {/* Close Button - Increase padding for larger click area */}
         <button
