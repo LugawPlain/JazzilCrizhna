@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node ./scripts/prepare-creds.js && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "update-images": "node scripts/update-images-data.js",
@@ -41,7 +41,8 @@
     "react-google-recaptcha": "^3.1.0",
     "react-icons": "^5.5.0",
     "tailwind-merge": "^3.2.0",
-    "tailwind-scrollbar": "^4.0.2"
+    "tailwind-scrollbar": "^4.0.2",
+    "vercel": "^41.7.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -53,6 +54,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "dotenv": "^16.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
     "tailwindcss": "^4",

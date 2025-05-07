@@ -1,3 +1,5 @@
+require("dotenv").config({ path: ".env.local" });
+
 const fs = require("fs");
 const path = require("path");
 
@@ -8,6 +10,14 @@ const targetDir = path.resolve(__dirname, "../config");
 const targetPath = path.join(targetDir, "service-account.json");
 
 console.log("[prepare-creds] Starting script...");
+console.log(
+  "[prepare-creds] Value of FIREBASE_SA_BASE64_CONTENT:",
+  base64Creds
+);
+console.log(
+  "[prepare-creds] Is FIREBASE_SA_BASE64_CONTENT undefined?",
+  typeof base64Creds === "undefined"
+);
 
 if (!base64Creds) {
   console.error(

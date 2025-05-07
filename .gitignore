@@ -42,13 +42,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts   
-/firebasekey
+
 
 # Local Netlify folder
 .netlify
 
 
-# Local Netlify folder
-/config/service-account.json
 
+/config/service-account.json
+/firebasekey
 .cursor/
