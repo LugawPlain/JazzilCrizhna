@@ -33,13 +33,13 @@ const nextConfig: NextConfig = {
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
     // Enhance caching for assets
-    config.cache = {
-      ...config.cache,
-      type: "filesystem",
-      buildDependencies: {
-        config: [__filename],
-      },
-    };
+    // config.cache = {
+    //   ...config.cache,
+    //   type: "filesystem",
+    //   buildDependencies: {
+    //     config: [__filename],
+    //   },
+    // };
 
     return config;
   },
