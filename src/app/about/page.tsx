@@ -13,10 +13,10 @@ export default function AboutPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-8 sm:mb-16"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 sm:mb-4">
+          <h1 className="text-3xl sm:text-4xl  text-white mb-2 sm:mb-4 font-heebo font-semibold">
             About Me
           </h1>
-          <p className="text-gray-400">Get to know me better</p>
+          <p className="text-gray-400">Get to know me better 🥰</p>
         </motion.div>
 
         <div className="relative mb-8 sm:mb-16">

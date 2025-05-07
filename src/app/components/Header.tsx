@@ -116,13 +116,13 @@ export default function Header() {
               {/* Logo/Name */}
               <Link
                 href="/"
-                className="text-white text-3xl font-semibold hover:text-gray-200 transition-color font-Montserrat"
+                className="text-white text-3xl hover:text-gray-200 transition-color font-bold font-montserrat"
               >
                 Yorticia
               </Link>
 
               {/* Desktop Navigation */}
-              <div className="hidden md:flex items-center space-x-8 font-Montserrat text-lg">
+              <div className="hidden md:flex items-center space-x-8 font-montserrat text-lg">
                 {/* Portfolio Dropdown */}
                 <div className="relative">
                   <div

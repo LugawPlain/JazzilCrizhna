@@ -21,7 +21,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         aspectRatio: "9/16",
       }}
     >
-      <div className="absolute inset-0 overflow-hidden rounded-lg">
+      <div className="absolute inset-0 overflow-hidden rounded-lg ">
         <Image
           src={project.image}
           alt={project.title}
@@ -34,7 +34,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
         {/* Gradient Overlay */}
         <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-black/70 to-transparent pointer-events-none md:hidden"></div>
 
-        <div className="absolute inset-0 bg-transparent md:bg-black/60 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+        <div className="absolute font-montserrat inset-0 bg-transparent md:bg-black/60 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500">
           <div className="absolute -left-10 -rotate-90 top-1/2 -translate-y-1/2 origin-center hidden md:block">
             <span className="text-white/60 tracking-widest text-sm">
               VIEW PROJECT
@@ -52,7 +52,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
               {project.title}
             </h3>
             <p className="text-white/80 font-serif text-xs md:text-sm md:translate-y-4 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 md:delay-200">
-              {project.photographerlink ? (
+              {project.photographerlink !== "#" ? (
                 <span
                   className="pointer-events-auto p-5 inline-block"
                   onClick={(e) => {
@@ -71,9 +71,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                   </span>
                 </span>
               ) : (
-                <span className="md:pl-5 md:pt-5 inline-block">
-                  {project.photographer}
-                </span>
+                <span className="p-5 inline-block">{project.photographer}</span>
               )}
             </p>
           </div>

@@ -6,6 +6,8 @@ import Header from "./components/Header";
 import SocialLinksButton from "@/components/SocialLinksButton";
 import Footer from "./components/Footer";
 import Providers from "./components/Providers";
+import { heebo } from "@/lib/fonts/heebo";
+import { montserrat } from "@/lib/fonts/montserrat";
 import { aestheticMoment } from "@/lib/fonts/aestheticmoment";
 import { quentonSerif } from "@/lib/fonts/quenton_serif";
 import { vogue } from "@/lib/fonts/vogue";
@@ -54,7 +56,7 @@ export default function RootLayout({
         <link rel="icon" href="/Logoico.ico" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${bulgariaDreams.variable} ${aestheticMoment.variable} ${quentonSerif.variable} ${vogue.variable} ${designer.variable} ${caliste2.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bulgariaDreams.variable} ${aestheticMoment.variable} ${quentonSerif.variable} ${vogue.variable} ${designer.variable} ${caliste2.variable} ${heebo.variable} ${montserrat.variable} font-heebo antialiased`}
       >
         <Providers>
           <Header />

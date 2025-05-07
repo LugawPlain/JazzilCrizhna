@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Clash+Display:ital,wght@0,100..900;1,100..900&display=swap");
 @custom-variant dark (&:is(.dark *));
 
 @plugin "tailwindcss-motion";
@@ -45,13 +43,17 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+@theme {
   --font-bulgaria-dreams: var(--font-bulgaria-dreams);
-  --font-Montserrat: "Montserrat";
   --font-aesthetic-moment: var(--font-aesthetic-moment);
   --font-quenton-serif: var(--font-quenton-serif);
   --font-vogue: var(--font-vogue);
   --font-designer: var(--font-designer);
   --font-caliste-2: var(--font-caliste-2);
+  --font-heebo: var(--font-heebo);
+  --font-montserrat: var(--font-montserrat);
 }
 
 @layer utilities {
