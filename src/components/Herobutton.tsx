@@ -9,7 +9,7 @@ interface HerobuttonProps {
 
 const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
   return (
-    <div className="relative flex items-center justify-center lg:opacity-40  0 lg:hover:opacity-100 transition-all duration-150">
+    <div className="relative flex items-center justify-center lg:opacity-40  lg:hover:opacity-100 transition-all duration-150">
       <motion.svg
         className="absolute z-0"
         width="200"
@@ -48,10 +48,7 @@ const Herobutton: React.FC<HerobuttonProps> = ({ text = "Portfolio" }) => {
         href="/portfolio"
         className="hover:bg-white/10 hover:backdrop-blur-xs transition-all duration-150 px-1 py-2 rounded-md z-10 group "
       >
-        <p
-          className="text-white group-hover:text-[#FFD700] transition-all duration-150 text-5xl font-normal "
-          style={{ fontFamily: "acumin-pro-regular, sans-serif" }}
-        >
+        <p className="text-white group-hover:text-[#FFD700] transition-all duration-150 text-5xl font-normal font-aesthetic-moment  ">
           {text}
         </p>
       </Link>

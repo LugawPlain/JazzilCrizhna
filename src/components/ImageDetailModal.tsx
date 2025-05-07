@@ -897,7 +897,42 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
                 )}
               </div>
             </>
-
+            {isAdmin && (
+              <div className="mt-6 flex items-center gap-3">
+                {!isEditing ? (
+                  <Button onClick={handleEditClick} size="sm">
+                    Edit Details
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handleSaveClick}
+                      disabled={isSaving || isDeleting}
+                      size="sm"
+                      variant="default"
+                    >
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                    <Button
+                      onClick={handleCancelClick}
+                      disabled={isSaving || isDeleting}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleDeleteClick}
+                      disabled={isSaving || isDeleting}
+                      size="sm"
+                      variant="destructive"
+                    >
+                      Delete Image
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
             {error && (
               <p className="text-red-500 text-sm mt-3">Error: {error}</p>
             )}
@@ -907,7 +942,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
         {/* Close Button - Increase padding for larger click area */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 md:top-4 md:right-4 z-20 bg-black/40 text-white p-4 rounded-full hover:bg-black/60 transition-colors"
+          className="absolute top-2 right-2 text-red-400 md:top-4 md:right-4 z-20 bg-black/40  p-4 rounded-full hover:bg-black/60 transition-colors"
           aria-label="Close modal"
         >
           <svg

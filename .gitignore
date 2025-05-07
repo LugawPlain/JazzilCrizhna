@@ -51,3 +51,4 @@ next-env.d.ts
 # Local Netlify folder
 /config/service-account.json
 
+.cursor/

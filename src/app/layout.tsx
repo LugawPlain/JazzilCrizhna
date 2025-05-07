@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { bulgariaDreams } from "@/lib/fonts/bulgariadreams";
 import "./globals.css";
 import Header from "./components/Header";
 import SocialLinksButton from "@/components/SocialLinksButton";
 import Footer from "./components/Footer";
 import Providers from "./components/Providers";
-
+import { aestheticMoment } from "@/lib/fonts/aestheticmoment";
+import { quentonSerif } from "@/lib/fonts/quenton_serif";
+import { vogue } from "@/lib/fonts/vogue";
+import { designer } from "@/lib/fonts/designer";
+import { caliste2 } from "@/lib/fonts/caliste_2";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -49,7 +54,7 @@ export default function RootLayout({
         <link rel="icon" href="/Logoico.ico" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bulgariaDreams.variable} ${aestheticMoment.variable} ${quentonSerif.variable} ${vogue.variable} ${designer.variable} ${caliste2.variable} antialiased`}
       >
         <Providers>
           <Header />
