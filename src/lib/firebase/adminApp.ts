@@ -26,8 +26,31 @@ if (!dbAdmin) {
       let serviceAccount: object | undefined;
       let initMethod: string | undefined;
 
-      // *** NEW: Check for local dev credentials FIRST ***
-      if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      // *** PRIORITY 1: Check for Base64 encoded service account from env variable ***
+      if (process.env.FIREBASE_SA_BASE64_CONTENT) {
+        try {
+          console.log(
+            "[Firebase Admin] Attempting to use FIREBASE_SA_BASE64_CONTENT environment variable."
+          );
+          const decodedJson = Buffer.from(
+            process.env.FIREBASE_SA_BASE64_CONTENT,
+            "base64"
+          ).toString("utf-8");
+          serviceAccount = JSON.parse(decodedJson);
+          initMethod = "environment variable (FIREBASE_SA_BASE64_CONTENT)";
+        } catch (base64Error: unknown) {
+          console.error(
+            "[Firebase Admin] Error decoding/parsing FIREBASE_SA_BASE64_CONTENT:",
+            base64Error instanceof Error
+              ? base64Error.message
+              : String(base64Error)
+          );
+          // Don't re-throw, allow fallback
+        }
+      }
+
+      // *** PRIORITY 2 (FALLBACK 1): Check for local dev credentials path via GOOGLE_APPLICATION_CREDENTIALS ***
+      if (!serviceAccount && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         try {
           const localCredentialPath =
             process.env.GOOGLE_APPLICATION_CREDENTIALS;
@@ -58,11 +81,11 @@ if (!dbAdmin) {
               ? localError.message
               : String(localError)
           );
-          // Don't re-throw yet, allow fallback to fixed path
+          // Don't re-throw, allow fallback to fixed path
         }
       }
 
-      // *** FALLBACK: Check for fixed file path (for deployed env) ***
+      // *** PRIORITY 3 (FALLBACK 2): Check for fixed file path (less ideal for deployment) ***
       if (!serviceAccount) {
         try {
           const absoluteFixedPath = path.resolve(
