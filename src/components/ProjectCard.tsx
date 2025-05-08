@@ -48,7 +48,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
           </div>
 
           <div className="absolute bottom-0 right-0 text-right">
-            <h3 className="text-white md:hidden text-base font-medium md:text-lg md:translate-y-4 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 md:delay-100">
+            <h3 className="text-white md:hidden mr-4 text-base font-medium md:text-lg md:translate-y-4 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 md:delay-100">
               {project.title}
             </h3>
             <p className="text-white/80 font-serif md:text-sm md:translate-y-4 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 md:delay-200">
@@ -65,7 +65,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                     );
                   }}
                 >
-                  <span className="absolute left-0 -translate-y-1">📸</span>
+                  <span className="absolute -left-1 -translate-y-0.5">📸</span>
                   {project.photographer}
                 </span>
               ) : (
