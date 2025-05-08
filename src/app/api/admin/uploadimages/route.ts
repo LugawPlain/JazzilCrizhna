@@ -1,51 +1,86 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET_NAME } from "@/lib/r2";
-
 import { v4 as uuidv4 } from "uuid";
 import { NextRequest, NextResponse } from "next/server";
-import { dbAdmin } from "@/lib/firebase/adminApp"; // <--- Import CORRECT export 'dbAdmin'
-import { FieldValue } from "firebase-admin/firestore"; // Keep FieldValue if used
+import { dbAdmin } from "@/lib/firebase/adminApp";
+import admin from "firebase-admin"; // Required for admin.firestore.Timestamp
+import { FieldValue } from "firebase-admin/firestore";
 
-// --- Helper function for date validation ---
-function isValidEventDateFormat(dateStr: string): boolean {
-  const trimmedStr = dateStr.trim();
-  // Regex to match M/D/YYYY or M/D/YYYY - M/D/YYYY (flexible digits)
+// --- Helper function to parse event date string to a JavaScript Date object ---
+// Parses M/D/YYYY or the start date of M/D/YYYY - M/D/YYYY
+function parseEventDateToJsDate(
+  dateStrInput: string | null | undefined
+): Date | null {
+  if (!dateStrInput) {
+    return null;
+  }
+  const dateStr = dateStrInput.trim();
+
+  // Regex to match M/D/YYYY or M/D/YYYY - M/D/YYYY (flexible digits for month/day)
   const rangeRegex =
     /^(\d{1,2}\/\d{1,2}\/\d{4})\s*-\s*(\d{1,2}\/\d{1,2}\/\d{4})$/;
   const singleRegex = /^(\d{1,2}\/\d{1,2}\/\d{4})$/;
 
-  const datesToValidate: string[] = [];
+  let dateStringToParse: string | null = null;
 
-  const rangeMatch = trimmedStr.match(rangeRegex);
+  const rangeMatch = dateStr.match(rangeRegex);
   if (rangeMatch) {
-    datesToValidate.push(rangeMatch[1], rangeMatch[2]);
+    dateStringToParse = rangeMatch[1]; // Use the start date of the range
   } else {
-    const singleMatch = trimmedStr.match(singleRegex);
+    const singleMatch = dateStr.match(singleRegex);
     if (singleMatch) {
-      datesToValidate.push(singleMatch[1]);
+      dateStringToParse = singleMatch[1];
     } else {
-      // Doesn't match either format
-      return false;
+      // Doesn't match either expected format
+      console.warn(
+        `[Upload API Helper] Event date string "${dateStr}" does not match expected M/D/YYYY or M/D/YYYY - M/D/YYYY format.`
+      );
+      return null;
     }
   }
 
-  // Validate each extracted date string
-  for (const dStr of datesToValidate) {
-    const dateObj = new Date(dStr);
-    // Check if Date constructor parsed it successfully and it's not an invalid date
-    if (isNaN(dateObj.getTime())) {
-      return false; // Invalid date like 02/30/2025
-    }
-  }
+  if (!dateStringToParse) return null; // Should not happen if logic above is correct
 
-  return true; // Format is correct and all dates are valid
+  // Attempt to parse the M/D/YYYY string
+  const parts = dateStringToParse.split("/");
+  if (parts.length === 3) {
+    const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+
+    // Basic validation for parts
+    if (isNaN(month) || isNaN(day) || isNaN(year)) {
+      console.warn(
+        `[Upload API Helper] Invalid date parts in "${dateStringToParse}"`
+      );
+      return null;
+    }
+
+    const dateObj = new Date(year, month, day);
+    // Check if Date constructor parsed it successfully, it's a valid date,
+    // and the components match (e.g., not 02/30/2025 which becomes 03/02/2025)
+    if (
+      isNaN(dateObj.getTime()) ||
+      dateObj.getFullYear() !== year ||
+      dateObj.getMonth() !== month ||
+      dateObj.getDate() !== day
+    ) {
+      console.warn(
+        `[Upload API Helper] Invalid date created from "${dateStringToParse}" (e.g., 02/30/2025).`
+      );
+      return null;
+    }
+    return dateObj;
+  }
+  return null; // Should be caught by regex if not M/D/YYYY
 }
 // --- End Helper function ---
 
 interface FileSpecificMetadata {
   photographer: string | null;
   photographerLink?: string | null;
-  eventDate: string | null;
+  eventDate: string | null; // This will store the original string input
+  eventEndDate?: string | null;
   location: string | null;
   locationLink?: string | null;
   event: string | null;
@@ -56,10 +91,9 @@ interface FileSpecificMetadata {
 }
 
 export async function POST(request: NextRequest) {
-  // --- Use the imported dbAdmin instance ---
   if (!dbAdmin) {
     console.error(
-      "[Upload API] Firestore instance (dbAdmin) is not available. Check lib/firebase/adminApp logs."
+      "[Upload API] Firestore instance (dbAdmin) is not available."
     );
     return NextResponse.json(
       { error: "Server configuration error (Database not ready)." },
@@ -71,280 +105,183 @@ export async function POST(request: NextRequest) {
   );
 
   try {
-    console.log(
-      "[/api/uploadimages] Parsing form data using request.formData()..."
-    );
     const formData = await request.formData();
-    console.log("[/api/uploadimages] Form data parsed successfully.");
-
-    // --- Extract files and fields from FormData ---
-    console.log("[/api/uploadimages] Extracting fields and files...");
-    const files: File[] = []; // Use the global File type (Web API)
+    const files: File[] = [];
     let category: string | null = null;
     let metadataArrayString: string | null = null;
 
     for (const [key, value] of formData.entries()) {
-      // Check against the global File constructor
       if (value instanceof File) {
         files.push(value);
       } else {
-        // It's a simple field
-        if (key === "category") {
-          category = value;
-        } else if (key === "metadataArray") {
-          metadataArrayString = value;
-        }
+        if (key === "category") category = value;
+        else if (key === "metadataArray") metadataArrayString = value;
       }
     }
-    console.log(`[/api/uploadimages] Extracted Category: ${category}`);
-    console.log(
-      `[/api/uploadimages] Extracted Metadata String: ${
-        metadataArrayString ? "Exists" : "Missing"
-      }`
-    );
-    console.log(
-      `[/api/uploadimages] Found ${files.length} file(s) in form data.`
-    );
 
-    // Check if any files were uploaded
     if (files.length === 0) {
-      console.log("[/api/uploadimages] No files found in upload.");
       return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
     }
-
-    // Backend validation for category
     if (!category) {
-      console.log("[/api/uploadimages] Category validation failed.");
       return NextResponse.json(
         { error: "Category is required." },
         { status: 400 }
       );
     }
-    console.log("[/api/uploadimages] Category validation passed.");
 
-    // --- Parse the metadata array (logic remains similar) ---
-    let parsedMetadata: FileSpecificMetadata[] = []; // Use defined interface
+    let parsedMetadata: FileSpecificMetadata[] = [];
     if (!metadataArrayString) {
-      console.log("[/api/uploadimages] Metadata array string is missing.");
       return NextResponse.json(
         { error: "Missing metadata array." },
         { status: 400 }
       );
     }
     try {
-      console.log("[/api/uploadimages] Parsing metadata array string...");
       parsedMetadata = JSON.parse(metadataArrayString);
-      if (!Array.isArray(parsedMetadata)) {
+      if (!Array.isArray(parsedMetadata))
         throw new Error("Metadata is not an array.");
-      }
-      // Optional: Add more validation for the structure of each metadata object
-      console.log(
-        `[/api/uploadimages] Metadata array parsed successfully. Found ${parsedMetadata.length} items.`
-      );
-      // Validate if metadata count matches file count
-      if (parsedMetadata.length !== files.length) {
-        console.warn(
-          `[/api/uploadimages] Mismatch: Found ${files.length} files but ${parsedMetadata.length} metadata entries.`
-        );
-        // Decide how to handle mismatch - error out? proceed carefully?
-        // For now, we'll proceed but rely on filename matching.
-        // Consider returning an error for stricter validation:
-        // throw new Error("Mismatch between number of files and metadata entries.");
-      }
     } catch (parseError: unknown) {
       const errorMessage =
         parseError instanceof Error ? parseError.message : String(parseError);
-      console.error(
-        "[/api/uploadimages] Failed to parse metadataArray:",
-        errorMessage
-      );
       return NextResponse.json(
         { error: "Invalid metadata format.", details: errorMessage },
         { status: 400 }
       );
     }
 
-    // --- Create a map for quick metadata lookup by filename (logic remains similar) ---
-    console.log("[/api/uploadimages] Creating metadata map...");
     const metadataMap = new Map(
       parsedMetadata.map((meta) => [meta.originalFilename, meta])
     );
-    console.log("[/api/uploadimages] Metadata map created.");
-
-    // --- Process each file ---
     const results = [];
     let successfulUploads = 0;
     const errors: string[] = [];
-
     const collectionName = `${category
       .toLowerCase()
       .replace(/\s+/g, "_")}_uploads`;
+
     console.log(
       `[/api/uploadimages] Using Firestore collection: ${collectionName}`
     );
 
-    console.log("[/api/uploadimages] Starting file processing loop...");
     for (const file of files) {
-      // file here is the global File type
-      const currentFileName = file.name || "unknownfile"; // Use file.name
+      const currentFileName = file.name || "unknownfile";
       console.log(`[/api/uploadimages] Processing file: ${currentFileName}`);
       try {
-        // --- R2 Upload using File object ---
-        const fileBuffer = Buffer.from(await file.arrayBuffer()); // Use file.arrayBuffer()
-
+        const fileBuffer = Buffer.from(await file.arrayBuffer());
         const fileKey = `uploads/${uuidv4()}-${currentFileName}`;
 
-        const uploadParams = {
-          Bucket: R2_BUCKET_NAME,
-          Key: fileKey,
-          Body: fileBuffer,
-          ContentType: file.type || "application/octet-stream", // Use file.type
-        };
-        console.log(`[/api/uploadimages] Uploading ${fileKey} to R2...`);
-        const command = new PutObjectCommand(uploadParams);
-        await r2Client.send(command);
+        await r2Client.send(
+          new PutObjectCommand({
+            Bucket: R2_BUCKET_NAME,
+            Key: fileKey,
+            Body: fileBuffer,
+            ContentType: file.type || "application/octet-stream",
+          })
+        );
         console.log(
           `[/api/uploadimages] Successfully uploaded ${fileKey} to R2.`
         );
-        // No temporary file path to check or delete anymore
 
-        // --- Firestore Save (logic remains similar, using metadataMap) ---
-        let firestoreDocId: string | null = null;
-        try {
-          console.log(
-            `[/api/uploadimages] Looking up metadata for ${currentFileName}...`
+        const specificMetadata = metadataMap.get(currentFileName);
+        if (!specificMetadata) {
+          console.warn(
+            `[/api/uploadimages] Metadata not found for file: ${currentFileName}.`
           );
-          const specificMetadata = metadataMap.get(currentFileName);
-
-          if (!specificMetadata) {
-            console.warn(
-              `[/api/uploadimages] Metadata not found for file: ${currentFileName}.`
-            );
-            errors.push(`Metadata missing for ${currentFileName}`);
-          }
-          console.log(
-            `[/api/uploadimages] Found metadata for ${currentFileName}:`,
-            specificMetadata || "Not Found"
-          );
-
-          console.log(
-            `[/api/uploadimages] Constructing Firestore data for ${currentFileName}...`
-          );
-
-          // --- NEW LOGIC: Validate and store eventDate as string or null ---
-          let eventDateValue: string | null = null; // Always string or null now
-          if (specificMetadata?.eventDate) {
-            const dateStr = specificMetadata.eventDate.trim();
-
-            if (isValidEventDateFormat(dateStr)) {
-              eventDateValue = dateStr; // Store the original valid string
-              console.log(
-                `[/api/uploadimages] Using valid event date string for ${currentFileName}: \\"${dateStr}\\"`
-              );
-            } else {
-              console.warn(
-                `[/api/uploadimages] Invalid or unrecognized event date format for ${currentFileName}: \\"${dateStr}\\". Storing null.`
-              );
-              // Keep eventDateValue as null if validation fails
-            }
-          } else {
-            console.log(
-              `[/api/uploadimages] No event date provided for ${currentFileName}.`
-            );
-            // Keep eventDateValue as null
-          }
-          // --- END NEW LOGIC ---
-
-          const uploadData = {
-            r2FileKey: fileKey,
-            originalFilename: currentFileName,
-            contentType: file.type || "application/octet-stream", // Use file.type
-            photographer: specificMetadata?.photographer || null,
-            photographerLink: specificMetadata?.photographerLink || null,
-            eventDate: eventDateValue, // Store the validated string or null
-            location: specificMetadata?.location || null,
-            event: specificMetadata?.event || null,
-            category: category,
-            uploadedAt: FieldValue.serverTimestamp(),
-            advertisingLink: specificMetadata?.advertisingLink || null,
-          };
-          console.log(
-            `[/api/uploadimages] Firestore data for ${currentFileName}:`,
-            `uploadData:`,
-            uploadData
-          );
-
-          console.log(
-            `[/api/uploadimages] Saving Firestore data for ${currentFileName} to collection ${collectionName}...`
-          );
-          const docRef = await dbAdmin
-            .collection(collectionName)
-            .add(uploadData);
-          firestoreDocId = docRef.id;
-          console.log(
-            `[/api/uploadimages] Firestore save successful for ${currentFileName}. Doc ID: ${firestoreDocId}`
-          );
-
-          results.push({
-            fileKey: fileKey,
-            originalFilename: currentFileName,
-            firestoreDocId: firestoreDocId,
-          });
-          successfulUploads++;
-        } catch (firestoreError: unknown) {
-          const errorMessage =
-            firestoreError instanceof Error
-              ? firestoreError.message
-              : String(firestoreError);
-          console.error(
-            `[/api/uploadimages] Error saving metadata to Firestore for ${currentFileName}:`,
-            errorMessage
-          );
-          errors.push(
-            `Failed to save metadata for ${currentFileName}: ${errorMessage}`
-          );
-          // Consider R2 cleanup here
+          // errors.push(`Metadata missing for ${currentFileName}`); // Optional: decide if this is an error
         }
-        // No temporary file cleanup needed
-      } catch (uploadError: unknown) {
+
+        // --- Process eventDate for eventStartDate (Timestamp) and keep original eventDate (string) ---
+        const originalEventDateString =
+          specificMetadata?.eventDate?.trim() || null;
+        let eventStartDateTimestamp: admin.firestore.Timestamp | null = null;
+
+        if (originalEventDateString) {
+          const jsDate = parseEventDateToJsDate(originalEventDateString);
+          if (jsDate) {
+            eventStartDateTimestamp =
+              admin.firestore.Timestamp.fromDate(jsDate);
+            console.log(
+              `[/api/uploadimages] Derived eventStartDate (Timestamp) for ${currentFileName}: ${eventStartDateTimestamp
+                .toDate()
+                .toISOString()}`
+            );
+          } else {
+            console.warn(
+              `[/api/uploadimages] Could not parse valid JS Date from eventDate string "${originalEventDateString}" for ${currentFileName}. eventStartDate will be null.`
+            );
+          }
+        } else {
+          console.log(
+            `[/api/uploadimages] No eventDate string provided for ${currentFileName}. eventStartDate will be null.`
+          );
+        }
+        // --- End eventDate processing ---
+
+        const uploadData = {
+          r2FileKey: fileKey,
+          originalFilename: currentFileName,
+          contentType: file.type || "application/octet-stream",
+          photographer: specificMetadata?.photographer || null,
+          photographerLink: specificMetadata?.photographerLink || null,
+          eventDate: originalEventDateString, // Store the original string (trimmed or null)
+          eventStartDate: eventStartDateTimestamp, // Store Firestore Timestamp or null
+          // eventEndDate: specificMetadata?.eventEndDate || null, // Keep if you use it
+          location: specificMetadata?.location || null,
+          locationLink: specificMetadata?.locationLink || null,
+          event: specificMetadata?.event || null,
+          eventLink: specificMetadata?.eventLink || null,
+          category: category,
+          uploadedAt: FieldValue.serverTimestamp(),
+          advertisingLink: specificMetadata?.advertisingLink || null,
+        };
+
+        console.log(
+          `[/api/uploadimages] Saving Firestore data for ${currentFileName}... Data:`,
+          JSON.stringify(uploadData, null, 2)
+        );
+        const docRef = await dbAdmin.collection(collectionName).add(uploadData);
+        console.log(
+          `[/api/uploadimages] Firestore save successful for ${currentFileName}. Doc ID: ${docRef.id}`
+        );
+
+        results.push({
+          fileKey: fileKey,
+          originalFilename: currentFileName,
+          firestoreDocId: docRef.id,
+        });
+        successfulUploads++;
+      } catch (processError: unknown) {
         const errorMessage =
-          uploadError instanceof Error
-            ? uploadError.message
-            : String(uploadError);
+          processError instanceof Error
+            ? processError.message
+            : String(processError);
         console.error(
           `[/api/uploadimages] Error processing file ${currentFileName}:`,
-          errorMessage
+          errorMessage,
+          processError
         );
-        errors.push(`Failed to upload ${currentFileName}: ${errorMessage}`);
-        // No temporary file cleanup needed here either
+        errors.push(`Failed for ${currentFileName}: ${errorMessage}`);
       }
     } // End loop
-    console.log("[/api/uploadimages] Finished file processing loop.");
 
-    // --- Consolidate Response (logic remains the same) ---
-    console.log(
-      `[/api/uploadimages] Consolidating response. Successful: ${successfulUploads}, Failed: ${errors.length}`
-    );
     if (successfulUploads === files.length) {
       return NextResponse.json(
         {
           message: `${successfulUploads} file(s) uploaded and metadata saved successfully`,
           count: successfulUploads,
-          results: results, // Array of successful upload details
+          results: results,
         },
         { status: 200 }
       );
     } else {
-      // Partial success or complete failure
-      const status = successfulUploads > 0 ? 207 : 500; // 207 Multi-Status or 500 Internal Server Error
       return NextResponse.json(
         {
           message: `Processed ${files.length} file(s). Successful: ${successfulUploads}, Failed: ${errors.length}`,
           count: successfulUploads,
-          results: results, // Successful ones
-          errors: errors, // List of errors
+          results: results,
+          errors: errors,
         },
-        { status: status }
+        { status: successfulUploads > 0 ? 207 : 500 }
       );
     }
   } catch (error: unknown) {
@@ -353,7 +290,6 @@ export async function POST(request: NextRequest) {
       "[/api/uploadimages] Unhandled error in POST handler:",
       error
     );
-    // Check if it's a specific error type that formData() might throw
     if (
       error instanceof TypeError &&
       errorMessage.includes("Could not parse content as FormData")
@@ -363,34 +299,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    // Check for AWS SDK errors (safer check)
-    // Use optional chaining and check if error is object-like before accessing name
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "name" in error &&
-      error.name === "NoSuchBucket"
-    ) {
-      return NextResponse.json(
-        { error: "R2 bucket not found." },
-        { status: 404 }
-      );
-    }
-
-    // Check if it's a Firebase Admin init error (using message is okay here)
-    if (errorMessage.includes("GOOGLE_APPLICATION_CREDENTIALS")) {
-      return NextResponse.json(
-        {
-          error: "Server configuration error (Firebase).",
-          details: errorMessage,
-        },
-        { status: 500 }
-      );
-    }
-
-    // Generic error
+    // Add other specific error checks if needed
     return NextResponse.json(
-      { error: "Failed to process upload.", details: errorMessage }, // Use safe errorMessage
+      { error: "Failed to process upload.", details: errorMessage },
       { status: 500 }
     );
   }

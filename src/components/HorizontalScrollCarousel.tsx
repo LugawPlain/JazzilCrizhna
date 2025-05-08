@@ -28,15 +28,40 @@ export const HorizontalScrollCarousel = () => {
 
   // Fetch data on component mount from the correct endpoint
   useEffect(() => {
-    const fetchProjectImages = async () => {
+    const fetchProjectImagesData = async () => {
       setLoading(true);
       setError(null);
+
+      const cacheKey = "projectImagesCache";
+
       try {
+        // Try to load from localStorage first
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+          console.log(
+            "[HorizontalScrollCarousel] Loaded project images from localStorage."
+          );
+          const parsedData = JSON.parse(cachedData);
+          // Basic validation, ensure it matches the expected structure
+          if (parsedData && Array.isArray(parsedData.projectImages)) {
+            setProjectImages(parsedData.projectImages);
+            setLoading(false); // Data loaded from cache
+            // Optionally, you could re-fetch in the background to update cache
+            // without showing loading again, but we'll keep it simple for now.
+            return; // Exit early as we've loaded from cache
+          } else {
+            console.warn(
+              "[HorizontalScrollCarousel] Invalid cached data format, removing from cache."
+            );
+            localStorage.removeItem(cacheKey); // Remove invalid cache
+          }
+        }
+
+        // If not in cache or cache was invalid, fetch from API
         console.log(
           "[HorizontalScrollCarousel] Fetching project images from /api/fetch-project-images..."
         );
-        // Ensure we call the correct endpoint
-        const response = await fetch("/api/fetch-project-images"); // Correct endpoint
+        const response = await fetch("/api/fetch-project-images");
         if (!response.ok) {
           throw new Error(
             `API Error: ${response.status} ${response.statusText}`
@@ -53,8 +78,25 @@ export const HorizontalScrollCarousel = () => {
         console.log(
           `[HorizontalScrollCarousel] Received ${data.projectImages.length} project images.`
         );
-        // Set the state with the data matching ProjectCardData
         setProjectImages(data.projectImages);
+
+        // Save to localStorage for next time
+        try {
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({ projectImages: data.projectImages })
+          );
+          console.log(
+            "[HorizontalScrollCarousel] Saved project images to localStorage."
+          );
+        } catch (cacheError) {
+          console.error(
+            "[HorizontalScrollCarousel] Failed to save project images to localStorage:",
+            cacheError
+          );
+          // If localStorage is full or disabled, this might fail.
+          // The app will still work, but data won't be cached.
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to load project images.";
@@ -68,7 +110,7 @@ export const HorizontalScrollCarousel = () => {
       }
     };
 
-    fetchProjectImages();
+    fetchProjectImagesData();
   }, []); // Empty dependency array ensures this runs only once on mount
 
   // Define the wheel handler using useCallback to keep its reference stable

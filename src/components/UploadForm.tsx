@@ -150,7 +150,7 @@ function UploadForm() {
             photographerLink: "",
             event: "",
             eventLink: "",
-            eventDate: "", // Initialize eventDate as empty string
+            eventDate: "",
             location: "",
             locationLink: "",
             advertising: "",

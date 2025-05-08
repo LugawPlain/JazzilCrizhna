@@ -68,6 +68,34 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
     const signal = controller.signal;
 
     const fetchImages = async () => {
+      const cacheKey = `image_cache_${category}`;
+      const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+      // Try to load from cache first
+      try {
+        const cachedItemJSON = sessionStorage.getItem(cacheKey);
+        if (cachedItemJSON) {
+          const cachedItem = JSON.parse(cachedItemJSON);
+          if (
+            cachedItem &&
+            cachedItem.timestamp &&
+            Date.now() - cachedItem.timestamp < CACHE_DURATION_MS &&
+            cachedItem.data
+          ) {
+            console.log(`[useImages] Using cached data for ${category}`);
+            setFetchedRawUnsortedImages(cachedItem.data);
+            // setLoading(false); // setLoading(false) will be called by the sort effect
+            return; // Exit if cached data is used
+          } else {
+            // Cache expired or invalid, remove it
+            sessionStorage.removeItem(cacheKey);
+          }
+        }
+      } catch (e) {
+        console.warn("[useImages] Error accessing session cache:", e);
+        sessionStorage.removeItem(cacheKey); // Clear corrupted cache
+      }
+
       try {
         const timestamp = Date.now(); // Cache busting
         const response = await fetch(
@@ -124,6 +152,17 @@ export function useImages(category: string, r2PublicUrl: string | undefined) {
         }));
 
         setFetchedRawUnsortedImages(formattedImages);
+        // Cache the newly fetched data
+        try {
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({ timestamp: Date.now(), data: formattedImages })
+          );
+          console.log(`[useImages] Cached data for ${category}`);
+        } catch (e) {
+          console.warn("[useImages] Error saving to session cache:", e);
+          // If quota is exceeded, or other storage error
+        }
       } catch (error: unknown) {
         if (error instanceof Error && error.name === "AbortError") {
           console.log("Fetch aborted"); // Request was cancelled, ignore

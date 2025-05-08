@@ -27,7 +27,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^11.6.0",
-    "firebase-admin": "^13.2.0",
+    "firebase-admin": "^13.3.0",
     "formidable": "^3.5.3",
     "framer-motion": "^12.7.4",
     "lucide-react": "^0.503.0",

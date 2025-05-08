@@ -31,20 +31,52 @@ if (admin.apps.length) {
 } else {
   // Attempt re-initialization or handle error (ideally init logic is shared/robust)
   try {
-    const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (!serviceAccountPath)
-      throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set.");
+    const serviceAccountEnvVar = process.env.FIREBASE_SA_BASE64_CONTENT;
+    if (!serviceAccountEnvVar) {
+      throw new Error(
+        "FIREBASE_SA_BASE64_CONTENT environment variable not set."
+      );
+    }
+
+    let parsedServiceAccount;
+    try {
+      // Try to parse as Base64 encoded JSON
+      const decodedJson = Buffer.from(serviceAccountEnvVar, "base64").toString(
+        "utf-8"
+      );
+      parsedServiceAccount = JSON.parse(decodedJson);
+      console.log(
+        "[/api/getportfolioimages] Successfully parsed FIREBASE_SA_BASE64_CONTENT."
+      );
+    } catch (parseError: unknown) {
+      // Log the parsing error message, which should be safe (e.g., "Unexpected token")
+      const parseErrorMessage =
+        parseError instanceof Error ? parseError.message : String(parseError);
+      console.error(
+        "[/api/getportfolioimages] FAILED to parse FIREBASE_SA_BASE64_CONTENT as Base64 encoded JSON. Ensure the environment variable contains a valid Base64 encoded service account key. Parsing error:",
+        parseErrorMessage
+      );
+      // Crucially, do not proceed to use serviceAccountEnvVar as a path.
+      // Let this error propagate to the outer catch.
+      throw new Error(
+        "Invalid service account configuration: FIREBASE_SA_BASE_64_CONTENT is not valid Base64 encoded JSON."
+      );
+    }
+
+    // If we reach here, parsedServiceAccount should be a valid object
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
+      credential: admin.credential.cert(parsedServiceAccount),
     });
     db = admin.firestore();
-    console.log("[/api/getimages] Secondary Firebase Admin Init successful.");
+    console.log(
+      "[/api/getportfolioimages] Firebase Admin Init successful with parsed service account."
+    );
   } catch (error: unknown) {
     // Type guard for error message
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
-      "[/api/getimages] CRITICAL: Firebase Admin initialization failed:",
-      errorMessage // Use safe message
+      "[/api/getportfolioimages] CRITICAL: Firebase Admin initialization failed:",
+      errorMessage // This errorMessage will now be from our specific throw or a more general initApp failure.
     );
     // db remains uninitialized
   }
