@@ -198,7 +198,7 @@ export async function GET() {
     // Optionally filter out events that have already passed if you only want future ones in the final display
     // const futureEvents = filteredEvents.filter(event => new Date(event.end) >= now);
 
-    // console.log("Filtered events (with conditional content):", filteredEvents);
+    console.log("Filtered events (with conditional content):", filteredEvents);
 
     eventCache = { data: filteredEvents, timestamp: Date.now() };
     return NextResponse.json(filteredEvents, { status: 200 });

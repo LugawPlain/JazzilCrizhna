@@ -94,6 +94,10 @@ export default function CalendarPage() {
     null
   );
   const [open, setOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null
+  );
 
   // Cache key and duration
   const CACHE_KEY = "calendar_events_cache";
@@ -225,10 +229,31 @@ export default function CalendarPage() {
 
   return (
     <>
-      <CalendarDayModal
-        open={open}
-        onClose={() => setOpen(false)}
-      ></CalendarDayModal>
+      <CalendarDayModal open={open} onClose={() => setOpen(false)}>
+        {selectedDay ? (
+          events.filter(
+            (event) =>
+              event.start && isSameDay(new Date(event.start), selectedDay)
+          ).length > 0 ? (
+            events
+              .filter(
+                (event) =>
+                  event.start && isSameDay(new Date(event.start), selectedDay)
+              )
+              .map((event) => (
+                <div key={event.id} className="mb-4">
+                  <h2 className="font-bold text-lg">{event.title}</h2>
+                  <p>{event.displayDate}</p>
+                  {event.description && <p>{event.description}</p>}
+                </div>
+              ))
+          ) : (
+            <p>No event for this day.</p>
+          )
+        ) : (
+          <p>No event for this day.</p>
+        )}
+      </CalendarDayModal>
       <div className="min-h-screen bg-neutral-900 relative overflow-hidden">
         {/* Background Images - (your existing code) */}
 
@@ -328,9 +353,9 @@ export default function CalendarPage() {
                         }
                      
                         ${
-                          isToday && !hasUpcoming
+                          isToday && hasUpcoming
                             ? "bg-violet-600/70 rounded-3xl "
-                            : isToday && hasUpcoming
+                            : isToday && !hasUpcoming
                             ? "bg-blue-500 "
                             : hasUpcoming
                             ? "bg-red-400/50 rounded-md"
@@ -342,7 +367,9 @@ export default function CalendarPage() {
                       `}
                       >
                         <Button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDay(day);
                             setOpen(true);
                           }}
                           variant="ghost"

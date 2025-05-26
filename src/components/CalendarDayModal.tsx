@@ -23,7 +23,7 @@ export default function CalendarDayModal({
           onClick={onClose}
         >
           <motion.div
-            className="bg-white rounded-lg shadow-xl max-w-md p-6 w-full"
+            className="bg-neutral-300 rounded-lg shadow-xl max-w-md p-6 w-full"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
