@@ -1,11 +1,11 @@
 "use client";
 import DisplayUpcomingEvents from "@/components/DisplayUpcomingEvents";
-import { useEffect, useState, useMemo } from "react"; // Added useMemo for optimization
+import { useEffect, useState, useMemo } from "react";
 import {
   format,
   startOfMonth,
   endOfMonth,
-  eachDayOfInterval,
+  eachDayOfInterval as fnsEachDayOfInterval, // Renamed to avoid conflict
   isSameMonth,
   isSameDay,
   addMonths,
@@ -14,19 +14,19 @@ import {
   endOfWeek,
   isFuture,
   isPast,
+  parseISO, // Import parseISO for converting YYYY-MM-DD strings
 } from "date-fns";
 import { Button } from "@/components/ui/button";
 import CalendarDayModal from "@/components/CalendarDayModal";
 
-// Define the shape of your event data returned from the API
 interface CalendarEvent {
   id: string;
   title: string;
-  description?: string; // Optional, only present for upcoming events
-  location?: string; // Optional, only present for upcoming events
-  displayDate: string; // Added displayDate property
-  start: string;
-  end: string;
+  description?: string;
+  location?: string;
+  displayDate: string;
+  start: string; // Expected to be YYYY-MM-DD after parsing
+  end: string; // Expected to be YYYY-MM-DD after parsing
 }
 
 function parseDisplayDate(
@@ -34,55 +34,36 @@ function parseDisplayDate(
 ): { start: string; end: string } | null {
   // Range with dash
   if (displayDate.includes(" - ")) {
-    const [startStr, endStr] = displayDate.split(" - ");
+    const [startStr, endStrPart] = displayDate.split(" - ");
+
+    const yearFromStart = new Date(startStr).getFullYear();
+    const endStr = endStrPart.includes(String(yearFromStart))
+      ? endStrPart
+      : `${endStrPart}, ${yearFromStart}`;
     const start = new Date(startStr);
     const end = new Date(endStr);
     if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
       return {
-        start:
-          start.getFullYear() +
-          "-" +
-          String(start.getMonth() + 1).padStart(2, "0") +
-          "-" +
-          String(start.getDate()).padStart(2, "0"),
-        end:
-          end.getFullYear() +
-          "-" +
-          String(end.getMonth() + 1).padStart(2, "0") +
-          "-" +
-          String(end.getDate()).padStart(2, "0"),
+        start: format(start, "yyyy-MM-dd"),
+        end: format(end, "yyyy-MM-dd"),
       };
     }
   }
 
   // Duration or single date/time
-  // Match with year included
-
   const dateMatch = displayDate.match(
     /^([A-Za-z]{3}, [A-Za-z]{3} \d{1,2}, \d{4})/
   );
   if (dateMatch) {
     const date = new Date(dateMatch[1]);
     if (!isNaN(date.getTime())) {
-      console.log("displayDate", displayDate);
-      console.log("date", date);
       return {
-        start:
-          date.getFullYear() +
-          "-" +
-          String(date.getMonth() + 1).padStart(2, "0") +
-          "-" +
-          String(date.getDate()).padStart(2, "0"),
-        end:
-          date.getFullYear() +
-          "-" +
-          String(date.getMonth() + 1).padStart(2, "0") +
-          "-" +
-          String(date.getDate()).padStart(2, "0"),
+        start: format(date, "yyyy-MM-dd"),
+        end: format(date, "yyyy-MM-dd"),
       };
     }
   }
-
+  console.warn("Could not parse displayDate:", displayDate);
   return null;
 }
 
@@ -95,41 +76,35 @@ export default function CalendarPage() {
   );
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
-    null
-  );
+  // const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null); // Not used in provided snippet
 
-  // Cache key and duration
   const CACHE_KEY = "calendar_events_cache";
-  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+  const CACHE_DURATION_MS = 5 * 60 * 1000;
 
-  // Calendar calculations (these are good as they are)
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  const monthYear = format(currentDate, "MMMM yyyy"); // Corrected format for "YYYY"
+  const days = fnsEachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const monthYear = format(currentDate, "MMMM yyyy"); // Corrected format
 
   useEffect(() => {
     setLoadingEvents(true);
     setErrorFetchingEvents(null);
 
-    // Try to load from localStorage first
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
-        const parsed = JSON.parse(cached);
+        const parsedCache = JSON.parse(cached);
         if (
-          parsed.timestamp &&
-          Date.now() - parsed.timestamp < CACHE_DURATION_MS &&
-          parsed.data
+          parsedCache.timestamp &&
+          Date.now() - parsedCache.timestamp < CACHE_DURATION_MS &&
+          parsedCache.data
         ) {
-          setEvents(parsed.data);
+          setEvents(parsedCache.data);
           setLoadingEvents(false);
-          return; // Use cached data
+          return;
         } else {
-          // Cache expired or invalid
           localStorage.removeItem(CACHE_KEY);
         }
       } catch {
@@ -137,7 +112,6 @@ export default function CalendarPage() {
       }
     }
 
-    // If not cached or cache expired, fetch from API
     fetch("/api/calendar/events")
       .then((res) => {
         if (!res.ok) {
@@ -146,24 +120,25 @@ export default function CalendarPage() {
         return res.json();
       })
       .then((data: CalendarEvent[]) => {
-        const parsedEvents = data.map((event) => {
-          const parsed = parseDisplayDate(event.displayDate);
-          return {
-            ...event,
-            start: parsed ? parsed.start : "",
-            end: parsed ? parsed.end : "",
-          };
-        });
-        setEvents(parsedEvents);
-        // Save to cache
+        // Assuming API returns data that might need parsing for start/end
+        const processedEvents = data
+          .map((event) => {
+            const parsedDates = parseDisplayDate(event.displayDate);
+            return {
+              ...event,
+              start: parsedDates ? parsedDates.start : event.start || "",
+              end: parsedDates ? parsedDates.end : event.end || "",
+            };
+          })
+          .filter((event) => event.start && event.end);
+
+        setEvents(processedEvents);
         try {
           localStorage.setItem(
             CACHE_KEY,
-            JSON.stringify({ timestamp: Date.now(), data: parsedEvents })
+            JSON.stringify({ timestamp: Date.now(), data: processedEvents })
           );
-        } catch {
-          // Ignore cache errors
-        }
+        } catch {}
       })
       .catch((error) => {
         console.error("Error fetching calendar events:", error);
@@ -172,96 +147,142 @@ export default function CalendarPage() {
       .finally(() => {
         setLoadingEvents(false);
       });
-  }, [CACHE_DURATION_MS]); // Only run on mount, but include CACHE_DURATION_MS as dependency
+  }, []);
 
-  // Helper function to check if a day has an upcoming event for highlighting
-  const hasUpcomingEventOnDay = (day: Date): boolean => {
-    return events.some((event) => {
-      if (!event.start || !event.end) return false;
-      return (
-        isSameDay(new Date(event.start), day) && isFuture(new Date(event.end))
-      );
+  // --- START: Optimized Event Handling ---
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    if (!events || events.length === 0) return map;
+
+    events.forEach((event) => {
+      if (event.start && event.end && event.start !== "" && event.end !== "") {
+        try {
+          const startDate = parseISO(event.start);
+          const endDate = parseISO(event.end);
+
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn(
+              `Invalid date strings for event ${event.id}: start='${event.start}', end='${event.end}'`
+            );
+            return;
+          }
+
+          if (startDate > endDate) {
+            console.warn(`Event ${event.id} has start date after end date.`);
+            return;
+          }
+
+          const intervalDays = fnsEachDayOfInterval({
+            start: startDate,
+            end: endDate,
+          });
+          intervalDays.forEach((dayInInterval) => {
+            const dayKey = format(dayInInterval, "yyyy-MM-dd");
+            const existingEvents = map.get(dayKey) || [];
+            map.set(dayKey, [...existingEvents, event]);
+          });
+        } catch (e) {
+          console.error(
+            `Error processing event dates for event ${event.id}:`,
+            e,
+            event
+          );
+        }
+      } else {
+        console.warn(
+          `Event ${event.id} has missing or empty start/end dates after processing.`
+        );
+      }
     });
+    return map;
+  }, [events]);
+
+  const getEventsForDay = (day: Date): CalendarEvent[] => {
+    const dayKey = format(day, "yyyy-MM-dd");
+    return eventsByDate.get(dayKey) || [];
   };
 
-  // Helper function to check if a day has a past event (for different styling)
-  const hasPastEventOnDay = (day: Date): boolean => {
-    return events.some((event) => {
-      if (!event.start || !event.end) return false;
-      return (
-        isSameDay(new Date(event.start), day) && isPast(new Date(event.end))
-      );
-    });
+  const dayHasUpcomingEvent = (day: Date): boolean => {
+    const eventsOnDay = getEventsForDay(day);
+    if (eventsOnDay.length === 0) return false;
+    return eventsOnDay.some(
+      (event) => event.end && isFuture(parseISO(event.end))
+    );
   };
 
-  // Filter events to display ONLY upcoming events in the list below the calendar
+  const dayHasPastEvent = (day: Date): boolean => {
+    const eventsOnDay = getEventsForDay(day);
+    if (eventsOnDay.length === 0) return false;
+    const isUpcomingPresent = eventsOnDay.some(
+      (event) => event.end && isFuture(parseISO(event.end))
+    );
+    if (isUpcomingPresent) return false;
+    return eventsOnDay.some(
+      (event) => event.end && isPast(parseISO(event.end))
+    );
+  };
+
   const upcomingEventsList = useMemo(() => {
-    // Filter events that have not yet ended
     return events
       .filter((event) => {
         if (!event.end) return false;
-        return isFuture(new Date(event.end));
+        try {
+          return isFuture(parseISO(event.end));
+        } catch {
+          return false;
+        }
       })
       .sort((a, b) => {
-        // Sort by start time to show nearest events first
         if (!a.start || !b.start) return 0;
-        return new Date(a.start).getTime() - new Date(b.start).getTime();
+        try {
+          return parseISO(a.start).getTime() - parseISO(b.start).getTime();
+        } catch {
+          return 0;
+        }
       });
-  }, [events]); // Re-calculate when 'events' state changes
+  }, [events]);
 
-  // Navigate to previous month
-  const prevMonth = () => {
-    setCurrentDate(subMonths(currentDate, 1));
-  };
+  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const goToToday = () => setCurrentDate(new Date());
 
-  // Navigate to next month
-  const nextMonth = () => {
-    setCurrentDate(addMonths(currentDate, 1));
-  };
-
-  // Navigate to today
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  // Day names for the header
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
     <>
       <CalendarDayModal open={open} onClose={() => setOpen(false)}>
         {selectedDay ? (
-          events.filter(
-            (event) =>
-              event.start && isSameDay(new Date(event.start), selectedDay)
-          ).length > 0 ? (
-            events
-              .filter(
-                (event) =>
-                  event.start && isSameDay(new Date(event.start), selectedDay)
-              )
-              .map((event) => (
-                <div key={event.id} className="mb-4">
+          (() => {
+            const dayEvents = getEventsForDay(selectedDay);
+            return dayEvents.length > 0 ? (
+              dayEvents.map((event) => (
+                <div key={event.id} className="">
                   <h2 className="font-bold text-lg">{event.title}</h2>
-                  <p>{event.displayDate}</p>
-                  {event.description && <p>{event.description}</p>}
+                  <p className="text-sm text-neutral-800">
+                    {event.displayDate}
+                  </p>
+                  {event.description && (
+                    <p className="text-neutral-800">{event.description}</p>
+                  )}
+                  {event.location && (
+                    <p className="text-xs text-neutral-800">{event.location}</p>
+                  )}
                 </div>
               ))
-          ) : (
-            <p>No event for this day.</p>
-          )
+            ) : (
+              <p>No events for this day.</p>
+            );
+          })()
         ) : (
-          <p>No event for this day.</p>
+          <p>No day selected.</p>
         )}
       </CalendarDayModal>
+
       <div className="min-h-screen bg-neutral-900 relative overflow-hidden">
         {/* Background Images - (your existing code) */}
-
-        {/* Content */}
         <div className="relative z-10 py-20 px-4 pt-24">
           <div className="container mx-auto px-4 py-8 max-w-4xl gap-4">
             <div className="bg-neutral-800 rounded-lg shadow-xl overflow-hidden border border-neutral-700 relative">
-              {/* Calendar Header */}
               <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 p-6 text-white border-b border-neutral-700">
                 <div className="flex justify-between items-center">
                   <h1 className="text-2xl font-bold text-neutral-100">
@@ -314,57 +335,54 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              {/* Calendar Grid */}
               <div className="p-4">
-                {/* Day names header */}
                 <div className="grid grid-cols-7 gap-1 mb-4">
-                  {dayNames.map((day) => (
+                  {dayNames.map((dayName) => (
                     <div
-                      key={day}
+                      key={dayName}
                       className="text-center text-sm font-medium text-neutral-300 py-2"
                     >
-                      {day}
+                      {dayName}
                     </div>
                   ))}
                 </div>
 
-                {/* Calendar days */}
                 <div className="grid grid-cols-7 gap-1">
                   {days.map((day, index) => {
                     const isCurrentMonth = isSameMonth(day, currentDate);
                     const isToday = isSameDay(day, new Date());
-                    const hasUpcoming = hasUpcomingEventOnDay(day); // Check for upcoming event
-                    const hasPast = hasPastEventOnDay(day); // Check for past event on this day
+                    const hasUpcoming = dayHasUpcomingEvent(day); // Use optimized function
+                    const hasPast = dayHasPastEvent(day); // Use optimized function
 
                     return (
                       <div
                         key={index}
                         className={`
-                        aspect-square flex flex-col items-center justify-center
-                         hover:bg-neutral-700 transition-colors
-                        border border-neutral-700   
-                         
-                        ${
-                          isCurrentMonth && !isToday
-                            ? "text-neutral-200"
-                            : isToday
-                            ? "text-white"
-                            : "text-neutral-500/50"
-                        }
-                     
-                        ${
-                          isToday && hasUpcoming
-                            ? "bg-violet-600/70 rounded-3xl "
-                            : isToday && !hasUpcoming
-                            ? "bg-blue-500 "
-                            : hasUpcoming
-                            ? "bg-red-400/50 rounded-md"
-                            : hasPast
-                            ? "bg-neutral-700 rounded-md"
-                            : "rounded-md"
-                        }
-                 
-                      `}
+                          aspect-square flex flex-col items-center justify-center
+                          hover:bg-neutral-700 transition-colors
+                          border border-neutral-700
+                          ${
+                            isCurrentMonth
+                              ? "text-neutral-200"
+                              : "text-neutral-500/50"
+                          }
+                          ${
+                            isToday && hasUpcoming
+                              ? "bg-violet-600/70 rounded-3xl text-white"
+                              : isToday && !hasUpcoming
+                              ? "bg-blue-500 rounded-md text-white" // Today, no upcoming
+                              : hasUpcoming
+                              ? "bg-red-400/50 rounded-md" // Has upcoming (not today)
+                              : hasPast
+                              ? "bg-neutral-600 rounded-md" // Has past (and no upcoming)
+                              : "rounded-md" // Default or just out of month
+                          }
+                          ${
+                            !isCurrentMonth && !hasUpcoming && !hasPast
+                              ? "bg-neutral-800/30"
+                              : ""
+                          } // Dim out-of-month days without events further
+                        `}
                       >
                         <Button
                           onClick={(e) => {
@@ -373,9 +391,14 @@ export default function CalendarPage() {
                             setOpen(true);
                           }}
                           variant="ghost"
-                          className="w-full h-full hover:bg-neutral-500"
+                          className="w-full h-full hover:bg-transparent focus:bg-neutral-500/30" // Ensure hover on button itself is subtle if div handles main hover
+                          disabled={!isCurrentMonth && !hasUpcoming && !hasPast} // Optionally disable clicks on empty out-of-month days
                         >
-                          <span className="text-sm">{format(day, "d")}</span>
+                          <span
+                            className={`text-sm ${isToday ? "font-bold" : ""}`}
+                          >
+                            {format(day, "d")}
+                          </span>
                         </Button>
                       </div>
                     );
@@ -384,7 +407,6 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            {/* Display ONLY UPCOMING events in the list below the calendar */}
             <DisplayUpcomingEvents
               loadingEvents={loadingEvents}
               errorFetchingEvents={errorFetchingEvents}
