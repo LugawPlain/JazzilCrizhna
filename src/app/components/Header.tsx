@@ -93,7 +93,7 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 max-h-24 min-h-24">
-        <AnimatePresence>
+        {/* <AnimatePresence>
           {showAnnouncement && (
             <motion.div
               initial={{ opacity: 0, y: -50 }}
@@ -107,7 +107,7 @@ export default function Header() {
               </Marquee>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence> */}
         {/* Announcement Marquee */}
 
         <nav className="bg-black/20 backdrop-blur-sm">

@@ -434,12 +434,12 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-neutral-900 pb-16"
     >
-      <div className="mx-auto px-4">
+      <div className="mx-auto px-4 ">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-center mb-16"
+          className="text-center mb-4"
         >
           <h1 className="text-4xl font-bold text-white mb-4">
             {capitalizeFirstLetter(category)}
@@ -451,7 +451,13 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
             {/* Fallback to image count */}
           </p>
         </motion.div>
-
+      </div>
+      <SettingsPanel
+        userColumnCount={userColumnCount}
+        setUserColumnCount={setUserColumnCount}
+        activeColumnCount={activeColumnCount}
+      />
+      <div className="mx-auto px-4 ">
         {isAdmin && (
           <div className="mb-6 flex justify-end gap-4 items-center">
             {!isSelecting ? (
@@ -531,12 +537,6 @@ const CategoryPageContent: React.FC<CategoryPageContentProps> = ({
           ))}
         </div>
       </div>
-
-      <SettingsPanel
-        userColumnCount={userColumnCount}
-        setUserColumnCount={setUserColumnCount}
-        activeColumnCount={activeColumnCount}
-      />
 
       <AnimatePresence>
         {selectedImageData && (

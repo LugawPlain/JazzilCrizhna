@@ -87,7 +87,7 @@ const SettingsPanel = React.memo(
     if (!isMobile) return null;
 
     return (
-      <div className="fixed bottom-4 left-0 right-0 z-40">
+      <div className="sticky top-20 mb-4 z-30">
         <div
           ref={settingsRef}
           className="mx-auto w-fit bg-neutral-800/90 backdrop-blur-sm rounded-full shadow-lg"
