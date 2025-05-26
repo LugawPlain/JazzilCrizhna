@@ -3,7 +3,18 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
+let eventCache: { data: any[] | null; timestamp: number } = {
+  data: null,
+  timestamp: 0,
+};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export async function GET() {
+  const now = Date.now();
+  if (eventCache.data && now - eventCache.timestamp < CACHE_DURATION) {
+    return NextResponse.json(eventCache.data, { status: 200 });
+  }
+
   // Retrieve environment variables
   const serviceAccountKeyBase64 = process.env.GOOGLE_CALENDAR_SA_BASE64_CONTENT;
   const calendarId = process.env.GOOGLE_CALENDAR_ID;
@@ -58,7 +69,7 @@ export async function GET() {
       timeMax: endOfNext2Months.toISOString(),
       singleEvents: true,
       orderBy: "startTime",
-      maxResults: 2500, // Increase to cover more events if needed
+      maxResults: 100, // Increase to cover more events if needed
     });
 
     const events = response.data.items || [];
@@ -71,6 +82,7 @@ export async function GET() {
     const filteredEvents = events.map((event) => {
       const start = event.start?.dateTime || event.start?.date || "";
       const end = event.end?.dateTime || event.end?.date || "";
+
       const startDate = new Date(start);
       let endDate = new Date(end);
       const isAllDay = !!event.start?.date && !event.start?.dateTime;
@@ -90,6 +102,7 @@ export async function GET() {
             weekday: "short",
             month: "short",
             day: "numeric",
+            year: "numeric",
           });
         } else {
           displayDate =
@@ -97,12 +110,14 @@ export async function GET() {
               weekday: "short",
               month: "short",
               day: "numeric",
+              year: "numeric",
             }) +
             " - " +
             endDate.toLocaleDateString("en-US", {
               weekday: "short",
               month: "short",
               day: "numeric",
+              year: "numeric",
             });
         }
       } else {
@@ -113,6 +128,7 @@ export async function GET() {
               weekday: "short",
               month: "short",
               day: "numeric",
+              year: "numeric",
               hour: "numeric",
               minute: "2-digit",
               hour12: true,
@@ -134,6 +150,7 @@ export async function GET() {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
+                year: "numeric",
               }) + (duration ? `, ${duration}` : "");
           }
         } else {
@@ -143,6 +160,7 @@ export async function GET() {
               weekday: "short",
               month: "short",
               day: "numeric",
+              year: "numeric",
               hour: "numeric",
               minute: "2-digit",
               hour12: true,
@@ -152,6 +170,7 @@ export async function GET() {
               weekday: "short",
               month: "short",
               day: "numeric",
+              year: "numeric",
               hour: "numeric",
               minute: "2-digit",
               hour12: true,
@@ -169,8 +188,6 @@ export async function GET() {
       }
       return {
         id: event.id,
-        start,
-        end,
         displayDate,
         title,
         location,
@@ -183,6 +200,7 @@ export async function GET() {
 
     // console.log("Filtered events (with conditional content):", filteredEvents);
 
+    eventCache = { data: filteredEvents, timestamp: Date.now() };
     return NextResponse.json(filteredEvents, { status: 200 });
   } catch (error: any) {
     console.error("Error fetching calendar events:", error);
