@@ -66,38 +66,122 @@ export async function GET(request: Request) {
     if (events.length === 0) {
       return NextResponse.json([], { status: 200 });
     }
+    // console.log("Events:", events);
 
     const filteredEvents = events.map((event) => {
-      const start = event.start?.dateTime || event.start?.date;
-      const end = event.end?.dateTime || event.end?.date;
-      const eventStartTime = new Date(start || ""); // Convert event start time to Date object
-
+      const start = event.start?.dateTime || event.start?.date || "";
+      const end = event.end?.dateTime || event.end?.date || "";
+      let startDate = new Date(start);
+      let endDate = new Date(end);
+      const isAllDay = !!event.start?.date && !event.start?.dateTime;
+      if (isAllDay) {
+        // Subtract 1 day from end for all-day events (Google Calendar exclusive end)
+        endDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+      }
+      const isSameDay =
+        startDate.getFullYear() === endDate.getFullYear() &&
+        startDate.getMonth() === endDate.getMonth() &&
+        startDate.getDate() === endDate.getDate();
+      const isSameTime = startDate.getTime() === endDate.getTime();
+      let displayDate = "";
+      if (isAllDay) {
+        if (isSameDay || isSameTime) {
+          displayDate = startDate.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          });
+        } else {
+          displayDate =
+            startDate.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            }) +
+            " - " +
+            endDate.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+        }
+      } else {
+        if (isSameDay) {
+          if (isSameTime) {
+            // Same date and time
+            displayDate = startDate.toLocaleString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            });
+          } else {
+            // Same date, different times: show date and duration
+            const diffMs = endDate.getTime() - startDate.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            const hours = Math.floor(diffMins / 60);
+            const minutes = diffMins % 60;
+            let duration = "";
+            if (hours > 0) duration += `${hours} hour${hours > 1 ? "s" : ""}`;
+            if (minutes > 0)
+              duration += `${hours > 0 ? " " : ""}${minutes} minute${
+                minutes > 1 ? "s" : ""
+              }`;
+            displayDate =
+              startDate.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              }) + (duration ? `, ${duration}` : "");
+          }
+        } else {
+          // Different dates
+          displayDate =
+            startDate.toLocaleString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            }) +
+            "  -  " +
+            endDate.toLocaleString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            });
+        }
+      }
       let title = "Client Event"; // Default generic title
       let location = null; // Default hidden location
-      let description = "hidden for now"; // Default hidden description
-
       // Check if the event is within the 3-day window from now
       // And also check if the event is in the future (not already passed)
+      const eventStartTime = new Date(start || "");
       if (eventStartTime <= threeDaysFromNow) {
         title = event.summary || "Unnamed Event"; // Use actual summary if available
         location = event.location || null; // Include location
-        description = event.description || ""; // Include description
       }
-
       return {
         id: event.id,
-        start: start,
-        end: end,
-        title: title,
-        description: description,
-        location: location,
+        start,
+        end,
+        displayDate,
+        title,
+        location,
+        description: event.description,
       };
     });
 
     // Optionally filter out events that have already passed if you only want future ones in the final display
     // const futureEvents = filteredEvents.filter(event => new Date(event.end) >= now);
 
-    console.log("Filtered events (with conditional content):", filteredEvents);
+    // console.log("Filtered events (with conditional content):", filteredEvents);
 
     return NextResponse.json(filteredEvents, { status: 200 });
   } catch (error: any) {

@@ -26,6 +26,7 @@ interface CalendarEvent {
   title: string;
   description?: string; // Optional, only present for upcoming events
   location?: string; // Optional, only present for upcoming events
+  displayDate: string; // Added displayDate property
 }
 
 export default function CalendarPage() {
@@ -36,6 +37,10 @@ export default function CalendarPage() {
     null
   );
 
+  // Cache key and duration
+  const CACHE_KEY = "calendar_events_cache";
+  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
   // Calendar calculations (these are good as they are)
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -44,12 +49,34 @@ export default function CalendarPage() {
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const monthYear = format(currentDate, "MMMM yyyy"); // Corrected format for "YYYY"
 
-  // Fetch events from your API route
   useEffect(() => {
     setLoadingEvents(true);
     setErrorFetchingEvents(null);
 
-    fetch("/api/calendar/events") // Your API route
+    // Try to load from localStorage first
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (
+          parsed.timestamp &&
+          Date.now() - parsed.timestamp < CACHE_DURATION_MS &&
+          parsed.data
+        ) {
+          setEvents(parsed.data);
+          setLoadingEvents(false);
+          return; // Use cached data
+        } else {
+          // Cache expired or invalid
+          localStorage.removeItem(CACHE_KEY);
+        }
+      } catch (e) {
+        localStorage.removeItem(CACHE_KEY);
+      }
+    }
+
+    // If not cached or cache expired, fetch from API
+    fetch("/api/calendar/events")
       .then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -58,6 +85,15 @@ export default function CalendarPage() {
       })
       .then((data: CalendarEvent[]) => {
         setEvents(data);
+        // Save to cache
+        try {
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ timestamp: Date.now(), data })
+          );
+        } catch (e) {
+          // Ignore cache errors
+        }
         console.log("Fetched events for client-side:", data);
       })
       .catch((error) => {
@@ -67,7 +103,7 @@ export default function CalendarPage() {
       .finally(() => {
         setLoadingEvents(false);
       });
-  }, []); // Empty dependency array: fetch once on mount. If you want to re-fetch when month changes, add currentDate here.
+  }, []); // Only run on mount
 
   // Helper function to check if a day has an upcoming event for highlighting
   const hasUpcomingEventOnDay = (day: Date): boolean => {
@@ -213,8 +249,9 @@ export default function CalendarPage() {
                       key={index}
                       className={`
                         aspect-square p-1 flex flex-col items-center justify-center
-                         hover:bg-neutral-700 rounded-md transition-colors
+                         hover:bg-neutral-700 transition-colors
                         border border-neutral-700
+                        
                         ${
                           isCurrentMonth
                             ? "text-neutral-200"
@@ -222,8 +259,8 @@ export default function CalendarPage() {
                         }
                         ${
                           isToday
-                            ? "bg-blue-600 rounded-full font-bold text-white"
-                            : ""
+                            ? "bg-blue-600/70 font-bold text-white rounded-3xl"
+                            : "rounded-md"
                         }
                         ${hasUpcoming ? "bg-red-400/50 text-white" : ""}
                         ${
@@ -231,7 +268,7 @@ export default function CalendarPage() {
                             ? "bg-neutral-700 text-neutral-400"
                             : ""
                         }
-                       
+                         
                       `}
                     >
                       <span className="text-sm">{format(day, "d")}</span>
@@ -277,42 +314,8 @@ export default function CalendarPage() {
                           {event.title}
                         </h3>
                         <p className="text-sm text-neutral-300">
-                          {isAllDay
-                            ? new Date(event.start).toLocaleDateString(
-                                "en-US",
-                                {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                }
-                              )
-                            : new Date(event.start).toLocaleString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                          {!isAllDay && (
-                            <>
-                              {" - "}
-                              {new Date(event.end).toLocaleString("en-US", {
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                            </>
-                          )}
+                          {event.displayDate}
                         </p>
-
-                        {/* <p className="text-neutral-400 mt-2 text-sm">
-                          Description: {event.description}
-                        </p>
-
-                        <p className="text-neutral-400 text-sm">
-                          Location: {event.location}
-                        </p> */}
                       </li>
                     );
                   }
