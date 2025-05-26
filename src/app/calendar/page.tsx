@@ -279,7 +279,6 @@ export default function CalendarPage() {
       </CalendarDayModal>
 
       <div className="min-h-screen bg-neutral-900 relative overflow-hidden">
-        {/* Background Images - (your existing code) */}
         <div className="relative z-10 py-20 px-4 pt-24">
           <div className="container mx-auto px-4 py-8 max-w-4xl gap-4">
             <div className="bg-neutral-800 rounded-lg shadow-xl overflow-hidden border border-neutral-700 relative">
@@ -351,31 +350,31 @@ export default function CalendarPage() {
                   {days.map((day, index) => {
                     const isCurrentMonth = isSameMonth(day, currentDate);
                     const isToday = isSameDay(day, new Date());
-                    const hasUpcoming = dayHasUpcomingEvent(day); // Use optimized function
-                    const hasPast = dayHasPastEvent(day); // Use optimized function
+                    const hasUpcoming = dayHasUpcomingEvent(day);
+                    const hasPast = dayHasPastEvent(day);
 
                     return (
                       <div
                         key={index}
                         className={`
                           aspect-square flex flex-col items-center justify-center
-                          hover:bg-neutral-700 transition-colors
-                          border border-neutral-700
+                          transition-colors
+                       
                           ${
                             isCurrentMonth
-                              ? "text-neutral-200"
-                              : "text-neutral-500/50"
+                              ? "text-neutral-200 border-neutral-700    border-2 "
+                              : "text-neutral-200 opacity-50 border-neutral-700/50 border"
                           }
                           ${
                             isToday && hasUpcoming
-                              ? "bg-violet-600/70 rounded-3xl text-white"
+                              ? "bg-violet-600 rounded-3xl text-white"
                               : isToday && !hasUpcoming
-                              ? "bg-blue-500 rounded-md text-white" // Today, no upcoming
+                              ? "bg-blue-500 rounded-md text-white"
                               : hasUpcoming
-                              ? "bg-red-400/50 rounded-md" // Has upcoming (not today)
+                              ? "bg-red-400/70 rounded-md"
                               : hasPast
-                              ? "bg-neutral-600 rounded-md" // Has past (and no upcoming)
-                              : "rounded-md" // Default or just out of month
+                              ? "bg-neutral-600/70 rounded-md"
+                              : "rounded-md"
                           }
                           ${
                             !isCurrentMonth && !hasUpcoming && !hasPast
@@ -391,8 +390,8 @@ export default function CalendarPage() {
                             setOpen(true);
                           }}
                           variant="ghost"
-                          className="w-full h-full hover:bg-transparent focus:bg-neutral-500/30" // Ensure hover on button itself is subtle if div handles main hover
-                          disabled={!isCurrentMonth && !hasUpcoming && !hasPast} // Optionally disable clicks on empty out-of-month days
+                          className="w-full h-full hover:bg-neutral-500/50 focus:bg-neutral-500/30"
+                          disabled={!isCurrentMonth && !hasUpcoming && !hasPast}
                         >
                           <span
                             className={`text-sm ${isToday ? "font-bold" : ""}`}

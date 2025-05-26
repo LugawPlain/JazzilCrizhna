@@ -48,31 +48,30 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
         </p>
       ) : (
         <>
-          {soonEvents.length > 0 && (
-            <>
-              <div className="mb-2 text-amber-300 font-semibold text-sm uppercase tracking-wide">
-                Happening Soon&nbsp;
-                <span className="text-neutral-400 text-xs font-normal normal-case">
-                  (3 days from now)
-                </span>
-              </div>
-              <ul className="space-y-4 mb-6">
-                {soonEvents.map((event) => (
-                  <li
-                    key={event.id}
-                    className="bg-neutral-600 p-4 rounded-md border border-neutral-500"
-                  >
-                    <h3 className="text-lg font-semibold text-neutral-100">
-                      {event.title}
-                    </h3>
-                    <p className="text-sm text-neutral-300">
-                      {event.displayDate}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <>
+            <div className="mb-2 text-amber-300 font-semibold text-sm uppercase tracking-wide">
+              Happening Soon&nbsp;
+              <span className="text-neutral-400 text-xs font-normal normal-case">
+                (3 days from now)
+              </span>
+            </div>
+            <ul className="space-y-4 mb-6">
+              {soonEvents.map((event) => (
+                <li
+                  key={event.id}
+                  className="bg-neutral-600 p-4 rounded-md border border-neutral-500"
+                >
+                  <h3 className="text-lg font-semibold text-neutral-100">
+                    {event.title}
+                  </h3>
+                  <p className="text-sm text-neutral-300">
+                    {event.displayDate}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </>
+
           {soonEvents.length > 0 && futureEvents.length > 0 && (
             <div className="border-t border-neutral-500 my-4" />
           )}
