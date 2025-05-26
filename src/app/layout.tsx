@@ -13,6 +13,7 @@ import { quentonSerif } from "@/lib/fonts/quenton_serif";
 import { vogue } from "@/lib/fonts/vogue";
 import { designer } from "@/lib/fonts/designer";
 import { caliste2 } from "@/lib/fonts/caliste_2";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -63,6 +64,7 @@ export default function RootLayout({
 
           <SocialLinksButton />
           {children}
+          <SpeedInsights />
           <Footer />
         </Providers>
       </body>
