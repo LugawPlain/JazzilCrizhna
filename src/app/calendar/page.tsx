@@ -223,7 +223,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar Grid */}
-            <div className="p-6">
+            <div className="p-4">
               {/* Day names header */}
               <div className="grid grid-cols-7 gap-1 mb-4">
                 {dayNames.map((day) => (
@@ -248,14 +248,14 @@ export default function CalendarPage() {
                     <div
                       key={index}
                       className={`
-                        aspect-square p-1 flex flex-col items-center justify-center
+                        aspect-square p-2 flex flex-col items-center justify-center
                          hover:bg-neutral-700 transition-colors
                         border border-neutral-700
                         
                         ${
                           isCurrentMonth
                             ? "text-neutral-200"
-                            : "text-neutral-500"
+                            : "text-neutral-500/50"
                         }
                         ${
                           isToday
@@ -273,9 +273,6 @@ export default function CalendarPage() {
                     >
                       <span className="text-sm">{format(day, "d")}</span>
                       {/* Small dot/indicator for events */}
-                      {hasUpcoming && (
-                        <div className="w-1.5 h-1.5 bg-white rounded-full mt-1"></div>
-                      )}
                     </div>
                   );
                 })}
