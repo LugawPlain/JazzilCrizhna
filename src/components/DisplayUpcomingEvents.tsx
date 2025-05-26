@@ -51,7 +51,7 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
           {soonEvents.length > 0 && (
             <>
               <div className="mb-2 text-amber-300 font-semibold text-sm uppercase tracking-wide">
-                Happening Soon{" "}
+                Happening Soon&nbsp;
                 <span className="text-neutral-400 text-xs font-normal normal-case">
                   (3 days from now)
                 </span>
@@ -79,7 +79,7 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
           {futureEvents.length > 0 && (
             <>
               <div className="mb-2 text-blue-300 font-semibold text-sm uppercase tracking-wide">
-                Future Events{" "}
+                Future Events&nbsp;
                 <span className="text-neutral-400 text-xs font-normal normal-case">
                   (subject to change)
                 </span>

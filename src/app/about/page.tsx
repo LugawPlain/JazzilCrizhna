@@ -51,11 +51,11 @@ export default function AboutPage() {
               My Story
             </h2>
             <p className="text-sm sm:text-base text-gray-300 leading-relaxed antialiased tracking-wide">
-              Hi there! ☺️ I'm
+              Hi there&nbsp;☺️ I&apos;m
               <span className="font-bold text-lg text-amber-500">
                 {" "}
                 Jazzil Sarinas{" "}
-              </span>{" "}
+              </span>
               (Yorticia) a model, an influencer, and a brand ambassador based on
               Cavite.
               <br />
@@ -63,22 +63,23 @@ export default function AboutPage() {
               and mall pageants 🏢👠, those early moments sparked a love for
               self expression confidence and grace 💗💖. What started as a
               heartfelt passion has blossomed into my purpose.
-              <br /> Over the years, I’ve been so grateful for opportunities
-              like being a basketball league muse 🏀, which gave me a platform
-              not just to be seen, but to inspire, uplift, and share the story
-              and energy ⚡🥰 I bring. Every runway walk, every photoshoot, and
-              every collaboration has sculpted the person I am today, someone
-              who leads with genuine authenticity and a whole lot of heart 💞.
+              <br /> Over the years, I&apos;ve been so grateful for
+              opportunities like being a basketball league muse 🏀, which gave
+              me a platform not just to be seen, but to inspire, uplift, and
+              share the story and energy ⚡🥰 I bring. Every runway walk, every
+              photoshoot, and every collaboration has sculpted the person I am
+              today, someone who leads with genuine authenticity and a whole lot
+              of heart 💞.
               <br />
               Now, I thrive on collaborating with brands, photographers 📸, and
-              fellow creatives 🎨 to craft content that’s more than just
-              stylish, it’s meaningful. Whether it's bringing fashion 👘👗 to
-              life, capturing a lifestyle moment, or energizing a live event, I
-              pour my passion into every detail, always aiming to spark
+              fellow creatives 🎨 to craft content that&apos;s more than just
+              stylish, it&apos;s meaningful. Whether it&apos;s bringing fashion
+              👘👗 to life, capturing a lifestyle moment, or energizing a live
+              event, I pour my passion into every detail, always aiming to spark
               inspiration and leave a positive, lasting impression 💖💖.
               <br />
-              Thanks for stopping by! 😁 I’m excited by the possibility of
-              connecting and creating something truly beautiful together 💖💖
+              Thanks for stopping by&nbsp;😁 I&apos;m excited by the possibility
+              of connecting and creating something truly beautiful together 💖💖
             </p>
           </motion.div>
         </div>

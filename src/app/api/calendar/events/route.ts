@@ -3,7 +3,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export async function GET() {
   // Retrieve environment variables
   const serviceAccountKeyBase64 = process.env.GOOGLE_CALENDAR_SA_BASE64_CONTENT;
   const calendarId = process.env.GOOGLE_CALENDAR_ID;
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     const filteredEvents = events.map((event) => {
       const start = event.start?.dateTime || event.start?.date || "";
       const end = event.end?.dateTime || event.end?.date || "";
-      let startDate = new Date(start);
+      const startDate = new Date(start);
       let endDate = new Date(end);
       const isAllDay = !!event.start?.date && !event.start?.dateTime;
       if (isAllDay) {

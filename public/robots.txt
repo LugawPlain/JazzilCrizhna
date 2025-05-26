@@ -9,7 +9,7 @@ Disallow: /admin/*
 Disallow: /calendar/test
 
 # Host
-Host: https://your-domain.com
+Host: https://www.yorticia.com
 
 # Sitemaps
-Sitemap: https://your-domain.com/sitemap.xml
+Sitemap: https://www.yorticia.com/sitemap.xml

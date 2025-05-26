@@ -14,8 +14,6 @@ import {
   endOfWeek,
   isFuture,
   isPast,
-  isBefore,
-  isAfter,
 } from "date-fns";
 
 // Define the shape of your event data returned from the API
@@ -70,7 +68,7 @@ export default function CalendarPage() {
           // Cache expired or invalid
           localStorage.removeItem(CACHE_KEY);
         }
-      } catch (e) {
+      } catch {
         localStorage.removeItem(CACHE_KEY);
       }
     }
@@ -91,7 +89,7 @@ export default function CalendarPage() {
             CACHE_KEY,
             JSON.stringify({ timestamp: Date.now(), data })
           );
-        } catch (e) {
+        } catch {
           // Ignore cache errors
         }
         console.log("Fetched events for client-side:", data);
@@ -103,7 +101,7 @@ export default function CalendarPage() {
       .finally(() => {
         setLoadingEvents(false);
       });
-  }, []); // Only run on mount
+  }, [CACHE_DURATION_MS]); // Only run on mount, but include CACHE_DURATION_MS as dependency
 
   // Helper function to check if a day has an upcoming event for highlighting
   const hasUpcomingEventOnDay = (day: Date): boolean => {
@@ -130,7 +128,6 @@ export default function CalendarPage() {
 
   // Filter events to display ONLY upcoming events in the list below the calendar
   const upcomingEventsList = useMemo(() => {
-    const now = new Date();
     // Filter events that have not yet ended
     return events
       .filter((event) => {
