@@ -54,7 +54,7 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
             <p className="text-white/80 font-serif md:text-sm md:translate-y-4 md:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 md:delay-200">
               {project.photographerlink !== "#" ? (
                 <span
-                  className="pointer-events-auto p-5 inline-block underline text-md cursor-pointer"
+                  className="pointer-events-auto px-5 pb-5 pt-3 inline-block underline text-sm lg:text-md cursor-pointer"
                   onClick={(e) => {
                     console.log("Photographer link clicked!");
                     e.nativeEvent.stopImmediatePropagation();
@@ -69,7 +69,9 @@ export const ProjectCard = ({ project }: ProjectCardProps) => {
                   {project.photographer}
                 </span>
               ) : (
-                <span className="p-5 inline-block">{project.photographer}</span>
+                <span className="px-5 pb-5 pt-3 inline-block">
+                  {project.photographer}
+                </span>
               )}
             </p>
           </div>
