@@ -80,7 +80,7 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
               <div className="mb-2 text-blue-300 font-semibold text-sm uppercase tracking-wide">
                 Future Events&nbsp;
                 <span className="text-neutral-400 text-xs font-normal normal-case">
-                  (subject to change)
+                  (subject to change, details hidden for privacy purposes)
                 </span>
               </div>
               <ul className="space-y-4">

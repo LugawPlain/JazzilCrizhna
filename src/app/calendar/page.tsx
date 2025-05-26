@@ -147,7 +147,7 @@ export default function CalendarPage() {
       .finally(() => {
         setLoadingEvents(false);
       });
-  }, []);
+  }, [CACHE_DURATION_MS]);
 
   // --- START: Optimized Event Handling ---
   const eventsByDate = useMemo(() => {
@@ -257,7 +257,9 @@ export default function CalendarPage() {
             return dayEvents.length > 0 ? (
               dayEvents.map((event) => (
                 <div key={event.id} className="">
-                  <h2 className="font-bold text-lg">{event.title}</h2>
+                  <h2 className="font-bold text-lg leading-tight mt-2 ">
+                    {event.title}
+                  </h2>
                   <p className="text-sm text-neutral-800">
                     {event.displayDate}
                   </p>

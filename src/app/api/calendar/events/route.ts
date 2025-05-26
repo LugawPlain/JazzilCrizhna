@@ -61,7 +61,7 @@ export async function GET() {
 
     // Calculate the threshold for displaying full content (3 days from now)
     const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(now.getDate() + 3);
+    threeDaysFromNow.setDate(now.getDate() + 2);
 
     const response = await calendar.events.list({
       calendarId: calendarId,

@@ -2,8 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import Marquee from "react-fast-marquee";
-import { motion, AnimatePresence } from "framer-motion";
+// import Marquee from "react-fast-marquee";
+// import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Image from "next/image";
 
@@ -18,19 +18,19 @@ export default function Header() {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showAnnouncement, setShowAnnouncement] = useState(true);
+  // const [showAnnouncement, setShowAnnouncement] = useState(true);
   const [categories, setCategories] = useState<CategoryLink[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
 
   useEffect(() => {
     // Initially show the announcement
-    setShowAnnouncement(true);
+    // setShowAnnouncement(true);
 
-    // Hide after 10 seconds
-    const timer = setTimeout(() => {
-      setShowAnnouncement(false);
-    }, 20000);
+    // // Hide after 10 seconds
+    // const timer = setTimeout(() => {
+    //   setShowAnnouncement(false);
+    // }, 20000);
 
     // Fetch categories
     const fetchCategories = async () => {
@@ -61,7 +61,7 @@ export default function Header() {
 
     fetchCategories(); // Call the fetch function
 
-    return () => clearTimeout(timer); // Cleanup announcement timer
+    // return () => clearTimeout(timer); // Cleanup announcement timer
   }, []);
 
   // Add the useEffect hook to log only when session/status change
