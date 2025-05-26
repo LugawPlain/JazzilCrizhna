@@ -167,7 +167,7 @@ export default function CalendarPage() {
 
       {/* Content */}
       <div className="relative z-10 py-20 px-4 pt-24">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="container mx-auto px-4 py-8 max-w-4xl gap-4">
           <div className="bg-neutral-800 rounded-lg shadow-xl overflow-hidden border border-neutral-700 relative">
             {/* Calendar Header */}
             <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 p-6 text-white border-b border-neutral-700">
