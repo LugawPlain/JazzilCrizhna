@@ -371,7 +371,7 @@ export default function CalendarPage() {
                             isToday && hasUpcoming
                               ? "bg-violet-600 rounded-3xl text-white"
                               : isToday && !hasUpcoming
-                              ? "bg-blue-500 rounded-md text-white"
+                              ? "bg-yellow-500 rounded-md text-white"
                               : hasUpcoming
                               ? "bg-red-400/70 rounded-md"
                               : hasPast
