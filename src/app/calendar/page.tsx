@@ -242,6 +242,27 @@ export default function CalendarPage() {
       });
   }, [events]);
 
+  const happeningNowEvents: CalendarEvent[] = [];
+  const soonEvents: CalendarEvent[] = [];
+  const futureEvents: CalendarEvent[] = [];
+
+  const now = new Date();
+  const threeDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+
+  upcomingEventsList.forEach((event) => {
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+
+    if (startDate <= now && now < endDate) {
+      console.log(happeningNowEvents);
+      happeningNowEvents.push(event);
+    } else if (startDate > now && startDate <= threeDaysFromNow) {
+      soonEvents.push(event);
+    } else if (startDate > threeDaysFromNow) {
+      futureEvents.push(event);
+    }
+  });
+
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const goToToday = () => setCurrentDate(new Date());
@@ -371,7 +392,7 @@ export default function CalendarPage() {
                             isToday && hasUpcoming
                               ? "bg-violet-600 rounded-3xl text-white"
                               : isToday && !hasUpcoming
-                              ? "bg-yellow-500 rounded-md text-white"
+                              ? "bg-blue-500 rounded-md text-white"
                               : hasUpcoming
                               ? "bg-red-400/70 rounded-md"
                               : hasPast
