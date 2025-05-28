@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CalendarDayModal from "@/components/CalendarDayModal";
+import CalendarSelectMonth from "@/components/CalendarSelectMonth";
+import CalendarSelectYear from "@/components/CalendarSelectYear";
 
 interface CalendarEvent {
   id: string;
@@ -99,21 +101,6 @@ export default function CalendarPage() {
     () => new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
     [now]
   );
-
-  const MONTHS = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
 
   const YEARS = Array.from(
     { length: 10 },
@@ -424,45 +411,15 @@ export default function CalendarPage() {
               <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 p-6 text-white border-b border-neutral-700">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <Select
-                      value={format(currentDate, "MMMM")}
-                      onValueChange={(month) => {
-                        const newDate = new Date(currentDate);
-                        newDate.setMonth(MONTHS.indexOf(month));
-                        setCurrentDate(newDate);
-                      }}
-                    >
-                      <SelectTrigger className="w-[140px] bg-neutral-700 border-neutral-600">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map((month) => (
-                          <SelectItem key={month} value={month}>
-                            {month}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <CalendarSelectMonth
+                      currentDate={currentDate}
+                      onDateChange={setCurrentDate}
+                    />
 
-                    <Select
-                      value={format(currentDate, "yyyy")}
-                      onValueChange={(year) => {
-                        const newDate = new Date(currentDate);
-                        newDate.setFullYear(parseInt(year));
-                        setCurrentDate(newDate);
-                      }}
-                    >
-                      <SelectTrigger className="w-[100px] bg-neutral-700 border-neutral-600">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {YEARS.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <CalendarSelectYear
+                      currentDate={currentDate}
+                      onDateChange={setCurrentDate}
+                    />
                   </div>
                   <div className="flex space-x-2">
                     <button
