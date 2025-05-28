@@ -88,6 +88,12 @@ export default function CalendarPage() {
   const days = fnsEachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const monthYear = format(currentDate, "MMMM yyyy"); // Corrected format
 
+  const now = useMemo(() => new Date(), []);
+  const threeDaysFromNow = useMemo(
+    () => new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+    [now]
+  );
+
   useEffect(() => {
     setLoadingEvents(true);
     setErrorFetchingEvents(null);
@@ -131,7 +137,6 @@ export default function CalendarPage() {
             };
           })
           .filter((event) => event.start && event.end);
-
         setEvents(processedEvents);
         try {
           localStorage.setItem(
@@ -202,16 +207,47 @@ export default function CalendarPage() {
     return eventsByDate.get(dayKey) || [];
   };
 
-  const dayHasUpcomingEvent = (day: Date): boolean => {
-    const eventsOnDay = getEventsForDay(day);
+  const hasUpcomingEvent = (eventsOnDay: CalendarEvent[]): boolean => {
     if (eventsOnDay.length === 0) return false;
-    return eventsOnDay.some(
-      (event) => event.end && isFuture(parseISO(event.end))
-    );
+    return eventsOnDay.some((event) => {
+      if (!event.end) return false;
+      try {
+        const endTimestamp = parseISO(event.end).getTime();
+        const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
+
+        // Only return true if the event ends after 3 days from now
+        return endTimestamp > threeDaysFromNowTimestamp;
+      } catch {
+        return false;
+      }
+    });
   };
 
-  const dayHasPastEvent = (day: Date): boolean => {
-    const eventsOnDay = getEventsForDay(day);
+  const hasHappeningSoonEvent = (eventsOnDay: CalendarEvent[]): boolean => {
+    if (eventsOnDay.length === 0) return false;
+
+    const nowTimestamp = now.getTime();
+    const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
+
+    return eventsOnDay.some((event) => {
+      if (!event.start || !event.end) return false;
+      try {
+        const startTimestamp = parseISO(event.start).getTime();
+        const endTimestamp = parseISO(event.end).getTime();
+
+        // Event is happening soon if it starts within 3 days AND ends within 3 days
+        return (
+          startTimestamp > nowTimestamp &&
+          startTimestamp <= threeDaysFromNowTimestamp &&
+          endTimestamp <= threeDaysFromNowTimestamp
+        );
+      } catch {
+        return false;
+      }
+    });
+  };
+
+  const hasPastEvent = (eventsOnDay: CalendarEvent[]): boolean => {
     if (eventsOnDay.length === 0) return false;
     const isUpcomingPresent = eventsOnDay.some(
       (event) => event.end && isFuture(parseISO(event.end))
@@ -222,46 +258,58 @@ export default function CalendarPage() {
     );
   };
 
-  const upcomingEventsList = useMemo(() => {
-    return events
-      .filter((event) => {
-        if (!event.end) return false;
-        try {
-          return isFuture(parseISO(event.end));
-        } catch {
-          return false;
-        }
-      })
-      .sort((a, b) => {
-        if (!a.start || !b.start) return 0;
-        try {
-          return parseISO(a.start).getTime() - parseISO(b.start).getTime();
-        } catch {
-          return 0;
-        }
-      });
-  }, [events]);
+  const hasHappeningNowEvent = (eventsOnDay: CalendarEvent[]): boolean => {
+    if (eventsOnDay.length === 0) return false;
 
-  const happeningNowEvents: CalendarEvent[] = [];
-  const soonEvents: CalendarEvent[] = [];
-  const futureEvents: CalendarEvent[] = [];
+    const nowTimestamp = now.getTime();
 
-  const now = new Date();
-  const threeDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    return eventsOnDay.some((event) => {
+      if (!event.start || !event.end) return false;
+      try {
+        const startTimestamp = parseISO(event.start).getTime();
+        const endTimestamp = parseISO(event.end).getTime();
+        return (
+          startTimestamp <= nowTimestamp &&
+          nowTimestamp < endTimestamp + 86399000
+        );
+      } catch {
+        return false;
+      }
+    });
+  };
 
-  upcomingEventsList.forEach((event) => {
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
+  const categorizedEvents = useMemo(() => {
+    const happeningNow: CalendarEvent[] = [];
+    const soon: CalendarEvent[] = [];
+    const future: CalendarEvent[] = [];
+    const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
+    console.log(events);
+    events.forEach((event) => {
+      const nowTimestamp = now.getTime();
+      const startTimestamp = parseISO(event.start).getTime();
+      const endTimestamp = parseISO(event.end).getTime();
 
-    if (startDate <= now && now < endDate) {
-      console.log(happeningNowEvents);
-      happeningNowEvents.push(event);
-    } else if (startDate > now && startDate <= threeDaysFromNow) {
-      soonEvents.push(event);
-    } else if (startDate > threeDaysFromNow) {
-      futureEvents.push(event);
-    }
-  });
+      if (
+        startTimestamp <= nowTimestamp &&
+        nowTimestamp < endTimestamp + 86399000
+      ) {
+        happeningNow.push(event);
+      } else if (
+        startTimestamp > nowTimestamp &&
+        startTimestamp <= threeDaysFromNowTimestamp
+      ) {
+        soon.push(event);
+      } else if (startTimestamp > threeDaysFromNowTimestamp) {
+        future.push(event);
+      }
+    });
+
+    return {
+      happeningNow,
+      soon,
+      future,
+    };
+  }, [events, now, threeDaysFromNow]);
 
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -373,8 +421,11 @@ export default function CalendarPage() {
                   {days.map((day, index) => {
                     const isCurrentMonth = isSameMonth(day, currentDate);
                     const isToday = isSameDay(day, new Date());
-                    const hasUpcoming = dayHasUpcomingEvent(day);
-                    const hasPast = dayHasPastEvent(day);
+                    const eventsOnDay = getEventsForDay(day);
+                    const hasUpcoming = hasUpcomingEvent(eventsOnDay);
+                    const hasHappeningSoon = hasHappeningSoonEvent(eventsOnDay);
+                    const hasHappeningNow = hasHappeningNowEvent(eventsOnDay);
+                    const hasPast = hasPastEvent(eventsOnDay);
 
                     return (
                       <div
@@ -389,18 +440,22 @@ export default function CalendarPage() {
                               : "text-neutral-200 opacity-50 border-neutral-700/50 border"
                           }
                           ${
-                            isToday && hasUpcoming
-                              ? "bg-violet-600 rounded-3xl text-white"
-                              : isToday && !hasUpcoming
-                              ? "bg-blue-500 rounded-md text-white"
+                            hasHappeningNow
+                              ? "bg-blue-500/80 rounded-md text-white"
                               : hasUpcoming
-                              ? "bg-red-400/70 rounded-md"
+                              ? "bg-red-500/80 rounded-md text-white"
+                              : hasHappeningSoon
+                              ? "bg-yellow-500/80 rounded-md text-white"
                               : hasPast
                               ? "bg-neutral-600/70 rounded-md"
                               : "rounded-md"
                           }
                           ${
-                            !isCurrentMonth && !hasUpcoming && !hasPast
+                            !isCurrentMonth &&
+                            !hasUpcoming &&
+                            !hasHappeningSoon &&
+                            !hasHappeningNow &&
+                            !hasPast
                               ? "bg-neutral-800/30"
                               : ""
                           } // Dim out-of-month days without events further
@@ -414,10 +469,20 @@ export default function CalendarPage() {
                           }}
                           variant="ghost"
                           className="w-full h-full hover:bg-neutral-500/50 focus:bg-neutral-500/30"
-                          disabled={!isCurrentMonth && !hasUpcoming && !hasPast}
+                          disabled={
+                            !isCurrentMonth &&
+                            !hasUpcoming &&
+                            !hasHappeningSoon &&
+                            !hasHappeningNow &&
+                            !hasPast
+                          }
                         >
                           <span
-                            className={`text-sm ${isToday ? "font-bold" : ""}`}
+                            className={`text-sm ${
+                              isToday
+                                ? "font-bold bg-blue-400 rounded-full h-6 w-6 flex items-center justify-center"
+                                : ""
+                            }`}
                           >
                             {format(day, "d")}
                           </span>
@@ -432,7 +497,9 @@ export default function CalendarPage() {
             <DisplayUpcomingEvents
               loadingEvents={loadingEvents}
               errorFetchingEvents={errorFetchingEvents}
-              upcomingEventsList={upcomingEventsList}
+              happeningNowEvents={categorizedEvents.happeningNow}
+              soonEvents={categorizedEvents.soon}
+              futureEvents={categorizedEvents.future}
             />
           </div>
         </div>

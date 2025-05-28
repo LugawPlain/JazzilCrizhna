@@ -11,32 +11,18 @@ interface Event {
 interface DisplayUpcomingEventsProps {
   loadingEvents: boolean;
   errorFetchingEvents: string | null;
-  upcomingEventsList: Event[];
+  happeningNowEvents: Event[];
+  soonEvents: Event[];
+  futureEvents: Event[];
 }
 
 const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
   loadingEvents,
   errorFetchingEvents,
-  upcomingEventsList,
+  happeningNowEvents,
+  soonEvents,
+  futureEvents,
 }) => {
-  // Split events into 'Happening Soon' (within 3 days) and 'Future Events'
-  const now = new Date();
-  const threeDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
-  const soonEvents: Event[] = [];
-  const futureEvents: Event[] = [];
-  const happeningNowEvents: Event[] = [];
-  upcomingEventsList.forEach((event) => {
-    const startDate = new Date(event.start);
-    const endDate = new Date(event.end);
-    if (startDate <= now && now < endDate) {
-      happeningNowEvents.push(event);
-    } else if (startDate <= threeDaysFromNow) {
-      soonEvents.push(event);
-    } else {
-      futureEvents.push(event);
-    }
-  });
-
   return (
     <div className="mt-8 p-6 bg-neutral-700 rounded-lg border border-neutral-700">
       <h2 className="text-lg font-semibold text-neutral-200 mb-4">
@@ -46,34 +32,32 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
         <p className="text-neutral-400">Loading upcoming events...</p>
       ) : errorFetchingEvents ? (
         <p className="text-red-400">{errorFetchingEvents}</p>
-      ) : upcomingEventsList.length === 0 ? (
+      ) : happeningNowEvents.length === 0 &&
+        soonEvents.length === 0 &&
+        futureEvents.length === 0 ? (
         <p className="text-neutral-400">
           No upcoming events found for this period.
         </p>
       ) : (
         <>
-          {happeningNowEvents.length > 0 && (
-            <>
-              <div className="mb-2 text-green-400 font-semibold text-sm uppercase tracking-wide">
-                Happening Now
-              </div>
-              <ul className="space-y-4 mb-6">
-                {happeningNowEvents.map((event) => (
-                  <li
-                    key={event.id}
-                    className="bg-green-900/60 p-4 rounded-md border border-green-500"
-                  >
-                    <h3 className="text-lg font-semibold text-green-100">
-                      {event.title}
-                    </h3>
-                    <p className="text-sm text-green-200">
-                      {event.displayDate}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <>
+            <div className="mb-2 text-green-400 font-semibold text-sm uppercase tracking-wide">
+              Happening Now
+            </div>
+            <ul className="space-y-4 mb-6">
+              {happeningNowEvents.map((event) => (
+                <li
+                  key={event.id}
+                  className="bg-green-900/60 p-4 rounded-md border border-green-500"
+                >
+                  <h3 className="text-lg font-semibold text-green-100">
+                    {event.title}
+                  </h3>
+                  <p className="text-sm text-green-200">{event.displayDate}</p>
+                </li>
+              ))}
+            </ul>
+          </>
 
           <>
             <div className="mb-2 text-amber-300 font-semibold text-sm uppercase tracking-wide">
