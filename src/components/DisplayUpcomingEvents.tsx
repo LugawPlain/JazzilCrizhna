@@ -41,26 +41,30 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
       ) : (
         <>
           <>
-            <div className="mb-2 text-green-400 font-semibold text-sm uppercase tracking-wide">
+            <div className="mb-2 text-blue-400 font-semibold text-sm uppercase tracking-wide">
               Happening Now
             </div>
             <ul className="space-y-4 mb-6">
               {happeningNowEvents.map((event) => (
                 <li
                   key={event.id}
-                  className="bg-green-900/60 p-4 rounded-md border border-green-500"
+                  className="bg-neutral-600 p-4 rounded-md border border-neutral-500"
                 >
-                  <h3 className="text-lg font-semibold text-green-100">
+                  <h3 className="text-lg font-semibold text-neutral-100">
                     {event.title}
                   </h3>
-                  <p className="text-sm text-green-200">{event.displayDate}</p>
+                  <p className="text-sm text-neutral-200">
+                    {event.displayDate}
+                  </p>
                 </li>
               ))}
             </ul>
           </>
-
+          {happeningNowEvents.length > 0 && (
+            <div className="border-t border-neutral-500 my-4" />
+          )}
           <>
-            <div className="mb-2 text-amber-300 font-semibold text-sm uppercase tracking-wide">
+            <div className="mb-2 text-amber-400 font-semibold text-sm uppercase tracking-wide">
               Happening Soon&nbsp;
               <span className="text-neutral-400 text-xs font-normal normal-case">
                 (3 days from now)
@@ -88,7 +92,7 @@ const DisplayUpcomingEvents: React.FC<DisplayUpcomingEventsProps> = ({
           )}
           {futureEvents.length > 0 && (
             <>
-              <div className="mb-2 text-blue-300 font-semibold text-sm uppercase tracking-wide">
+              <div className="mb-2 text-red-400 font-semibold text-sm uppercase tracking-wide">
                 Future Events&nbsp;
                 <span className="text-neutral-400 text-xs font-normal normal-case">
                   (subject to change, details hidden for privacy purposes)

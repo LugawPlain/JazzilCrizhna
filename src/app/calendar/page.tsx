@@ -12,11 +12,16 @@ import {
   subMonths,
   startOfWeek,
   endOfWeek,
-  isFuture,
-  isPast,
   parseISO, // Import parseISO for converting YYYY-MM-DD strings
 } from "date-fns";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CalendarDayModal from "@/components/CalendarDayModal";
 
 interface CalendarEvent {
@@ -27,6 +32,8 @@ interface CalendarEvent {
   displayDate: string;
   start: string; // Expected to be YYYY-MM-DD after parsing
   end: string; // Expected to be YYYY-MM-DD after parsing
+  startTimestamp?: number; // Added: Numeric timestamp for start
+  endTimestamp?: number; // Added: Numeric timestamp for end
 }
 
 function parseDisplayDate(
@@ -76,10 +83,9 @@ export default function CalendarPage() {
   );
   const [open, setOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  // const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null); // Not used in provided snippet
 
   const CACHE_KEY = "calendar_events_cache";
-  const CACHE_DURATION_MS = 5 * 60 * 1000;
+  const CACHE_DURATION_MS = 20 * 60 * 1000;
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -92,6 +98,26 @@ export default function CalendarPage() {
   const threeDaysFromNow = useMemo(
     () => new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
     [now]
+  );
+
+  const MONTHS = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const YEARS = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() + i
   );
 
   useEffect(() => {
@@ -107,7 +133,39 @@ export default function CalendarPage() {
           Date.now() - parsedCache.timestamp < CACHE_DURATION_MS &&
           parsedCache.data
         ) {
-          setEvents(parsedCache.data);
+          // Ensure cached data also has timestamps if this logic is newer than cache
+          const eventsWithTimestamps = parsedCache.data
+            .map((event: CalendarEvent) => {
+              if (
+                event.start &&
+                event.end &&
+                (!event.startTimestamp || !event.endTimestamp)
+              ) {
+                try {
+                  return {
+                    ...event,
+                    startTimestamp: parseISO(event.start).getTime(),
+                    endTimestamp: parseISO(event.end).getTime(),
+                  };
+                } catch (e) {
+                  console.warn(
+                    `Error parsing cached event dates ${event.id}:`,
+                    e
+                  );
+                  return {
+                    ...event,
+                    startTimestamp: undefined,
+                    endTimestamp: undefined,
+                  };
+                }
+              }
+              return event;
+            })
+            .filter(
+              (event: CalendarEvent) =>
+                event.startTimestamp && event.endTimestamp
+            );
+          setEvents(eventsWithTimestamps);
           setLoadingEvents(false);
           return;
         } else {
@@ -126,17 +184,42 @@ export default function CalendarPage() {
         return res.json();
       })
       .then((data: CalendarEvent[]) => {
-        // Assuming API returns data that might need parsing for start/end
         const processedEvents = data
           .map((event) => {
             const parsedDates = parseDisplayDate(event.displayDate);
+            const startStr = parsedDates
+              ? parsedDates.start
+              : event.start || "";
+            const endStr = parsedDates ? parsedDates.end : event.end || "";
+
+            let startTs, endTs;
+            if (startStr && endStr) {
+              try {
+                startTs = parseISO(startStr).getTime();
+                endTs = parseISO(endStr).getTime();
+              } catch (e) {
+                console.warn(
+                  `Error parsing dates for event ${event.id}: start='${startStr}', end='${endStr}'`,
+                  e
+                );
+              }
+            }
+
             return {
               ...event,
-              start: parsedDates ? parsedDates.start : event.start || "",
-              end: parsedDates ? parsedDates.end : event.end || "",
+              start: startStr,
+              end: endStr,
+              startTimestamp: startTs,
+              endTimestamp: endTs,
             };
           })
-          .filter((event) => event.start && event.end);
+          .filter(
+            (event) =>
+              event.startTimestamp &&
+              event.endTimestamp &&
+              event.start &&
+              event.end
+          ); // Ensure valid events
         setEvents(processedEvents);
         try {
           localStorage.setItem(
@@ -152,7 +235,7 @@ export default function CalendarPage() {
       .finally(() => {
         setLoadingEvents(false);
       });
-  }, [CACHE_DURATION_MS]);
+  }, [CACHE_DURATION_MS, CACHE_KEY]);
 
   // --- START: Optimized Event Handling ---
   const eventsByDate = useMemo(() => {
@@ -209,17 +292,11 @@ export default function CalendarPage() {
 
   const hasUpcomingEvent = (eventsOnDay: CalendarEvent[]): boolean => {
     if (eventsOnDay.length === 0) return false;
-    return eventsOnDay.some((event) => {
-      if (!event.end) return false;
-      try {
-        const endTimestamp = parseISO(event.end).getTime();
-        const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
+    const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
 
-        // Only return true if the event ends after 3 days from now
-        return endTimestamp > threeDaysFromNowTimestamp;
-      } catch {
-        return false;
-      }
+    return eventsOnDay.some((event) => {
+      if (!event.startTimestamp) return false;
+      return event.startTimestamp > threeDaysFromNowTimestamp;
     });
   };
 
@@ -230,51 +307,44 @@ export default function CalendarPage() {
     const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
 
     return eventsOnDay.some((event) => {
-      if (!event.start || !event.end) return false;
-      try {
-        const startTimestamp = parseISO(event.start).getTime();
-        const endTimestamp = parseISO(event.end).getTime();
+      if (!event.startTimestamp || !event.endTimestamp) return false;
 
-        // Event is happening soon if it starts within 3 days AND ends within 3 days
-        return (
-          startTimestamp > nowTimestamp &&
-          startTimestamp <= threeDaysFromNowTimestamp &&
-          endTimestamp <= threeDaysFromNowTimestamp
-        );
-      } catch {
-        return false;
-      }
+      // Event is happening soon if it starts within 3 days AND ends within 3 days
+
+      return (
+        event.startTimestamp > nowTimestamp &&
+        event.startTimestamp <= threeDaysFromNowTimestamp &&
+        event.endTimestamp <= threeDaysFromNowTimestamp
+      );
     });
   };
 
   const hasPastEvent = (eventsOnDay: CalendarEvent[]): boolean => {
     if (eventsOnDay.length === 0) return false;
-    const isUpcomingPresent = eventsOnDay.some(
-      (event) => event.end && isFuture(parseISO(event.end))
+    const nowMs = now.getTime(); // 'now' is from useMemo
+
+    // Check if any event on this day is still upcoming or happening now
+    const isFutureOrCurrentEventPresent = eventsOnDay.some(
+      (event) => event.endTimestamp && event.endTimestamp >= nowMs
     );
-    if (isUpcomingPresent) return false;
-    return eventsOnDay.some(
-      (event) => event.end && isPast(parseISO(event.end))
-    );
+    if (isFutureOrCurrentEventPresent) return false;
+
+    return eventsOnDay.some((event) => {
+      if (!event.endTimestamp) return false;
+      return event.endTimestamp < nowMs;
+    });
   };
 
   const hasHappeningNowEvent = (eventsOnDay: CalendarEvent[]): boolean => {
     if (eventsOnDay.length === 0) return false;
-
     const nowTimestamp = now.getTime();
 
     return eventsOnDay.some((event) => {
-      if (!event.start || !event.end) return false;
-      try {
-        const startTimestamp = parseISO(event.start).getTime();
-        const endTimestamp = parseISO(event.end).getTime();
-        return (
-          startTimestamp <= nowTimestamp &&
-          nowTimestamp < endTimestamp + 86399000
-        );
-      } catch {
-        return false;
-      }
+      if (!event.startTimestamp || !event.endTimestamp) return false;
+      return (
+        event.startTimestamp <= nowTimestamp &&
+        nowTimestamp < event.endTimestamp + 86399000
+      );
     });
   };
 
@@ -282,33 +352,31 @@ export default function CalendarPage() {
     const happeningNow: CalendarEvent[] = [];
     const soon: CalendarEvent[] = [];
     const future: CalendarEvent[] = [];
+
+    const nowTimestamp = now.getTime();
     const threeDaysFromNowTimestamp = threeDaysFromNow.getTime();
-    console.log(events);
+    const endOfDayOffset = 86399000; // 23:59:59 in milliseconds
+
     events.forEach((event) => {
-      const nowTimestamp = now.getTime();
-      const startTimestamp = parseISO(event.start).getTime();
-      const endTimestamp = parseISO(event.end).getTime();
+      // Use pre-calculated timestamps
+      if (!event.startTimestamp || !event.endTimestamp) return;
 
       if (
-        startTimestamp <= nowTimestamp &&
-        nowTimestamp < endTimestamp + 86399000
+        event.startTimestamp <= nowTimestamp &&
+        nowTimestamp < event.endTimestamp + endOfDayOffset
       ) {
         happeningNow.push(event);
       } else if (
-        startTimestamp > nowTimestamp &&
-        startTimestamp <= threeDaysFromNowTimestamp
+        event.startTimestamp > nowTimestamp &&
+        event.startTimestamp <= threeDaysFromNowTimestamp
       ) {
         soon.push(event);
-      } else if (startTimestamp > threeDaysFromNowTimestamp) {
+      } else if (event.startTimestamp > threeDaysFromNowTimestamp) {
         future.push(event);
       }
     });
 
-    return {
-      happeningNow,
-      soon,
-      future,
-    };
+    return { happeningNow, soon, future };
   }, [events, now, threeDaysFromNow]);
 
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
@@ -355,9 +423,47 @@ export default function CalendarPage() {
             <div className="bg-neutral-800 rounded-lg shadow-xl overflow-hidden border border-neutral-700 relative">
               <div className="bg-gradient-to-r from-neutral-700 to-neutral-800 p-6 text-white border-b border-neutral-700">
                 <div className="flex justify-between items-center">
-                  <h1 className="text-2xl font-bold text-neutral-100">
-                    {monthYear}
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={format(currentDate, "MMMM")}
+                      onValueChange={(month) => {
+                        const newDate = new Date(currentDate);
+                        newDate.setMonth(MONTHS.indexOf(month));
+                        setCurrentDate(newDate);
+                      }}
+                    >
+                      <SelectTrigger className="w-[140px] bg-neutral-700 border-neutral-600">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map((month) => (
+                          <SelectItem key={month} value={month}>
+                            {month}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={format(currentDate, "yyyy")}
+                      onValueChange={(year) => {
+                        const newDate = new Date(currentDate);
+                        newDate.setFullYear(parseInt(year));
+                        setCurrentDate(newDate);
+                      }}
+                    >
+                      <SelectTrigger className="w-[100px] bg-neutral-700 border-neutral-600">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {YEARS.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={prevMonth}
