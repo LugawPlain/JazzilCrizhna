@@ -41,9 +41,6 @@ if (admin.apps.length) {
         "utf-8"
       );
       parsedServiceAccount = JSON.parse(decodedJson);
-      console.log(
-        "[/api/fetchcategoryimages] Successfully parsed FIREBASE_SA_BASE64_CONTENT."
-      );
     } catch (parseError: unknown) {
       // Log the parsing error message, which should be safe
       const parseErrorMessage =

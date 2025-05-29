@@ -5,8 +5,6 @@ import Link from "next/link";
 // REMOVED: import { categories, CategoryData } from "../app/portfolio/CategoryData";
 import { ProjectCard } from "./ProjectCard";
 
-// Define the structure fetched from /api/fetch-project-images
-// This aligns with ProjectCardData from the API route
 interface ProjectCardData {
   category: string;
   imageSrc: string;
@@ -59,9 +57,9 @@ export const HorizontalScrollCarousel = () => {
 
         // If not in cache or cache was invalid, fetch from API
         console.log(
-          "[HorizontalScrollCarousel] Fetching project images from /api/fetch-project-images..."
+          "[HorizontalScrollCarousel] Fetching project images from /api/fetch-categories-thumbnails..."
         );
-        const response = await fetch("/api/fetch-project-images");
+        const response = await fetch("/api/fetch-categories-thumbnails");
         if (!response.ok) {
           throw new Error(
             `API Error: ${response.status} ${response.statusText}`

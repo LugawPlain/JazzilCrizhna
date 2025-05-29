@@ -52,5 +52,6 @@ next-env.d.ts
 /config/service-account.json
 /firebasekey
 .cursor/
+.continue/
 TODOS
 /servicekeys

@@ -6,6 +6,14 @@ interface CategoryLink {
   link: string;
 }
 
+// Cache object to store categories and timestamp
+let categoryCache: {
+  data: CategoryLink[];
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 export async function GET() {
   const endpoint = "/api/fetch-categories";
   const logPrefix = `[${endpoint}]`;
@@ -17,16 +25,33 @@ export async function GET() {
       { status: 500 }
     );
   }
-  console.log(`${logPrefix} GET request received.`);
+
+  // Check if cache is valid
+  const now = Date.now();
+  if (categoryCache && now - categoryCache.timestamp < CACHE_DURATION) {
+    console.log(`${logPrefix} Returning categories from cache.`);
+    return NextResponse.json(
+      { categories: categoryCache.data },
+      { status: 200 }
+    );
+  }
+
+  console.log(
+    `${logPrefix} Cache expired or not found. Fetching from Firestore.`
+  );
 
   try {
     const collectionName = "portfolio_uploads";
-    console.log(`${logPrefix} Querying '${collectionName}' for all documents.`);
 
     const snapshot = await dbAdmin.collection(collectionName).get();
 
     if (snapshot.empty) {
       console.log(`${logPrefix} No documents found in '${collectionName}'.`);
+      // Even if empty, cache the result briefly to avoid hitting Firestore repeatedly if empty
+      categoryCache = { data: [], timestamp: now };
+      console.log(
+        `${logPrefix} Fetched categories (empty) and stored in cache.`
+      );
       return NextResponse.json({ categories: [] }, { status: 200 });
     }
 
@@ -64,9 +89,12 @@ export async function GET() {
     // Optional: Sort categories alphabetically by title
     uniqueCategories.sort((a, b) => a.title.localeCompare(b.title));
 
-    console.log(
-      `${logPrefix} Returning ${uniqueCategories.length} unique category items.`
-    );
+    // Store in cache
+    categoryCache = {
+      data: uniqueCategories,
+      timestamp: now, // Use 'now' captured before the async operation
+    };
+    console.log(`${logPrefix} Fetched categories and stored in cache.`);
 
     return NextResponse.json({ categories: uniqueCategories }, { status: 200 });
   } catch (error: unknown) {

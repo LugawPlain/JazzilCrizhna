@@ -286,7 +286,7 @@ function UploadForm() {
     try {
       console.log("Submitting FormData:");
       console.log("Metadata Array:", finalMetadata);
-      const response = await fetch("/api/admin/uploadimages", {
+      const response = await fetch("/api/admin/upload-images", {
         method: "POST",
         body: formData,
       });

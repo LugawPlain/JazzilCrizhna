@@ -17,7 +17,7 @@ const fixedCredentialPath = "config/service-account.json";
 // Check if already initialized (by checking if dbAdmin is already set)
 if (!dbAdmin) {
   try {
-    console.log("[Firebase Admin] Attempting initialization...");
+    // console.log("[Firebase Admin] Attempting initialization...");
 
     // Check if Firebase Admin app is already initialized
     if (!apps.length) {
@@ -29,9 +29,9 @@ if (!dbAdmin) {
       // *** PRIORITY 1: Check for Base64 encoded service account from env variable ***
       if (process.env.FIREBASE_SA_BASE64_CONTENT) {
         try {
-          console.log(
-            "[Firebase Admin] Attempting to use FIREBASE_SA_BASE64_CONTENT environment variable."
-          );
+          // console.log(
+          //   "[Firebase Admin] Attempting to use FIREBASE_SA_BASE64_CONTENT environment variable."
+          // );
           const decodedJson = Buffer.from(
             process.env.FIREBASE_SA_BASE64_CONTENT,
             "base64"
@@ -92,9 +92,9 @@ if (!dbAdmin) {
             process.cwd(),
             fixedCredentialPath
           );
-          console.log(
-            `[Firebase Admin] Attempting initialization using fixed file path (deployment mode): ${absoluteFixedPath}`
-          );
+          // console.log(
+          //   `[Firebase Admin] Attempting initialization using fixed file path (deployment mode): ${absoluteFixedPath}`
+          // );
 
           if (fs.existsSync(absoluteFixedPath)) {
             serviceAccount = JSON.parse(
@@ -127,19 +127,19 @@ if (!dbAdmin) {
         );
       }
 
-      console.log(
-        `[Firebase Admin] Using credentials from: ${initMethod}. Project ID: ${
-          (serviceAccount as any).project_id || "undefined"
-        }`
-      );
+      // console.log(
+      //   `[Firebase Admin] Using credentials from: ${initMethod}. Project ID: ${
+      //     (serviceAccount as any).project_id || "undefined"
+      //   }`
+      // );
 
       initializeApp({
         credential: credential.cert(serviceAccount),
       });
 
-      console.log("[Firebase Admin] Initialized successfully.");
+      //   console.log("[Firebase Admin] Initialized successfully.");
     } else {
-      console.log("[Firebase Admin] Using existing Firebase Admin app.");
+      //   console.log("[Firebase Admin] Using existing Firebase Admin app.");
     }
 
     // --- Get services ONLY AFTER successful initialization/app check ---
@@ -153,9 +153,9 @@ if (!dbAdmin) {
       );
     }
 
-    console.log(
-      "[Firebase Admin] Auth and Firestore services obtained successfully."
-    );
+    // console.log(
+    //   "[Firebase Admin] Auth and Firestore services obtained successfully."
+    // );
   } catch (error: unknown) {
     initError = error instanceof Error ? error : new Error(String(error)); // Store the initialization error
     console.error(
