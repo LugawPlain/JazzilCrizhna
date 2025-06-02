@@ -15,13 +15,7 @@ import {
   parseISO, // Import parseISO for converting YYYY-MM-DD strings
 } from "date-fns";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import CalendarDayModal from "@/components/CalendarDayModal";
 import CalendarSelectMonth from "@/components/CalendarSelectMonth";
 import CalendarSelectYear from "@/components/CalendarSelectYear";
@@ -94,17 +88,11 @@ export default function CalendarPage() {
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = fnsEachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  const monthYear = format(currentDate, "MMMM yyyy"); // Corrected format
 
   const now = useMemo(() => new Date(), []);
   const threeDaysFromNow = useMemo(
     () => new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
     [now]
-  );
-
-  const YEARS = Array.from(
-    { length: 10 },
-    (_, i) => new Date().getFullYear() + i
   );
 
   useEffect(() => {

@@ -58,17 +58,17 @@ export const authOptions: AuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async signIn({ user, account }) {
-      // Added more parameters to log
-      // console.log("[AuthCallback] signIn: Reached");
-      // console.log(`[AuthCallback] signIn: User Email: ${user?.email}`);
-      // console.log(
-      //   `[AuthCallback] signIn: Account Provider: ${account?.provider}`
-      // );
-      // Avoid logging full credentials object if sensitive
-      // console.log("[AuthCallback] signIn: Credentials:", credentials);
-      return true; // Original logic
-    },
+    // async signIn({ user, account }) {
+    //   // Added more parameters to log
+    //   // console.log("[AuthCallback] signIn: Reached");
+    //   // console.log(`[AuthCallback] signIn: User Email: ${user?.email}`);
+    //   // console.log(
+    //   //   `[AuthCallback] signIn: Account Provider: ${account?.provider}`
+    //   // );
+    //   // Avoid logging full credentials object if sensitive
+    //   // console.log("[AuthCallback] signIn: Credentials:", credentials);
+    //   return true; // Original logic
+    // },
     async jwt({ token, user, account }) {
       // Added more parameters to log
       // console.log("[AuthCallback] jwt: Reached");
