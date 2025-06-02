@@ -409,7 +409,7 @@ export default function CalendarPage() {
                       onDateChange={setCurrentDate}
                     />
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="hidden md:flex space-x-2">
                     <button
                       onClick={prevMonth}
                       className="p-2 rounded-full hover:bg-neutral-600/50 transition-colors"
@@ -531,7 +531,7 @@ export default function CalendarPage() {
                           <span
                             className={`text-sm ${
                               isToday
-                                ? "font-bold bg-blue-400 rounded-full h-6 w-6 flex items-center justify-center"
+                                ? "font-bold md:bg-blue-400 rounded-full h-6 w-6 flex items-center justify-center text-blue-400 md:text-neutral-200"
                                 : ""
                             }`}
                           >

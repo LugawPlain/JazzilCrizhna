@@ -61,7 +61,7 @@ export async function GET() {
 
     // Calculate the threshold for displaying full content (3 days from now)
     const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(now.getDate() + 2);
+    threeDaysFromNow.setDate(now.getDate() + 30);
 
     const response = await calendar.events.list({
       calendarId: calendarId,
@@ -177,7 +177,7 @@ export async function GET() {
             });
         }
       }
-      let title = "Client Event"; // Default generic title
+      let title = "Future Event"; // Default generic title
       let location = null; // Default hidden location
       // Check if the event is within the 3-day window from now
       // And also check if the event is in the future (not already passed)
